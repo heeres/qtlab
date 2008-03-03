@@ -80,8 +80,6 @@ class Instruments(gobject.GObject):
         if self._instruments.has_key(name):
             self.emit('instrument-changed', name, changes)
 
-instruments = Instruments()
-
 if __name__ == '__main__':
     i = Instruments()
     i.create('test1', 'HP1234')
