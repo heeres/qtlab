@@ -1,15 +1,17 @@
 from instrument import Instrument
+import types
 
 class dummy_ivvi_rack(Instrument):
     '''this is a dummy ivvi rack'''
 
-    def __init__(self,name):
+    def __init__(self, name):
 
         # address?
-        reset=False
+        reset = False
 
-        Instrument.__init__(self,name)
-        self.add_parameter('dacvalue', flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET, minval=0, maxval=10)
+        Instrument.__init__(self, name)
+        self.add_parameter('dacvalue', type=types.IntType
+                flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET, minval=0, maxval=10)
 
         self._dummy_dacvalue = [-99,-99,-99,-99,-99,-99,-99,-99]
         self._dacvalue = [-99,-99,-99,-99,-99,-99,-99,-99]
@@ -33,7 +35,7 @@ class dummy_ivvi_rack(Instrument):
    
 #### communication with machine
 
-    def _do_get_dacvalue(self,dacnr,hard=True):
+    def _do_get_dacvalue(self, dacnr, hard=True):
         if hard:
             print __name__ + ' : reading dac %i value from instrument' % dacnr
             self._dacvalue[dacnr-1]=self._dummy_dacvalue[dacnr-1]
@@ -42,7 +44,7 @@ class dummy_ivvi_rack(Instrument):
             print __name__ + ' : reading dac %i value from instrument' % dacnr
             return self._dacvalue[dacnr-1]
 
-    def _do_set_dacvalue(self,dacnr,value):
+    def _do_set_dacvalue(self, dacnr, value):
         print __name__ + ' : setting dac %i to %f' % (dacnr,value)
         self._dacvalue[dacnr-1] = value
         self._do_get_dacvalue(dacnr)
