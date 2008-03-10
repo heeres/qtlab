@@ -8,8 +8,9 @@ class HP1234(Instrument):
     'trigger': 'T?'
     }
 
-    def __init__(self, name):
+    def __init__(self, name, address=None):
         Instrument.__init__(self, name)
+
         self.add_parameter('value', type=types.FloatType,
                 flags=Instrument.FLAG_GET)
         self.add_parameter('speed', type=types.IntType,
@@ -20,6 +21,11 @@ class HP1234(Instrument):
 
         self.set_default_read_var('value')
         self.set_default_write_var('value')
+
+        if address == None:
+            raise ValueError('HP1234 requires an address parameter')
+        else:
+            print 'HP1234 address %s' % address
 
     def _do_get_value(self):
         return 1

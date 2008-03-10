@@ -58,10 +58,10 @@ class Instruments(gobject.GObject):
     def get_instruments(self):
         return self._instruments
 
-    def create(self, name, type, args={}):
+    def create(self, name, type, **kwargs):
         argstr = ''
-        for (name, val) in args.iteritems():
-            argstr += ',%s=%s' % (name, val)
+        for (name, val) in kwargs.iteritems():
+            argstr += ',%s=%r' % (name, val)
 
         importstr = 'import instrument_plugins.%s\n' % type
         importstr += '_ins = instrument_plugins.%s.%s(name%s)' % (type, type, argstr)
