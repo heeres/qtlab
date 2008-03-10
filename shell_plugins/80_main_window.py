@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
+import gui
 
 from gettext import gettext as _
 
@@ -52,7 +53,7 @@ class QTLab(gtk.Window):
                 ]
             }
         ]
-        self.menu = self.build_menu(menu, root=True)
+        self.menu = gui.build_menu(menu)
         self.vbox.pack_start(self.menu, False, False)
         self.add(self.vbox)
 
@@ -63,24 +64,6 @@ class QTLab(gtk.Window):
 
     def load_instruments(self):
         return
-
-    def build_menu(self, tree, root=False):
-        if root:
-            menu = gtk.MenuBar()
-        else:
-            menu = gtk.Menu()
-
-        for element in tree:
-            item = gtk.MenuItem(element['name'])
-            if element.has_key('icon'):
-                pass
-            if element.has_key('submenu'):
-                item.set_submenu(self.build_menu(element['submenu']))
-            elif element.has_key('action'):
-                item.connect('activate', element['action'])
-            menu.add(item)
-
-        return menu
 
     def _delete_event_cb(self, widget, event, data=None):
         # Change False to True and the main window will not be destroyed

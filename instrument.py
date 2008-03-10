@@ -28,7 +28,7 @@ class Instrument(gobject.GObject):
 
     Implement an instrument:
     In __init__ call self.add_variable(<name>, <option dict>)
-    Implement do_get_<variable> and do_set_<variable> functions
+    Implement _do_get_<variable> and _do_set_<variable> functions
     """
 
     __gsignals__ = {

@@ -18,8 +18,24 @@ class QTSource(gtk.Window):
 
         self.connect("delete-event", self._delete_event_cb)
 
+        menu = [
+            {'name': _('File'), 'submenu':
+                [
+                    {'name': _('Save'), 'action': self._save_cb},
+                    {'name': _('Open'), 'action': self._open_cb},
+                    {'name': _('Run'), 'action': self._run_cb}
+                ]
+            }
+        ]
+
+        self.menu = gui.build_menu(menu)
+
         self.setup_source_view()
-        self.add(self.source_win)
+
+        self.vbox = gtk.VBox()
+        self.vbox.pack_start(self.menu, False, False)
+        self.vbox.pack_start(self.source_win)
+        self.add(self.vbox)
 
         self.show_all()
 
@@ -47,6 +63,16 @@ class QTSource(gtk.Window):
         print 'Hiding source window, use showsource() to get it back'
         self.hide()
         return True
+
+    def _save_cb(self):
+        pass
+
+    def _open_cb(self):
+        pass
+
+    def _run_cb(self):
+        code = ''
+        exec(code)
 
 def showsource():
     global _soucewin
