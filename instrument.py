@@ -177,6 +177,9 @@ class Instrument(gobject.GObject):
             return None
 
         ret = func(value)
+        if p['flags'] & self.FLAG_GET_AFTER_SET:
+                ret = self._get_value(name)
+
         p['value'] = ret
         return ret
 
