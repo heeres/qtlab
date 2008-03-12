@@ -45,8 +45,6 @@ class Instrument(gobject.GObject):
     FLAG_GETSET = 0x03
     FLAG_GET_AFTER_SET = 0x04
 
-    FLAG_KWARGS = 0x100
-
     def __init__(self, name):
         gobject.GObject.__init__(self)
 
@@ -82,10 +80,20 @@ class Instrument(gobject.GObject):
         self._parameters[name] = options
 
         # Create proxies
-        if options['flags'] & Instrument.FLAG_GET:
-            setattr(self, 'get_%s' % name, lambda query=True: self.get(name, query))
-        if options['flags'] & Instrument.FLAG_SET:
-            setattr(self, 'set_%s' % name, lambda x: self.set(name, x))
+        if 'channels' in options:
+            if options['flags'] & Instrument.FLAG_GET:
+                setattr(self, 'get_%s' % name, lambda channel, query=True: \
+                    self.get(name, query=query, channel=channel))
+            if options['flags'] & Instrument.FLAG_SET:
+                setattr(self, 'set_%s' % name, lambda channel, val: \
+                    self.set(name, val, channel=channel))
+        else:
+            if options['flags'] & Instrument.FLAG_GET:
+                setattr(self, 'get_%s' % name, lambda query=True: \
+                    self.get(name, query=query))
+            if options['flags'] & Instrument.FLAG_SET:
+                setattr(self, 'set_%s' % name, lambda val: \
+                    self.set(name, val))
 
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
@@ -102,21 +110,49 @@ class Instrument(gobject.GObject):
     def get_parameters(self):
         return self._parameters
 
-    def _get_value(self, name, query=True):
+    def _channel_check(self, name, p, **kwargs):
+        if 'channels' in p:
+            if 'channel' not in kwargs:
+                print 'Channel number not specified for variable %s' % name
+                return None
+
+            ch = p['channels']
+            if len(ch) == 2:
+                if kwargs['channel'] < ch[0] or kwargs['channel'] > ch[1]:
+                    print 'Channel %d out of range' % kwargs['channel']
+                    return None
+
+            value_var = 'value%d' % kwargs['channel']
+
+        elif 'channel' in kwargs:
+            print 'Variable %s does not exist for different channels'
+            return None
+
+        else:
+            value_var = 'value'
+
+        return value_var
+
+    def _get_value(self, name, query=True, **kwargs):
         if name in self._parameters:
             p = self._parameters[name]
         else:
             print 'Could not retrieve options for parameter %s' % name
             return None
 
+        value_var = self._channel_check(name, p, **kwargs)
+        if value_var == None:
+            return None
+
         if not query:
             print 'Getting cached value'
-            if 'value' in p:
-                return p['value']
+            if value_var in p:
+                return p[value_var]
             else:
                 print 'Trying to access cached value, but none available'
                 return None
 
+        # Check this here; getting of cached values should work
         if not p['flags'] & Instrument.FLAG_GET:
             print 'Instrument does not support getting of %s' % name
             return None
@@ -127,22 +163,22 @@ class Instrument(gobject.GObject):
             print 'Instrument does not implement getting of %s' % name
             return None
 
-        return func()
+        return func(**kwargs)
 
-    def get(self, name, query=True):
+    def get(self, name, query=True, **kwargs):
         if type(name) in (types.ListType, types.TupleType):
             result = {}
             for key in name:
-                val = self._get_value(name, query)
+                val = self._get_value(name, query, **kwargs)
                 if val is not None:
                     result[key] = val
 
             return result
 
         else:
-            return self._get_value(name, query)
+            return self._get_value(name, query, **kwargs)
 
-    def _set_value(self, name, value):
+    def _set_value(self, name, value, **kwargs):
         if self._parameters.has_key(name):
             p = self._parameters[name]
         else:
@@ -152,6 +188,10 @@ class Instrument(gobject.GObject):
             print 'Instrument does not support setting of %s' % name
             return None
 
+        value_var = self._channel_check(name, p, **kwargs)
+        if value_var == None:
+            return None
+         
         if 'type' in p:
             if p['type'] == types.IntType:
                 value = int(value)
@@ -176,14 +216,14 @@ class Instrument(gobject.GObject):
             print 'Instrument does not implement setting of %s' % name
             return None
 
-        ret = func(value)
+        ret = func(value, **kwargs)
         if p['flags'] & self.FLAG_GET_AFTER_SET:
-                ret = self._get_value(name)
+                ret = self._get_value(name, **kwargs)
 
-        p['value'] = ret
+        p[value_var] = ret
         return ret
 
-    def set(self, name, value=None):
+    def set(self, name, value=None, **kwargs):
         if self._locked:
             print 'Trying to set value of locked instrument (%s)' % self.get_name()
             return False
@@ -192,13 +232,13 @@ class Instrument(gobject.GObject):
         changed = {}
         if type(name) == types.DictType:
             for key, val in name.iteritems():
-                if self._set_value(key, val):
+                if self._set_value(key, val, **kwargs):
                     changed[key] = val
                 else:
                     result = False
 
         else:
-            if self._set_value(name, value):
+            if self._set_value(name, value, **kwargs):
                 changed[name] = value
             else:
                 result = False

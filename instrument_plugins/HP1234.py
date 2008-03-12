@@ -15,9 +15,17 @@ class HP1234(Instrument):
                 flags=Instrument.FLAG_GET)
         self.add_parameter('speed', type=types.IntType,
                 flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-           minval=0, maxval=10)
+                minval=0, maxval=10)
+        self.add_parameter('input', type=types.FloatType,
+                flags=Instrument.FLAG_GET,
+                channels=(0, 7),
+                minval=0, maxval=10)
+        self.add_parameter('output', type=types.FloatType,
+                flags=Instrument.FLAG_SET,
+                channels=(0, 7),
+                minval=0, maxval=10)
 
-        self.add_function('reset', flags=Instrument.FLAG_KWARGS)
+        self.add_function('reset')
 
         self.set_default_read_var('value')
         self.set_default_write_var('value')
@@ -37,6 +45,12 @@ class HP1234(Instrument):
     def _do_set_speed(self, val):
         print 'Set speed to %s' % val
         return True
+
+    def _do_get_input(self, channel):
+        return channel * channel
+
+    def _do_set_output(self, val, channel):
+        print 'Setting channel %d to %f' % (channel, val)
 
     def remove(self):
         Instrument.remove(self)
