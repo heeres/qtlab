@@ -17,6 +17,7 @@
 
 import types
 import gobject
+import copy
 
 class Instrument(gobject.GObject):
     """
@@ -77,16 +78,35 @@ class Instrument(gobject.GObject):
         options = kwargs
         if not options.has_key('flags'):
             options['flags'] = Instrument.FLAG_GETSET
+
+        # If defining channels call add_parameter for each channel 
+        if 'channels' in options:
+            if len(options['channels']) != 2:
+                print 'Error: channels has to have a valid range'
+                return None
+
+            minch, maxch = options['channels']
+            for i in xrange(minch, maxch + 1):
+                chopt = copy.copy(options)
+                del chopt['channels']
+                chopt['channel'] = i
+                chopt['base_name'] = name
+                self.add_parameter('%s%d' % (name, i), **chopt)
+
+            return
+
         self._parameters[name] = options
 
-        # Create proxies
-        if 'channels' in options:
+        if 'channel' in options:
+            ch = options['channel']
+            base_name = options['base_name']
+            print 'Defining channel %d for %s' % (ch, base_name)
             if options['flags'] & Instrument.FLAG_GET:
-                setattr(self, 'get_%s' % name, lambda channel, query=True: \
-                    self.get(name, query=query, channel=channel))
+                setattr(self, 'get_%s' % name, lambda query=True: \
+                    self.get(name, query=query, channel=ch))
             if options['flags'] & Instrument.FLAG_SET:
-                setattr(self, 'set_%s' % name, lambda channel, val: \
-                    self.set(name, val, channel=channel))
+                setattr(self, 'set_%s' % name, lambda val: \
+                    self.set(name, val, channel=ch))
         else:
             if options['flags'] & Instrument.FLAG_GET:
                 setattr(self, 'get_%s' % name, lambda query=True: \
@@ -110,29 +130,6 @@ class Instrument(gobject.GObject):
     def get_parameters(self):
         return self._parameters
 
-    def _channel_check(self, name, p, **kwargs):
-        if 'channels' in p:
-            if 'channel' not in kwargs:
-                print 'Channel number not specified for variable %s' % name
-                return None
-
-            ch = p['channels']
-            if len(ch) == 2:
-                if kwargs['channel'] < ch[0] or kwargs['channel'] > ch[1]:
-                    print 'Channel %d out of range' % kwargs['channel']
-                    return None
-
-            value_var = 'value%d' % kwargs['channel']
-
-        elif 'channel' in kwargs:
-            print 'Variable %s does not exist for different channels'
-            return None
-
-        else:
-            value_var = 'value'
-
-        return value_var
-
     def _get_value(self, name, query=True, **kwargs):
         if name in self._parameters:
             p = self._parameters[name]
@@ -140,14 +137,13 @@ class Instrument(gobject.GObject):
             print 'Could not retrieve options for parameter %s' % name
             return None
 
-        value_var = self._channel_check(name, p, **kwargs)
-        if value_var == None:
-            return None
+        if 'channel' in p and 'channel' not in kwargs:
+            kwargs['channel'] = p['channel']
 
         if not query:
             print 'Getting cached value'
-            if value_var in p:
-                return p[value_var]
+            if 'value' in p:
+                return p['value']
             else:
                 print 'Trying to access cached value, but none available'
                 return None
@@ -157,10 +153,15 @@ class Instrument(gobject.GObject):
             print 'Instrument does not support getting of %s' % name
             return None
 
+        if 'base_name' in p:
+            base_name = p['base_name']
+        else:
+            base_name = name
+
         try:
-            func = getattr(self, '_do_get_%s' % name)
+            func = getattr(self, '_do_get_%s' % base_name)
         except Exception, e:
-            print 'Instrument does not implement getting of %s' % name
+            print 'Instrument does not implement getting of %s' % base_name
             return None
 
         return func(**kwargs)
@@ -188,9 +189,8 @@ class Instrument(gobject.GObject):
             print 'Instrument does not support setting of %s' % name
             return None
 
-        value_var = self._channel_check(name, p, **kwargs)
-        if value_var == None:
-            return None
+        if 'channel' in p and 'channel' not in kwargs:
+            kwargs['channel'] = p['channel']
          
         if 'type' in p:
             if p['type'] == types.IntType:
@@ -210,20 +210,25 @@ class Instrument(gobject.GObject):
             print 'Trying to set too large value: %s' % value
             return None
 
+        if 'base_name' in p:
+            base_name = p['base_name']
+        else:
+            base_name = name
+
         try:
-            func = getattr(self, '_do_set_%s' % name)
+            func = getattr(self, '_do_set_%s' % base_name)
         except Exception, e:
-            print 'Instrument does not implement setting of %s' % name
+            print 'Instrument does not implement setting of %s' % base_name
             return None
 
         ret = func(value, **kwargs)
         if p['flags'] & self.FLAG_GET_AFTER_SET:
                 ret = self._get_value(name, **kwargs)
 
-        p[value_var] = ret
+        p['value'] = ret
         return ret
 
-    def set(self, name, value=None, **kwargs):
+    def set(self, name, value, **kwargs):
         if self._locked:
             print 'Trying to set value of locked instrument (%s)' % self.get_name()
             return False

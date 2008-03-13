@@ -18,11 +18,11 @@ class HP1234(Instrument):
                 minval=0, maxval=10)
         self.add_parameter('input', type=types.FloatType,
                 flags=Instrument.FLAG_GET,
-                channels=(0, 7),
+                channels=(1, 4),
                 minval=0, maxval=10)
         self.add_parameter('output', type=types.FloatType,
                 flags=Instrument.FLAG_SET,
-                channels=(0, 7),
+                channels=(1, 4),
                 minval=0, maxval=10)
 
         self.add_function('reset')
