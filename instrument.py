@@ -124,6 +124,21 @@ class Instrument(gobject.GObject):
         else:
             return None
 
+    def set_parameter_options(self, name, **kwargs):
+        if name not in self._parameters:
+            print 'Parameter %s not defined' % name
+            return None
+
+        for key, val in kwargs.iteritems():
+            self._parameters[name][key] = val
+
+    def set_parameter_bounds(self, name, minval, maxval):
+        self.set_parameter_options(name, minval=minval, maxval=maxval)
+
+    def set_channel_bounds(self, name, channel, minval, maxval):
+        self.set_parameter_options('%s%d' % (name, channel), \
+            minval=minval, maxval=maxval)
+
     def get_parameter_names(self):
         return self._parameters.keys()
 

@@ -25,6 +25,8 @@ class HP1234(Instrument):
                 channels=(1, 4),
                 minval=0, maxval=10)
 
+        self.set_channel_bounds('output', 1, -1, 1)
+
         self.add_function('reset')
 
         self.set_default_read_var('value')
