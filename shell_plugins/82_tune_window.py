@@ -90,7 +90,7 @@ class QTTune(gtk.Window):
         val = ins.get(param)
         print 'Param: %r, val: %r' % (param, val)
 
-        self._param_edit.set_text('%r' % val)
+        self._param_edit.set_text('%s' % val)
 
     def _set_param_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
