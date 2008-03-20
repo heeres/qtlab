@@ -45,6 +45,7 @@ class Instrument(gobject.GObject):
     FLAG_SET = 0x02
     FLAG_GETSET = 0x03
     FLAG_GET_AFTER_SET = 0x04
+    FLAG_SOFTGET = 0x08
 
     def __init__(self, name):
         gobject.GObject.__init__(self)
@@ -99,21 +100,19 @@ class Instrument(gobject.GObject):
 
         if 'channel' in options:
             ch = options['channel']
-            base_name = options['base_name']
-            print 'Defining channel %d for %s' % (ch, base_name)
-            if options['flags'] & Instrument.FLAG_GET:
-                setattr(self, 'get_%s' % name, lambda query=True: \
-                    self.get(name, query=query, channel=ch))
-            if options['flags'] & Instrument.FLAG_SET:
-                setattr(self, 'set_%s' % name, lambda val: \
-                    self.set(name, val, channel=ch))
+            more_opts = {'channel': ch}
         else:
-            if options['flags'] & Instrument.FLAG_GET:
-                setattr(self, 'get_%s' % name, lambda query=True: \
-                    self.get(name, query=query))
-            if options['flags'] & Instrument.FLAG_SET:
-                setattr(self, 'set_%s' % name, lambda val: \
-                    self.set(name, val))
+            more_opts = {}
+
+        if options['flags'] & Instrument.FLAG_GET:
+            setattr(self, 'get_%s' % name, lambda query=True: \
+                self.get(name, query=query, **more_opts))
+        if options['flags'] & Instrument.FLAG_SOFTGET:
+            setattr(self, 'get_%s' % name, lambda: \
+                self.get(name, query=False, **more_opts))
+        if options['flags'] & Instrument.FLAG_SET:
+            setattr(self, 'set_%s' % name, lambda val: \
+                self.set(name, val, **more_opts))
 
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
