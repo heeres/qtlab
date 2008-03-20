@@ -172,3 +172,47 @@ class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
         except:
             return None
 
+class AllParametersDropdown(gtk.ComboBoxEntry):
+
+    def __init__(self, flags=Instrument.FLAG_GETSET):
+        self._param_list = gtk.ListStore(gobject.TYPE_STRING)
+        gtk.ComboBoxEntry.__init__(self, model=self._param_list)
+
+        self._flags = flags
+        self.update_list()
+
+        global instruments
+        self._instruments = instruments
+        self._instruments.connect('instrument-added', self._instrument_added_cb)
+        self._instruments.connect('instrument-removed', self._instrument_removed_cb)
+        self._instruments.connect('instrument-changed', self._instrument_changed_cb)
+
+    def _instrument_added_cb(self, sender, instrument):
+        self.update_list()
+
+    def _instrument_removed_cb(self, sender, instrument):
+        self.update_list()
+
+    def _instrument_changed_cb(self, sender, instrument, property, value):
+        self.update_list()
+
+    def set_flags(self, flags):
+        if self._flags != flags:
+            self._flags = flags
+            return self.update_list()
+
+    def update_list(self):
+        self._param_list.clear()
+
+        global instruments
+        inslist = instruments.get_instruments()
+        for (ins, options) in inslist.iteritems():
+            params = ins.get_parameters()
+            for name, options in params.iteritems():
+                if options['flags'] & self._flags:
+                    add_name = '%s.%s' % (ins, name)
+                    self._param_list.append([add_name])
+
+    def get_parameter(self):
+        return None
+
