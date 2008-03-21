@@ -15,20 +15,25 @@ class QTInstruments(gtk.Window):
 
         self.connect("delete-event", self._delete_event_cb)
 
-        self.vbox = gtk.VBox()
         self._ins_combo = InstrumentDropdown()
 
         self._ins_textview = gtk.TextView()
         self._ins_text = self._ins_textview.get_buffer()
+
+        self._scrolled_win = gtk.ScrolledWindow()
+        self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self._scrolled_win.add(self._ins_textview)
 
         global instruments
         instruments.connect('instrument-added', self._instruments_changed_cb)
         instruments.connect('instrument-removed', self._instruments_changed_cb)
         instruments.connect('instrument-changed', self._instruments_changed_cb)
 
-        self.vbox.pack_start(self._ins_combo, False, False)
-        self.vbox.pack_start(self._ins_textview, False, False)
-        self.add(self.vbox)
+        self._vbox = gtk.VBox()
+        self._vbox.pack_start(self._ins_combo, False, False)
+        self._vbox.pack_start(self._scrolled_win, True, True)
+
+        self.add(self._vbox)
 
         self.show_all()
 
