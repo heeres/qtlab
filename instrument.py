@@ -77,8 +77,10 @@ class Instrument(gobject.GObject):
 
     def add_parameter(self, name, **kwargs):
         options = kwargs
-        if not options.has_key('flags'):
+        if 'flags' not in options:
             options['flags'] = Instrument.FLAG_GETSET
+        if 'type' not in options:
+            options['type'] = types.NoneType
 
         # If defining channels call add_parameter for each channel 
         if 'channels' in options:

@@ -70,12 +70,13 @@ class InstrumentDropdown(gtk.ComboBoxEntry):
 
 class InstrumentParameterDropdown(gtk.ComboBoxEntry):
 
-    def __init__(self, instrument=None, flags=Instrument.FLAG_GETSET):
+    def __init__(self, instrument=None, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         gtk.ComboBoxEntry.__init__(self, model=self._param_list)
 
         self._instrument = instrument
         self._flags = flags
+        self._types = types
 
         global instruments
         self._instruments = instruments
@@ -86,6 +87,11 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
             ins = self._instrument
             self.set_instrument(None)
             self.set_instrument(ins)
+
+    def set_types(self, types):
+        if self._types != types:
+            self._types = types
+            return self.update_list()
 
     def _instrument_removed_cb(self, sender, instrument):
         if instrument == self._instrument:
@@ -108,6 +114,9 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
         if ins is not None:
             params = ins.get_parameters()
             for name, options in params.iteritems():
+                if len(self._types) > 0 and options['type'] not in self._types:
+                    continue
+
                 if options['flags'] & self._flags:
                     self._param_list.append([name])
         else:
@@ -174,11 +183,12 @@ class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
 
 class AllParametersDropdown(gtk.ComboBoxEntry):
 
-    def __init__(self, flags=Instrument.FLAG_GETSET):
+    def __init__(self, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         gtk.ComboBoxEntry.__init__(self, model=self._param_list)
 
         self._flags = flags
+        self._types = types
         self.update_list()
 
         global instruments
@@ -199,6 +209,11 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
     def set_flags(self, flags):
         if self._flags != flags:
             self._flags = flags
+            return self.update_list()
+
+    def set_types(self, types):
+        if self._types != types:
+            self._types = types
             return self.update_list()
 
     def update_list(self):
