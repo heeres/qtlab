@@ -41,11 +41,25 @@ class Instruments(gobject.GObject):
         return self.get(key)
 
     def add(self, ins):
+        '''
+        Add instrument to the internal instruments list and listen
+        to signals emitted by the instrument.
+
+        Input:  Instrument object
+        Output: None
+        '''
         ins.connect('changed', self._instrument_changed_cb)
         ins.connect('removed', self._instrument_removed_cb)
         self._instruments[ins.get_name()] = ins
 
     def get(self, name):
+        '''
+        Return Instrument object with name 'name'. 
+        
+        Input:  name of instrument (string)
+        Output: Instrument object
+        '''
+        
         if len(name) != 1:
             return None
 
@@ -56,9 +70,21 @@ class Instruments(gobject.GObject):
             return None
 
     def get_instruments(self):
+        '''
+        Return the instruments dictionary of name -> Instrument.
+        '''
         return self._instruments
 
     def create(self, name, type, **kwargs):
+        '''
+        Create an instrument called 'name' of type 'type'.
+
+        Input:  (1) name of the newly created instrument (string)
+                (2) type of instrument (string)
+                (3) optional: keyword arguments.
+                    E.g.: an instrument might need an 'address=' input.
+        Output: Instrument object
+        '''
         argstr = ''
         for (kwname, kwval) in kwargs.iteritems():
             argstr += ',%s=%r' % (kwname, kwval)
@@ -86,11 +112,26 @@ class Instruments(gobject.GObject):
         return _ins
 
     def _instrument_removed_cb(self, sender, name):
+        '''
+        Remove instrument from list and emit instrument-removed signal.
+
+        Input:  (1) sender of signal
+                (2) instrument name
+        Output: None
+        '''
         if self._instruments.has_key(name):
             del self._instruments[name]
         self.emit('instrument-removed', name)
 
     def _instrument_changed_cb(self, sender, name, changes):
+        '''
+        Emit signal when values of an Instrument change.
+
+        Input:  (1) sender of message
+                (2) name of instrument
+                (3) dictionary of changed parameters
+        Output: None
+        '''
         if self._instruments.has_key(name):
             self.emit('instrument-changed', name, changes)
 

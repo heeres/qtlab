@@ -41,11 +41,16 @@ class Instrument(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT]))
     }
 
-    FLAG_GET = 0x01
-    FLAG_SET = 0x02
-    FLAG_GETSET = 0x03
-    FLAG_GET_AFTER_SET = 0x04
-    FLAG_SOFTGET = 0x08
+    # FLAGS are used to to set extra properties on a parameter.
+
+    FLAG_GET = 0x01             # Parameter is gettable
+    FLAG_SET = 0x02             # {arameter is settable
+    FLAG_GETSET = 0x03          # Shortcut for GET and SET
+    FLAG_GET_AFTER_SET = 0x04   # perform a 'get' after a 'set'
+    FLAG_SOFTGET = 0x08         # 'get' operation is simulated in software,
+                                # e.g. an internally stored value is returned.
+                                # Only use for parameters that cannot be read
+                                # back from a device.
 
     def __init__(self, name):
         gobject.GObject.__init__(self)
@@ -64,23 +69,69 @@ class Instrument(gobject.GObject):
         return "Instrument '%s'" % (self.get_name())
 
     def get_name(self):
+        '''
+        Returns the name of the instrument as a string
+
+        Input: None
+        Output: name of instrument (string)
+        '''
         return self._name
 
     def initialize(self):
+        '''
+        Currently unsupported; might be used in the future to perform
+        extra initialization in sub-classed Instruments.
+
+        Input: None
+        Output: None
+        '''
         self._initialized = True
 
     def remove(self):
+        '''
+        Notifies the environment that the instrument is removed.
+        Override this in a sub-classed Instrument to perform cleanup.
+
+        Input: None
+        Output: None
+        '''
         self.emit('removed', self.get_name())
 
     def is_initialized(self):
+        '''
+        Return whether Instrument is initialized.
+
+        Input: None
+        Output: Boolean
+        '''
         return self._initialized
 
     def add_parameter(self, name, **kwargs):
+        '''
+        Create an instrument 'parameter' that is known by the whole
+        environment (gui etc).
+
+        This function creates the 'get_<name>' and 'set_<name>' wrapper
+        functions that will perform checks on parameters and finally call
+        '_do_get_<name>' and '_do_set_<name>'. The latter functions should
+        be implemented in the instrument driver.
+
+        Input:  (1) the name of the parameter (string)
+                (2) optional keywords:
+                    (1) type: types.FloatType, types.StringType, etc.
+                    (2) flags: bitwise or of Instrument.FLAG_ constants.
+                        If not set, GETSET is default
+                    (3) channels: tuple. Automagically create channels, e.g.
+                        (1, 4) will make channels 1, 2, 3, 4.
+                    (3) minval, maxval (bound checking)
+                    (4) units, string describing the units of this parameter
+        Output: None
+        '''
         options = kwargs
         if not options.has_key('flags'):
             options['flags'] = Instrument.FLAG_GETSET
 
-        # If defining channels call add_parameter for each channel 
+        # If defining channels call add_parameter for each channel
         if 'channels' in options:
             if len(options['channels']) != 2:
                 print 'Error: channels has to have a valid range'
@@ -118,12 +169,24 @@ class Instrument(gobject.GObject):
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
 
     def get_parameter_options(self, name):
+        '''
+        Return list of options for paramter.
+
+        Input: name (string)
+        Output: dictionary of options
+        '''
         if self._parameters.has_key(name):
             return self._parameters[name]
         else:
             return None
 
     def set_parameter_options(self, name, **kwargs):
+        '''
+        Change parameter options.
+
+        Input:  name of parameter (string)
+        Ouput:  None
+        '''
         if name not in self._parameters:
             print 'Parameter %s not defined' % name
             return None
@@ -132,19 +195,56 @@ class Instrument(gobject.GObject):
             self._parameters[name][key] = val
 
     def set_parameter_bounds(self, name, minval, maxval):
+        '''
+        Change the bounds for a parameter.
+
+        Input:  (1) name of parameter (string)
+                (2) minimum value
+                (3) maximum value
+        Output: None
+        '''
         self.set_parameter_options(name, minval=minval, maxval=maxval)
 
     def set_channel_bounds(self, name, channel, minval, maxval):
+        '''
+        Change the bounds for a channel.
+
+        Input:  (1) name of parameter (string)
+                (2) channel number (int)
+                (3) minimum value
+                (4) maximum value
+        Output: None
+        '''
         self.set_parameter_options('%s%d' % (name, channel), \
             minval=minval, maxval=maxval)
 
     def get_parameter_names(self):
+        '''
+        Returns a list of parameter names.
+
+        Input: None
+        Output: all the paramter names (list of strings)
+        '''
         return self._parameters.keys()
 
     def get_parameters(self):
+        '''
+        Return the parameter dictionary.
+
+        Input: None
+        Ouput: Dictionary, keys are parameter names, values are the options.
+        '''
         return self._parameters
 
     def _get_value(self, name, query=True, **kwargs):
+        '''
+        Private wrapper function to get a value.
+
+        Input:  (1) name of parameter (string)
+                (2) query the instrument or return stored value (Boolean)
+                (3) optional list of extra options
+        Output: value of parameter (whatever type the instrument driver returns)
+        '''
         if name in self._parameters:
             p = self._parameters[name]
         else:
@@ -181,6 +281,15 @@ class Instrument(gobject.GObject):
         return func(**kwargs)
 
     def get(self, name, query=True, **kwargs):
+        '''
+        Get one or more Instrument parameter values.
+
+        Input:  (1) name of parameter (string, or list/tuple of strings)
+                (2) query the instrument or return stored value (Boolean)
+                (3) optional list of arguments
+        Output: Single value, or dictionary of parameter -> values
+                Type is whatever the instrument driver returns.
+        '''
         if type(name) in (types.ListType, types.TupleType):
             result = {}
             for key in name:
@@ -194,6 +303,16 @@ class Instrument(gobject.GObject):
             return self._get_value(name, query, **kwargs)
 
     def _set_value(self, name, value, **kwargs):
+        '''
+        Private wrapper function to set a value.
+
+        Input:  (1) name of parameter (string)
+                (2) value of parameter (whatever type the parameter supports).
+                    Type casting is performed if necessary.
+                (3) Optional keyword args that will be passed on.
+        Output: Value returned by the _do_set_<name> function,
+                or result of get in FLAG_GET_AFTER_SET specified.
+        '''
         if self._parameters.has_key(name):
             p = self._parameters[name]
         else:
@@ -205,7 +324,7 @@ class Instrument(gobject.GObject):
 
         if 'channel' in p and 'channel' not in kwargs:
             kwargs['channel'] = p['channel']
-         
+
         if 'type' in p:
             if p['type'] == types.IntType:
                 value = int(value)
@@ -243,6 +362,19 @@ class Instrument(gobject.GObject):
         return ret
 
     def set(self, name, value, **kwargs):
+        '''
+        Set one or more Instrument parameter values.
+        
+        Checks whether the Instrument is locked and checks value bounds,
+        if specified by minval / maxval.
+
+        Input:  (1) name of parameter (string), or dictionary of
+                    parameter -> value
+                (2) value to send to instrument (whatever the parameter needs)
+                (3) Optional keyword args that will be passed on.
+        Output: True or False whether the operation succeeded.
+                For multiple sets return False if any of the parameters failed.
+        '''
         if self._locked:
             print 'Trying to set value of locked instrument (%s)' % self.get_name()
             return False
@@ -268,6 +400,13 @@ class Instrument(gobject.GObject):
         return result
 
     def add_function(self, name, **options):
+        '''
+        Inform the Instrument wrapper class to expose a function.
+
+        Input:  (1) name of function (string)
+                (2) dictionary of extra options
+        Output: None
+        '''
         if hasattr(self, name):
             f = getattr(self, name)
             if hasattr(f, '__doc__'):
@@ -276,30 +415,80 @@ class Instrument(gobject.GObject):
         self._functions[name] = options
 
     def get_function_options(self, name):
+        '''
+        Return options for an Instrument function.
+
+        Input:  name of function (string)
+        Output: dictionary of options for function 'name'
+        '''
         if self._functions.has_key(name):
             return self._functions[name]
         else:
             return None
 
     def get_function_names(self):
+        '''
+        Return the list of exposed Instrument function names.
+
+        Input: None
+        Output: list of function names (list of strings)
+        '''
         return self._functions.keys()
 
     def get_functions(self):
+        '''
+        Return the exposed functions dictionary.
+
+        Input: None
+        Ouput: Dictionary, keys are function  names, values are the options.
+        '''
         return self._functions
 
     def call(self, funcname, **kwargs):
+        '''
+        Call the exposed function 'funcname'.
+
+        Input:  (1) function name (string)
+                (2) Optional keyword args that will be passed on.
+        Output: None
+        '''
         f = getattr(self, funcname)
         f(**kwargs)
 
     def lock(self):
+        '''
+        Lock the instrument; no parameters can be changed until the Instrument
+        is unlocked.
+
+        Input: None
+        Output: None
+        '''
         self._locked = True
 
     def unlock(self):
+        '''
+        Unlock the instrument; parameters can be changed.
+
+        Input: None
+        Output: None
+        '''
         self._locked = False
 
     def set_default_read_var(self, name):
+        '''
+        For future use.
+
+        Input: name of variable (string)
+        Output: None
+        '''
         self._default_read_var = name
 
     def set_default_write_var(self, name):
+        '''
+        For future use.
+
+        Input: name of variable (string)
+        Output: None
+        '''
         self._default_write_var = name
 
