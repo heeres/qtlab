@@ -17,6 +17,7 @@
 
 import code
 import gobject
+import types
 
 class Instruments(gobject.GObject):
 
@@ -60,10 +61,11 @@ class Instruments(gobject.GObject):
         Output: Instrument object
         '''
         
-        if len(name) != 1:
-            return None
+        if type(name) == types.TupleType:
+            if len(name) != 1:
+                return None
+            name = name[0]
 
-        name = name[0]
         if self._instruments.has_key(name):
             return self._instruments[name]
         else:
