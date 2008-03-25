@@ -18,6 +18,7 @@
 import code
 import gobject
 import types
+import os
 
 class Instruments(gobject.GObject):
 
@@ -76,6 +77,21 @@ class Instruments(gobject.GObject):
         Return the instruments dictionary of name -> Instrument.
         '''
         return self._instruments
+
+    def get_types(self):
+        '''
+        Return list of supported instrument types
+        '''
+
+        ret = []
+        filelist = os.listdir('instrument_plugins')
+        for path_fn in filelist:
+            path, fn = os.path.split(path_fn)
+            name, ext = os.path.splitext(fn)
+            if ext == '.py' and name != "__init__":
+                ret.append(name)
+
+        return ret
 
     def create(self, name, type, **kwargs):
         '''
