@@ -52,12 +52,16 @@ class Instrument(gobject.GObject):
                                 # Only use for parameters that cannot be read
                                 # back from a device.
 
-    def __init__(self, name):
+    def __init__(self, name, **kwargs):
         gobject.GObject.__init__(self)
 
         self._name = name
         self._initialized = False
         self._locked = False
+
+        self._options = kwargs
+        if 'tags' not in self._options:
+            self._options['tags'] = []
 
         self._parameters = {}
         self._functions = {}
@@ -75,7 +79,28 @@ class Instrument(gobject.GObject):
         Input: None
         Output: name of instrument (string)
         '''
+
         return self._name
+
+    def get_tags(self):
+        '''
+        Returns array of tags
+
+        Input: None
+        Output: array of strings
+        '''
+
+        return self._options['tags']
+
+    def add_tag(self, tag):
+        '''
+        Add tag to the tag list
+
+        Input: tag (string)
+        Output: None
+        '''
+
+        self._options['tags'].append(tag)
 
     def initialize(self):
         '''
@@ -125,6 +150,7 @@ class Instrument(gobject.GObject):
                         (1, 4) will make channels 1, 2, 3, 4.
                     (3) minval, maxval (bound checking)
                     (4) units, string describing the units of this parameter
+                    (5) tags, array of tags for this parameter
         Output: None
         '''
         options = kwargs
@@ -132,6 +158,8 @@ class Instrument(gobject.GObject):
             options['flags'] = Instrument.FLAG_GETSET
         if 'type' not in options:
             options['type'] = types.NoneType
+        if 'tags' not in options:
+            options['tags'] = []
 
         # If defining channels call add_parameter for each channel
         if 'channels' in options:
@@ -195,6 +223,33 @@ class Instrument(gobject.GObject):
 
         for key, val in kwargs.iteritems():
             self._parameters[name][key] = val
+
+    def get_parameter_tags(self, name):
+        '''
+        Return tags for parameter 'name'.
+
+        Input:  name of parameter (string)
+        Ouput:  array of tags
+        '''
+
+        if name not in self._parameters:
+            return []
+
+        return self._parameters[name]['tags']
+
+    def add_parameter_tag(self, name, tag):
+        '''
+        Add tag to list of tags for parameter 'name'.
+
+        Input:  (1) name of parameter (string)
+                (2) tag (string)
+        Ouput:  None
+        '''
+
+        if name not in self._parameters:
+            return
+
+        self._parameters[name]['tags'].append(tag)
 
     def set_parameter_bounds(self, name, minval, maxval):
         '''

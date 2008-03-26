@@ -100,7 +100,9 @@ class Instruments(gobject.GObject):
         Input:  (1) name of the newly created instrument (string)
                 (2) type of instrument (string)
                 (3) optional: keyword arguments.
-                    E.g.: an instrument might need an 'address=' input.
+                    (1) tags, array of strings representing tags
+                    (2) many instruments require address=<address>
+
         Output: Instrument object
         '''
         argstr = ''
