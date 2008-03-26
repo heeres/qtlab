@@ -9,21 +9,24 @@ class HP1234(Instrument):
     }
 
     def __init__(self, name, address=None):
-        Instrument.__init__(self, name)
+        Instrument.__init__(self, name, tags=['measure'])
 
         self.add_parameter('value', type=types.FloatType,
-                flags=Instrument.FLAG_GET)
+                flags=Instrument.FLAG_GET,
+                tags=['measure'])
         self.add_parameter('speed', type=types.IntType,
                 flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
                 minval=0, maxval=10)
         self.add_parameter('input', type=types.FloatType,
                 flags=Instrument.FLAG_GET,
                 channels=(1, 4),
-                minval=0, maxval=10)
+                minval=0, maxval=10,
+                tags=['measure'])
         self.add_parameter('output', type=types.FloatType,
                 flags=Instrument.FLAG_SET,
                 channels=(1, 4),
-                minval=0, maxval=10)
+                minval=0, maxval=10,
+                tags=['sweep'])
 
         self.set_channel_bounds('output', 1, -1, 1)
 
