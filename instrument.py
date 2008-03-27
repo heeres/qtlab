@@ -186,14 +186,19 @@ class Instrument(gobject.GObject):
             more_opts = {}
 
         if options['flags'] & Instrument.FLAG_GET:
-            setattr(self, 'get_%s' % name, lambda query=True: \
-                self.get(name, query=query, **more_opts))
+            func = lambda query=True: self.get(name, query=query, **more_opts)
+            func.__doc__ = 'Get variable %s' % name
+            setattr(self, 'get_%s' % name,  func)
+
         if options['flags'] & Instrument.FLAG_SOFTGET:
-            setattr(self, 'get_%s' % name, lambda: \
-                self.get(name, query=False, **more_opts))
+            func = lambda query=True: self.get(name, query=False, **more_opts)
+            func.__doc__ = 'Get variable %s (internal stored value)' % name
+            setattr(self, 'get_%s' % name,  func)
+
         if options['flags'] & Instrument.FLAG_SET:
-            setattr(self, 'set_%s' % name, lambda val: \
-                self.set(name, val, **more_opts))
+            func = lambda val: self.set(name, val, **more_opts)
+            func.__doc__ = 'Set variable %s' % name
+            setattr(self, 'set_%s' % name, func)
 
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
