@@ -16,17 +16,20 @@ class HP1234(Instrument):
                 tags=['measure'])
         self.add_parameter('speed', type=types.IntType,
                 flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-                minval=0, maxval=10)
+                minval=0, maxval=10,
+                units='Hz')
         self.add_parameter('input', type=types.FloatType,
                 flags=Instrument.FLAG_GET,
                 channels=(1, 4),
                 minval=0, maxval=10,
-                tags=['measure'])
+                tags=['measure'],
+                units='mV')
         self.add_parameter('output', type=types.FloatType,
                 flags=Instrument.FLAG_SET,
-                channels=(1, 4),
+                channels=(1, 4), channel_prefix='ch%d_',
                 minval=0, maxval=10,
-                tags=['sweep'])
+                tags=['sweep'],
+                units='mV')
 
         self.set_channel_bounds('output', 1, -1, 1)
 

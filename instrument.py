@@ -173,7 +173,13 @@ class Instrument(gobject.GObject):
                 del chopt['channels']
                 chopt['channel'] = i
                 chopt['base_name'] = name
-                self.add_parameter('%s%d' % (name, i), **chopt)
+
+                if 'channel_prefix' in options:
+                    var_name = options['channel_prefix'] % i + name
+                else:
+                    var_name = '%s%d' % (name, i)
+
+                self.add_parameter(var_name, **chopt)
 
             return
 
