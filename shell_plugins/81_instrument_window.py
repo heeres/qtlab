@@ -65,9 +65,7 @@ class QTInstruments(gtk.Window):
         for (iname, ins) in instruments.get_instruments().iteritems():
             text += 'Instrument: %s\n' % iname
             for (param, popts) in ins.get_parameters().iteritems():
-                text += '\tParameter: %s\n' % param
-                for (opt, val) in popts.iteritems():
-                    text += '\t\tOption %s, value %s\n' % (opt, val)
+                text += '\t%s: %s\n' % (param, ins.get(param))
 
         self._ins_text.set_text(text)
 
