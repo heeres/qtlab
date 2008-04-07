@@ -57,7 +57,9 @@ class HP1234(Instrument):
     def _do_get_input(self, channel):
         return channel * channel
 
-    def _do_set_output(self, val, channel):
+    def _do_set_output(self, val, channel, times2=False):
+        if times2:
+            val *= 2
         print 'Setting channel %d to %f' % (channel, val)
 
     def remove(self):

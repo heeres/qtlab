@@ -187,22 +187,37 @@ class Instrument(gobject.GObject):
 
         if 'channel' in options:
             ch = options['channel']
-            more_opts = {'channel': ch}
         else:
-            more_opts = {}
+            ch = None
 
         if options['flags'] & Instrument.FLAG_GET:
-            func = lambda query=True: self.get(name, query=query, **more_opts)
+            if ch is not None:
+                func = lambda query=True, **lopts: \
+                    self.get(name, query=query, channel=ch, **lopts)
+            else:
+                func = lambda query=True, **lopts: \
+                    self.get(name, query=query, **lopts)
+
             func.__doc__ = 'Get variable %s' % name
             setattr(self, 'get_%s' % name,  func)
 
         if options['flags'] & Instrument.FLAG_SOFTGET:
-            func = lambda query=True: self.get(name, query=False, **more_opts)
+            if ch is not None:
+                func = lambda query=True, **lopts: \
+                    self.get(name, query=False, channel=ch, **lopts)
+            else:
+                func = lambda query=True, **lopts: \
+                    self.get(name, query=False, **lopts)
+
             func.__doc__ = 'Get variable %s (internal stored value)' % name
             setattr(self, 'get_%s' % name,  func)
 
         if options['flags'] & Instrument.FLAG_SET:
-            func = lambda val: self.set(name, val, **more_opts)
+            if ch is not None:
+                func = lambda val, **lopts: self.set(name, val, channel=ch, **lopts)
+            else:
+                func = lambda val, **lopts: self.set(name, val, **lopts)
+
             func.__doc__ = 'Set variable %s' % name
             setattr(self, 'set_%s' % name, func)
 
