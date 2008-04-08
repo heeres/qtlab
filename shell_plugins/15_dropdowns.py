@@ -221,13 +221,30 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
 
         global instruments
         inslist = instruments.get_instruments()
-        for (ins, options) in inslist.iteritems():
+        for (insname, ins) in inslist.iteritems():
             params = ins.get_parameters()
-            for name, options in params.iteritems():
+            for varname, options in params.iteritems():
                 if options['flags'] & self._flags:
-                    add_name = '%s.%s' % (ins, name)
+                    add_name = '%s.%s' % (insname, varname)
                     self._param_list.append([add_name])
 
-    def get_parameter(self):
-        return None
+    def get_selected_string(self):
+        try:
+            item = self.get_active_iter()
+            sel = self._param_list.get(item, 0)
+            return sel[0]
+        except Exception, e:
+            print 'Error: %s' % e
+            return None
 
+    def get_selection(self):
+        try:
+            selstr = self.get_selected_string()
+            insname, dot, parname = selstr.partition('.')
+            print 'selected instrument %r, parameter %s' % (insname, parname)
+            ins = self._instruments[insname]
+            print 'instrument: %r' % ins
+            return ins, parname
+        except Exception, e:
+            print 'Error: %s' % e
+            return None
