@@ -26,7 +26,7 @@ class QTLab(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         self.move(0, 0)
 
-        self.set_size_request(500, 100)
+        self.set_size_request(200, 200)
         self.set_border_width(1)
         self.set_title('QT Lab')
 
@@ -54,16 +54,33 @@ class QTLab(gtk.Window):
             }
         ]
         self.menu = gui.build_menu(menu)
-        self.vbox.pack_start(self.menu, False, False)
-        self.add(self.vbox)
 
-#        self.shell = ShellWindow()
-#        self.plot = PlotWindow()
+        self._ins_but = gtk.Button('Instruments')
+        self._ins_but.connect('clicked', self._toggle_visibility_cb, get_inswin())
+        self._tune_but = gtk.Button('Tune')
+        self._tune_but.connect('clicked', self._toggle_visibility_cb, get_tunewin())
+        self._source_but = gtk.Button('Source')
+        self._source_but.connect('clicked', self._toggle_visibility_cb, get_sourcewin())
+        self._measure_but = gtk.Button('Measure')
+        self._measure_but.connect('clicked', self._toggle_visibility_cb, get_measurewin())
+
+        v1 = pack_vbox([
+            self._ins_but,
+            self._tune_but,
+            self._source_but,
+            self._measure_but])
+
+        self.vbox.pack_start(self.menu, False, False)
+        self.vbox.pack_start(v1, False, False)
+        self.add(self.vbox)
 
         self.show_all()
 
     def load_instruments(self):
         return
+
+    def dummy_cb(self, widget):
+        print 'boe!'
 
     def _delete_event_cb(self, widget, event, data=None):
         # Change False to True and the main window will not be destroyed
@@ -81,6 +98,12 @@ class QTLab(gtk.Window):
     def _exit_cb(self, widget):
         pass
 #        gtk.main_quit()
+
+    def _toggle_visibility_cb(self, widget, window):
+        if (window.flags() & gtk.VISIBLE):
+            window.hide()
+        else:
+            window.show_all()
 
     def _view_shell_cb(self, widget):
         if self.shell is None:
