@@ -1,3 +1,3 @@
 # Script to init pylab environment
 
-from pylab import *
+#from pylab import *
