@@ -35,7 +35,7 @@ class QTInstruments(gtk.Window):
 
         self.add(self._vbox)
 
-        self.show_all()
+        self._vbox.show_all()
 
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding instruments window, use showinstruments() to get it back'
@@ -73,7 +73,16 @@ def showinstruments():
     global _inswin
     _inswin.show()
 
+def hideinstruments():
+    global _inswin
+    _inswin.hide()
+
 _inswin = QTInstruments()
+
+def get_inswin():
+    global _inswin
+    return _inswin
+
 if __name__ == "__main__":
     gtk.main()
 

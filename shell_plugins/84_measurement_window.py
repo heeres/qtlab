@@ -271,7 +271,7 @@ class QTMeasure(gtk.Window):
 
         self.add(self._vbox)
 
-        self.show_all()
+        self._vbox.show_all()
 
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding measurement window, use showmeasure() to get it back'
@@ -333,10 +333,16 @@ class QTMeasure(gtk.Window):
         self.set_sensitive(True)
 
 def showmeasure():
-    global _measurewin
-    _measurewin.show()
+    get_measurewin().show()
+
+def hidemeasure():
+    get_measurewin().hide()
 
 _measurewin = QTMeasure()
+def get_measurewin():
+    global _measurewin
+    return _measurewin
+
 if __name__ == "__main__":
     gtk.main()
 

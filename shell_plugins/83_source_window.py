@@ -6,6 +6,8 @@ import pango
 
 from gettext import gettext as _
 
+import gui
+
 class QTSource(gtk.Window):
 
     def __init__(self):
@@ -37,7 +39,7 @@ class QTSource(gtk.Window):
         self.vbox.pack_start(self.source_win)
         self.add(self.vbox)
 
-        self.show_all()
+        self.vbox.show_all()
 
     def setup_source_view(self):
         self._buffer = gtksourceview2.Buffer()
@@ -75,10 +77,16 @@ class QTSource(gtk.Window):
         exec(code)
 
 def showsource():
-    global _soucewin
-    _sourcewin.show()
+    get_sourcewin().show()
+
+def hidesource():
+    get_sourcewin().hide()
 
 _sourcewin = QTSource()
+def get_sourcewin():
+    global _sourcewin
+    return _sourcewin
+
 if __name__ == "__main__":
     gtk.main()
 

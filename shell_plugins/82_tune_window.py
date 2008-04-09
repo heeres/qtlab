@@ -20,6 +20,8 @@ import gobject
 
 from gettext import gettext as _
 
+from flexscale import FlexScale
+
 class QTTune(gtk.Window):
 
     def __init__(self):
@@ -51,6 +53,17 @@ class QTTune(gtk.Window):
         self._call_but = gtk.Button('Call')
         self._call_but.connect('clicked', self._call_function_clicked_cb)
 
+        self._spin_but = FlexScale(-10, 10, scaling=FlexScale.SCALE_SQRT)
+        self._coarse_slider = gtk.VScale()
+        self._coarse_slider.set_size_request(50, 100)
+        self._coarse_slider.set_range(-10, 10)
+        self._fine_slider = gtk.VScale()
+        self._fine_slider.set_range(-1, 1)
+        controls = pack_hbox([
+            self._spin_but,
+            self._coarse_slider,
+            self._fine_slider])
+
         h1 = pack_hbox([
             gtk.Label(_('Instrument')),
             self._ins_combo])
@@ -60,9 +73,9 @@ class QTTune(gtk.Window):
         h3 = pack_hbox([
             gtk.Label(_('Function')),
             self._function_combo])
-        self.add(pack_vbox([h1, h2, param_getset, h3, self._call_but], False, False))
+        self.add(pack_vbox([h1, h2, param_getset, h3, self._call_but, controls], False, False))
 
-        self.show_all()
+        self.hide_all()
 
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding tune window, use showtune() to get it back'
@@ -106,10 +119,16 @@ class QTTune(gtk.Window):
         ins.call(funcname)
 
 def showtune():
-    global _tunewin
-    _tunewin.show()
+    get_tunewin().show_all()
+
+def hidetune():
+    get_tunewin().hide_all()
 
 _tunewin = QTTune()
+def get_tunewin():
+    global _tunewin
+    return _tunewin
+
 if __name__ == "__main__":
     gtk.main()
 
