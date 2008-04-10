@@ -155,6 +155,13 @@ class Instruments(gobject.GObject):
         if self._instruments.has_key(name):
             self.emit('instrument-changed', name, changes)
 
+_instruments = None
+def get_instruments():
+    global _instruments
+    if _instruments is None:
+        _instruments = Instruments()
+    return _instruments
+
 if __name__ == '__main__':
-    i = Instruments()
+    i = get_instruments()
     i.create('test1', 'HP1234')

@@ -1,9 +1,28 @@
+# measurement.py, Measurement class
+# Reinier Heeres <reinier@heeres.eu>, 2008
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
 import time
 import gobject
+import os
 
 import calltimer
 
-import data
+from data import Data
+import qtgnuplot
 
 from config import get_config
 
@@ -27,8 +46,15 @@ class Measurement(gobject.GObject):
         dstr = time.strftime('%Y%m%d')
         tstr = time.strftime('%H%M%S')
         mname = '%s_%s' % (tstr, name)
-        mfn = '%s/%s/%s.dat' % (get_config()['datadir'], dstr, mname)
-        self._data = data.QTData(mname, mfn)
+        dir = '%s/%s' % (get_config()['datadir'], dstr)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+        self._data = Data()
+        self._data.create_datafile(mname, dir)
+
+    def get_data(self):
+        return self._data
 
     def _add_coordinate_options(self, coord, **kwargs):
         if 'steps' in kwargs:
@@ -47,6 +73,15 @@ class Measurement(gobject.GObject):
             coord['delay'] = kwargs['delay']
 
         self._coords.append(coord)
+
+        if 'func' in coord:
+            to_sweep = coord['func'].__name__
+        else:
+            to_sweep = '%s.%s' % (coord['ins'].get_name(), coord['var'])
+
+        comment = 'Sweep %s from %s to %s in %d steps (stepsize = %f)' % \
+            (to_sweep, coord['start'], coord['end'], coord['steps'], coord['stepsize'])
+        self._data.add_comment_to_header(comment)
 
     def add_coordinate(self, ins, var, start, end, **kwargs):
         '''
@@ -67,10 +102,14 @@ class Measurement(gobject.GObject):
             None
         '''
 
-        coord = {'start': float(start), 'end': float(end), 'ins': ins, 'var': var}
+        coord = {'start': float(start), 'end': float(end),
+                'ins': ins, 'var': var}
+
         self._add_coordinate_options(coord, **kwargs)
 
-        self._data.add_coordinate(**coord)
+        print 'Added coordinate'
+        self._data.add_column_to_header(ins.get_name(), var)
+        print 'Added column header'
 
     def add_coordinate_func(self, func, start, end, **kwargs):
         '''
@@ -95,6 +134,9 @@ class Measurement(gobject.GObject):
 
         self._data.add_coordinate(**coord)
 
+    def get_coordinate_count(self):
+        return len(self._coords)
+
     def add_measurement(self, ins, var, **kwargs):
         '''
         Add a measurement to the internal list.
@@ -112,7 +154,10 @@ class Measurement(gobject.GObject):
             meas[key] = val
         self._measurements.append(meas)
 
-        self._data.add_value(**meas)
+        self._data.add_column_to_header(ins.get_name(), var)
+
+        comment = 'Measure %s.%s' % (ins.get_name(), var)
+        self._data.add_comment_to_header(comment)
 
     def add_measurement_func(self, func, **kwargs):
         meas = {'func': func}
@@ -121,6 +166,9 @@ class Measurement(gobject.GObject):
         self._measurements.append(meas)
 
         self._data.add_value(**meas)
+
+    def get_measurement_count(self):
+        return len(self._measurements)
 
     def emit(self, *args):
         gobject.idle_add(gobject.GObject.emit, self, *args)
@@ -188,7 +236,8 @@ class Measurement(gobject.GObject):
                     extra_delay += self._coords[i]['delay'] / 1000.0
 
         data = self._do_measurements()
-        self._data.add(data, cor=coords)
+        cols = coords + data
+        self._data.add_data_point(*cols)
 
         return extra_delay
 
@@ -205,8 +254,6 @@ class Measurement(gobject.GObject):
 
         self._set_start_values()
         
-        self._data.start_measure()
-
         # determine loop delay
         last_coord = self._coords[len(self._coords) - 1]
         if 'delay' in self._options:
@@ -226,6 +273,7 @@ class Measurement(gobject.GObject):
         for i in xrange(len(self._coords)):
             self._last_index.append(0)
 
+
         if not blocking:
             self._thread = calltimer.CallTimerThread(self._measure, delay, n)
             self._thread.connect('finished', self._finished_cb)
@@ -241,8 +289,7 @@ class Measurement(gobject.GObject):
 
     def _finished_cb(self, sender, *args):
         print '_finished_cb'
-        for i in args:
-            print '    %r' % i
+        self._data.close_datafile()
         self.emit('finished', self)
 
     def new_data(self, data):
@@ -272,4 +319,5 @@ class Measurements(gobject.GObject):
     def __init__(self):
         pass
 
-measurements = Measurements()
+measurements = None
+

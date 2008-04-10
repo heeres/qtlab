@@ -234,7 +234,6 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
             sel = self._param_list.get(item, 0)
             return sel[0]
         except Exception, e:
-            print 'Error: %s' % e
             return None
 
     def get_selection(self):
@@ -246,5 +245,4 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
             print 'instrument: %r' % ins
             return ins, parname
         except Exception, e:
-            print 'Error: %s' % e
             return None

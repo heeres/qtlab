@@ -26,6 +26,7 @@ from flexscale import FlexScale
 from calltimer import CallTimerThread
 
 import measurement
+import qtgnuplot
 
 class StepToggleButton(gtk.ToggleButton):
 
@@ -123,7 +124,6 @@ class QTSweepVarSettings(gobject.GObject):
         self._step_size.set_sensitive(not steps_sel)
 
     def _parameter_changed_cb(self, widget):
-        print 'Changed: %r' % (widget)
         sel = self._variable_dropdown.get_selection()
         if sel is not None:
             ins, varname = sel
@@ -210,7 +210,6 @@ class QTMeasureVarSettings(gobject.GObject):
         self._frame.add(self._vbox)
 
     def _parameter_changed_cb(self, widget):
-        print 'Changed: %r' % (widget)
         sel = self._variable_dropdown.get_selection()
         if sel is not None:
             ins, varname = sel
@@ -281,7 +280,9 @@ class QTMeasure(gtk.Window):
     def _add_loop_var(self, measurement, sweep):
         try:
             ins, var = sweep.get_instrument_var()
+            print 'Got %s, %s' % (ins, var)
             start, end = sweep.get_sweep_range()
+            print 'Got %s, %s' % (start, end)
             steps = sweep.get_steps()
             units = sweep.get_units()
             measurement.add_coordinate(ins, var, start, end,
@@ -321,6 +322,15 @@ class QTMeasure(gtk.Window):
 
         self._add_measurement(self._measurement, self._measure_1)
         self._add_measurement(self._measurement, self._measure_2)
+
+        data = self._measurement.get_data()
+        ncoord = self._measurement.get_coordinate_count()
+        if ncoord == 1:
+            self._plot = qtgnuplot.Plot2D(data)
+            self._plot.set_auto_update()
+        elif ncoord == 2:
+            self._plot = qtgnuplot.Plot3D(data)
+            self._plot.set_auto_update()
 
         self._measurement.start()
 

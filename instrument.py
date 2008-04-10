@@ -298,8 +298,14 @@ class Instrument(gobject.GObject):
                 (4) maximum value
         Output: None
         '''
-        self.set_parameter_options('%s%d' % (name, channel), \
-            minval=minval, maxval=maxval)
+
+        opts = self.get_parameter_options(name)
+        if 'channel_prefix' in opts:
+            var_name = opts['channel_prefix'] % channel + name
+        else:
+            var_name = '%s%d' % (name, channel)
+
+        self.set_parameter_options(var_name, minval=minval, maxval=maxval)
 
     def get_parameter_names(self):
         '''
@@ -337,7 +343,7 @@ class Instrument(gobject.GObject):
         if 'channel' in p and 'channel' not in kwargs:
             kwargs['channel'] = p['channel']
 
-        if not query:
+        if not query or p['flags'] & self.FLAG_SOFTGET:
             print 'Getting cached value'
             if 'value' in p:
                 return p['value']
@@ -439,7 +445,8 @@ class Instrument(gobject.GObject):
 
         ret = func(value, **kwargs)
         if p['flags'] & self.FLAG_GET_AFTER_SET:
-                ret = self._get_value(name, **kwargs)
+            print 'Doing get'
+            ret = self._get_value(name, **kwargs)
 
         p['value'] = ret
         return ret

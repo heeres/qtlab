@@ -1,3 +1,2 @@
-import instruments
-instruments = instruments.Instruments()
-
+from instruments import Instruments, get_instruments
+instruments = get_instruments()

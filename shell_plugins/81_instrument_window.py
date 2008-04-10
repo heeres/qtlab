@@ -65,7 +65,8 @@ class QTInstruments(gtk.Window):
         for (iname, ins) in instruments.get_instruments().iteritems():
             text += 'Instrument: %s\n' % iname
             for (param, popts) in ins.get_parameters().iteritems():
-                text += '\t%s: %s\n' % (param, ins.get(param))
+                if popts['flags'] & (Instrument.FLAG_GET | Instrument.FLAG_SOFTGET):
+                    text += '\t%s: %s\n' % (param, ins.get(param))
 
         self._ins_text.set_text(text)
 

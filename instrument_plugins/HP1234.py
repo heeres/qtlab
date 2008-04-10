@@ -1,5 +1,9 @@
+
 from instrument import Instrument
 import types
+
+import sys,IPython.ultraTB
+sys.excepthook = IPython.ultraTB.FormattedTB(mode='Verbose',color_scheme='Linux', call_pdb=1)
 
 class HP1234(Instrument):
 
@@ -31,7 +35,7 @@ class HP1234(Instrument):
                 tags=['sweep'],
                 units='mV')
 
-        self.set_channel_bounds('output', 1, -1, 1)
+#        self.set_channel_bounds('output', 1, -1, 1)
 
         self.add_function('reset')
 
