@@ -19,6 +19,7 @@ import gtk
 import gobject
 import time
 
+import logging
 from gettext import gettext as _
 
 from instrument import Instrument
@@ -127,6 +128,9 @@ class QTSweepVarSettings(gobject.GObject):
         sel = self._variable_dropdown.get_selection()
         if sel is not None:
             ins, varname = sel
+            if ins is None:
+                return
+
             opt = ins.get_parameter_options(varname)
             if 'minval' in opt and 'maxval' in opt:
                 print 'Setting range %s - %s' % (opt['minval'], opt['maxval'])
@@ -213,6 +217,9 @@ class QTMeasureVarSettings(gobject.GObject):
         sel = self._variable_dropdown.get_selection()
         if sel is not None:
             ins, varname = sel
+            if ins is None:
+                return
+
             opt = ins.get_parameter_options(varname)
             if 'units' in opt:
                 self._units.set_text(opt['units'])
@@ -243,6 +250,23 @@ class QTMeasure(gtk.Window):
 
 
     def _create_layout(self):
+        self._option_frame = gtk.Frame()
+        self._option_frame.set_label(_('Options'))
+
+        self._option_vbox = gtk.VBox()
+        self._option_frame.add(self._option_vbox)
+
+        self._name_entry = gtk.Entry()
+        self._option_vbox.pack_start(pack_hbox([
+            gtk.Label(_('Name')), self._name_entry]), False, False)
+
+        self._delay = gtk.SpinButton(climb_rate=0.1, digits=0)
+        self._delay.set_range(0, 100000)
+        self._delay.set_increments(1, 2)
+        self._delay.set_value(100)
+        self._option_vbox.pack_start(pack_hbox([
+            gtk.Label(_('Delay (ms)')), self._delay]), False, False)
+
         self._sweep_z = QTSweepVarSettings('Z loop')
         self._sweep_y = QTSweepVarSettings('Y loop')
         self._sweep_x = QTSweepVarSettings('X loop')
@@ -257,6 +281,8 @@ class QTMeasure(gtk.Window):
         self._stop_but.set_sensitive(False)
 
         self._vbox = gtk.VBox()
+        self._vbox.pack_start(self._option_frame, False, False)
+
         self._vbox.pack_start(self._sweep_z.get_layout(), False, False)
         self._vbox.pack_start(self._sweep_y.get_layout(), False, False)
         self._vbox.pack_start(self._sweep_x.get_layout(), False, False)
@@ -280,9 +306,7 @@ class QTMeasure(gtk.Window):
     def _add_loop_var(self, measurement, sweep):
         try:
             ins, var = sweep.get_instrument_var()
-            print 'Got %s, %s' % (ins, var)
             start, end = sweep.get_sweep_range()
-            print 'Got %s, %s' % (start, end)
             steps = sweep.get_steps()
             units = sweep.get_units()
             measurement.add_coordinate(ins, var, start, end,
@@ -309,11 +333,17 @@ class QTMeasure(gtk.Window):
         self._stop_but.set_sensitive(not sensitive)
 
     def _start_clicked_cb(self, widget):
-        print 'Starting measurement...'
+        logging.debug('Starting measurement')
 
         self.set_sensitive(False)
 
-        self._measurement = measurement.Measurement('auto', delay=500)
+        mname = self._name_entry.get_text()
+        if mname == '':
+            mname = 'auto'
+
+        delay = self._delay.get_value()
+
+        self._measurement = measurement.Measurement(mname, delay=delay)
         self._measurement.connect('finished', self._measurement_finished_cb)
 
         self._add_loop_var(self._measurement, self._sweep_z)
@@ -331,15 +361,18 @@ class QTMeasure(gtk.Window):
         elif ncoord == 2:
             self._plot = qtgnuplot.Plot3D(data)
             self._plot.set_auto_update()
+        else:
+            logging.warning('No plot available')
 
         self._measurement.start()
 
     def _stop_clicked_cb(self, widget):
-        print 'Stopping measurement...'
+        logging.debug('Stopping measurement')
         if self._measurement is not None:
             self._measurement.stop()
 
     def _measurement_finished_cb(self, sender, *args):
+        logging.debug('Measurement finished')
         self.set_sensitive(True)
 
 def showmeasure():
