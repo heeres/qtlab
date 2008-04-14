@@ -31,7 +31,7 @@ class Instruments(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
         'instrument-changed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
-                    ([gobject.TYPE_PYOBJECT]))
+                    ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT]))
     }
 
     def __init__(self):
@@ -143,17 +143,19 @@ class Instruments(gobject.GObject):
             del self._instruments[name]
         self.emit('instrument-removed', name)
 
-    def _instrument_changed_cb(self, sender, name, changes):
+    def _instrument_changed_cb(self, sender, changes):
         '''
         Emit signal when values of an Instrument change.
 
-        Input:  (1) sender of message
-                (2) name of instrument
-                (3) dictionary of changed parameters
-        Output: None
+        Input:
+            sender (Instrument): sender of message
+            changes (dict): dictionary of changed parameters
+
+        Output:
+            None
         '''
-        if self._instruments.has_key(name):
-            self.emit('instrument-changed', name, changes)
+
+        self.emit('instrument-changed', sender, changes)
 
 _instruments = None
 def get_instruments():

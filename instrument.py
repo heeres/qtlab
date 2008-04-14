@@ -19,6 +19,8 @@ import types
 import gobject
 import copy
 
+import logging
+
 class Instrument(gobject.GObject):
     """
     Base class for instruments.
@@ -344,11 +346,10 @@ class Instrument(gobject.GObject):
             kwargs['channel'] = p['channel']
 
         if not query or p['flags'] & self.FLAG_SOFTGET:
-            print 'Getting cached value'
             if 'value' in p:
                 return p['value']
             else:
-                print 'Trying to access cached value, but none available'
+                logging.debug('Trying to access cached value, but none available')
                 return None
 
         # Check this here; getting of cached values should work
@@ -445,11 +446,10 @@ class Instrument(gobject.GObject):
 
         ret = func(value, **kwargs)
         if p['flags'] & self.FLAG_GET_AFTER_SET:
-            print 'Doing get'
             ret = self._get_value(name, **kwargs)
 
-        p['value'] = ret
-        return ret
+        p['value'] = value
+        return value
 
     def set(self, name, value, **kwargs):
         '''
@@ -473,19 +473,15 @@ class Instrument(gobject.GObject):
         changed = {}
         if type(name) == types.DictType:
             for key, val in name.iteritems():
-                if self._set_value(key, val, **kwargs):
-                    changed[key] = val
-                else:
-                    result = False
+                self._set_value(key, val, **kwargs)
+                changed[key] = val
 
         else:
-            if self._set_value(name, value, **kwargs):
-                changed[name] = value
-            else:
-                result = False
+            self._set_value(name, value, **kwargs)
+            changed[name] = value
 
-#        if len(changed) > 0:
-#            self.emit('changed', changed)
+        if len(changed) > 0:
+            self.emit('changed', changed)
 
         return result
 

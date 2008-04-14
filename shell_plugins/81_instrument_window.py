@@ -25,9 +25,9 @@ class QTInstruments(gtk.Window):
         self._scrolled_win.add(self._ins_textview)
 
         global instruments
-        instruments.connect('instrument-added', self._instruments_changed_cb)
-        instruments.connect('instrument-removed', self._instruments_changed_cb)
-        instruments.connect('instrument-changed', self._instruments_changed_cb)
+        instruments.connect('instrument-added', self._instrument_added_cb)
+        instruments.connect('instrument-removed', self._instrument_removed_cb)
+        instruments.connect('instrument-changed', self._instrument_changed_cb)
 
         self._vbox = gtk.VBox()
         self._vbox.pack_start(self._ins_combo, False, False)
@@ -43,30 +43,26 @@ class QTInstruments(gtk.Window):
         return True
 
     def _instrument_added_cb(self, sender, instrument):
-        self._ins_list.append([instrument])
+        self._update_info()
 
     def _instrument_removed_cb(self, sender, instrument):
-        print 'Instrument removed: %s' % instrument
+        self._update_info()
 
-        i = self._ins_list.get_iter_root()
-        while i:
-            if self._ins_list.get_value(i, 0) == instrument:
-                self._ins_list.remove(i)
-                break
-            i = self._ins_list.iter_next(i)
-
-
-    def _instrument_changed_cb(self, sender, instrument, property, value):
-        print 'Instrument changed: %s' % instrument
+    def _instrument_changed_cb(self, sender, instrument, changes):
+        self._update_info()
 
     def _instruments_changed_cb(self, widget, arg=None):
+        self._update_info()
+
+    def _update_info(self):
         global instruments
         text = ''
         for (iname, ins) in instruments.get_instruments().iteritems():
             text += 'Instrument: %s\n' % iname
             for (param, popts) in ins.get_parameters().iteritems():
                 if popts['flags'] & (Instrument.FLAG_GET | Instrument.FLAG_SOFTGET):
-                    text += '\t%s: %s\n' % (param, ins.get(param))
+                    val = ins.get(param, query=False)
+                    text += '\t%s: %s\n' % (param, val)
 
         self._ins_text.set_text(text)
 

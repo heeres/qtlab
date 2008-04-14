@@ -64,16 +64,16 @@ class dummy_signal_generator(Instrument):
         if self._type == self.TYPE_SIN:
             return self._amplitude * math.sin(dt * self._frequency * 2 * math.pi)
         elif self._type == self.TYPE_SQUARE:
-            arg = math.dt * self._frequency
-            amod = arg - floor(arg)
-            if arg < 0.5:
+            arg = dt * self._frequency
+            amod = arg - math.floor(arg)
+            if amod < 0.5:
                 return self._amplitude
             else:
                 return -self._amplitude
         elif self._type == self.TYPE_SAW:
-            arg = math.dt * self._frequency
-            amod = arg - floor(arg)
-            if arg < 0.9:
+            arg = dt * self._frequency
+            amod = arg - math.floor(arg)
+            if amod < 0.9:
                 return (amod - 0.45) * 2 / 0.9 * self._amplitude
             else:
                 return -(amod - 0.95) * 2 / 0.1 * self._amplitude

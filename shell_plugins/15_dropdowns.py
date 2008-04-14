@@ -57,7 +57,7 @@ class InstrumentDropdown(gtk.ComboBoxEntry):
             i = self._ins_list.iter_next(i)
 
 
-    def _instrument_changed_cb(self, sender, instrument, property, value):
+    def _instrument_changed_cb(self, sender, instrument, changes):
         print 'Instrument changed: %s' % instrument
 
     def get_instrument(self):
@@ -98,7 +98,7 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
             print 'Instrument for dropdown removed: %s' % instrument
             self.set_instrument(None)
 
-    def _instrument_changed_cb(self, sender, instrument, property, value):
+    def _instrument_changed_cb(self, sender, instrument, changes):
         print 'Instrument changed: %s' % instrument
 
     def set_instrument(self, ins):
@@ -203,7 +203,7 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
     def _instrument_removed_cb(self, sender, instrument):
         self.update_list()
 
-    def _instrument_changed_cb(self, sender, instrument, property, value):
+    def _instrument_changed_cb(self, sender, instrument, changes):
         self.update_list()
 
     def set_flags(self, flags):
@@ -228,21 +228,17 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
                     add_name = '%s.%s' % (insname, varname)
                     self._param_list.append([add_name])
 
-    def get_selected_string(self):
-        try:
-            item = self.get_active_iter()
-            sel = self._param_list.get(item, 0)
-            return sel[0]
-        except Exception, e:
-            return None
-
     def get_selection(self):
         try:
-            selstr = self.get_selected_string()
+            selstr = self.get_active_text()
             insname, dot, parname = selstr.partition('.')
-            print 'selected instrument %r, parameter %s' % (insname, parname)
+            print 'Selected instrument %s, parameter %s' % (insname, parname)
+
             ins = self._instruments[insname]
-            print 'instrument: %r' % ins
+            if ins is None:
+                return None
+
             return ins, parname
+
         except Exception, e:
             return None

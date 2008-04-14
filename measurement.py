@@ -19,6 +19,7 @@ import time
 import gobject
 import os
 
+import logging
 import calltimer
 
 from data import Data
@@ -288,7 +289,7 @@ class Measurement(gobject.GObject):
             self._thread.join()
 
     def _finished_cb(self, sender, *args):
-        print '_finished_cb'
+        logging.debug('Measurement finished')
         self._data.close_datafile()
         self.emit('finished', self)
 
