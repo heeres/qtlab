@@ -44,21 +44,21 @@ class InstrumentDropdown(gtk.ComboBoxEntry):
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
 
     def _instrument_added_cb(self, sender, instrument):
-        self._ins_list.append([instrument])
+        self._ins_list.append([instrument.get_name()])
 
     def _instrument_removed_cb(self, sender, instrument):
         print 'Instrument removed: %s' % instrument
 
         i = self._ins_list.get_iter_root()
         while i:
-            if self._ins_list.get_value(i, 0) == instrument:
+            if self._ins_list.get_value(i, 0) == instrument.get_name():
                 self._ins_list.remove(i)
                 break
             i = self._ins_list.iter_next(i)
 
 
     def _instrument_changed_cb(self, sender, instrument, changes):
-        print 'Instrument changed: %s' % instrument
+        return
 
     def get_instrument(self):
         try:
@@ -99,7 +99,7 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
             self.set_instrument(None)
 
     def _instrument_changed_cb(self, sender, instrument, changes):
-        print 'Instrument changed: %s' % instrument
+        return
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
@@ -150,7 +150,7 @@ class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
             self.set_instrument(None)
 
     def _instrument_changed_cb(self, sender, instrument, property, value):
-        print 'Instrument changed: %s' % instrument
+        return
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
@@ -204,7 +204,7 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
         self.update_list()
 
     def _instrument_changed_cb(self, sender, instrument, changes):
-        self.update_list()
+        return
 
     def set_flags(self, flags):
         if self._flags != flags:

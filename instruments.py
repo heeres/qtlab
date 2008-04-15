@@ -128,7 +128,7 @@ class Instruments(gobject.GObject):
             print 'error: %s' % e
             return None
 
-        self.emit('instrument-added', name)
+        self.emit('instrument-added', _ins)
         return _ins
 
     def _instrument_removed_cb(self, sender, name):
