@@ -380,17 +380,25 @@ class Instrument(gobject.GObject):
         Output: Single value, or dictionary of parameter -> values
                 Type is whatever the instrument driver returns.
         '''
+
+        changed = {}
+
         if type(name) in (types.ListType, types.TupleType):
             result = {}
             for key in name:
                 val = self._get_value(name, query, **kwargs)
                 if val is not None:
                     result[key] = val
-
-            return result
+                    changed[key] = val
 
         else:
-            return self._get_value(name, query, **kwargs)
+            result = self._get_value(name, query, **kwargs)
+            changed[name] = result
+
+        if len(changed) > 0:
+            self.emit('changed', changed)
+
+        return result
 
     def _set_value(self, name, value, **kwargs):
         '''
