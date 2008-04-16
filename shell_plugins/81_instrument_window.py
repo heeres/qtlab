@@ -34,15 +34,10 @@ class QTInstrumentFrame(gtk.Frame):
         if param in self._parameters:
             self._parameters[param].set_text('%s' % val)
 
-class QTInstruments(gtk.Window):
+class QTInstruments(QTWindow):
 
     def __init__(self):
-        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.move(110, 110)
-
-        self.set_size_request(300, 500)
-        self.set_border_width(1)
-        self.set_title(_('Instruments'))
+        QTWindow.__init__(self, 'Instruments')
 
         self.connect("delete-event", self._delete_event_cb)
 
@@ -54,6 +49,7 @@ class QTInstruments(gtk.Window):
         instruments.connect('instrument-changed', self._instrument_changed_cb)
 
         self._vbox = gtk.VBox()
+        self._vbox.set_border_width(4)
         self._ins_widgets = {}
         self._add_instruments()
 
@@ -61,7 +57,6 @@ class QTInstruments(gtk.Window):
         self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self._scrolled_win.add_with_viewport(self._vbox)
         self.add(self._scrolled_win)
-        self._vbox.show_all()
 
     def _add_instrument(self, ins):
         name = ins.get_name()

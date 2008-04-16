@@ -79,9 +79,6 @@ class QTLab(gtk.Window):
     def load_instruments(self):
         return
 
-    def dummy_cb(self, widget):
-        print 'boe!'
-
     def _delete_event_cb(self, widget, event, data=None):
         # Change False to True and the main window will not be destroyed
         # with a "delete_event".
@@ -89,8 +86,11 @@ class QTLab(gtk.Window):
         self.hide()
         return True
 
-#    def _destroy_cb(self, widget, data=None):
-#        gtk.main_quit()
+    def _destroy_cb(self, widget, data=None):
+        print 'Storing configuration settings...'
+        config = config.get_config()
+        config.save()
+        gtk.main_quit()
 
     def _save_cb(self, widget):
         print 'Save'

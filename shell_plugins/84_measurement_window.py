@@ -248,7 +248,6 @@ class QTMeasure(gtk.Window):
 
         self._measurement = None
 
-
     def _create_layout(self):
         self._option_frame = gtk.Frame()
         self._option_frame.set_label(_('Options'))

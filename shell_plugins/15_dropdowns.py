@@ -231,6 +231,9 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
     def get_selection(self):
         try:
             selstr = self.get_active_text()
+            if selstr == '':
+                return None
+
             insname, dot, parname = selstr.partition('.')
             print 'Selected instrument %s, parameter %s' % (insname, parname)
 
