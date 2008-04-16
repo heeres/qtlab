@@ -17,7 +17,10 @@ class QTInstrumentFrame(gtk.Frame):
     def _add_parameters(self):
         self._left_box = gtk.VBox()
         self._right_box = gtk.VBox()
-        for (param, popts) in self._instrument.get_parameters().iteritems():
+
+        parameters = self._instrument.get_parameters()
+        for (param, popts) in dict_to_ordered_tuples(parameters):
+
             plabel = gtk.Label(param)
             plabel.set_justify(gtk.JUSTIFY_RIGHT)
             self._left_box.pack_start(plabel, False, False)

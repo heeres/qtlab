@@ -39,6 +39,9 @@ class InstrumentDropdown(gtk.ComboBoxEntry):
 
         global instruments
         self._instruments = instruments
+        for name, ins in self._instruments.get_instruments().iteritems():
+            self._ins_list.append([ins.get_name()])
+
         self._instruments.connect('instrument-added', self._instrument_added_cb)
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
@@ -112,8 +115,7 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
         self._instrument = ins
         self._param_list.clear()
         if ins is not None:
-            params = ins.get_parameters()
-            for name, options in params.iteritems():
+            for (name, options) in dict_to_ordered_tuples(ins.get_parameters()):
                 if len(self._types) > 0 and options['type'] not in self._types:
                     continue
 
@@ -164,7 +166,7 @@ class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
         self._func_list.clear()
         if ins is not None:
             funcs = ins.get_functions()
-            for (name, options) in funcs.iteritems():
+            for (name, options) in dict_to_ordered_tuples(funcs):
                 if 'doc' in options:
                     doc = options['doc']
                 else:
@@ -223,7 +225,7 @@ class AllParametersDropdown(gtk.ComboBoxEntry):
         inslist = instruments.get_instruments()
         for (insname, ins) in inslist.iteritems():
             params = ins.get_parameters()
-            for varname, options in params.iteritems():
+            for varname, options in dict_to_ordered_tuples(params):
                 if options['flags'] & self._flags:
                     add_name = '%s.%s' % (insname, varname)
                     self._param_list.append([add_name])
