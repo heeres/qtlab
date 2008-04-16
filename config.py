@@ -1,6 +1,8 @@
 import gobject
 import simplejson
 
+import logging
+
 class QTConfig(gobject.GObject):
     '''
     Class to manage settings for the QTLab environment.
@@ -29,23 +31,25 @@ class QTConfig(gobject.GObject):
         Load settings.
         '''
 
-        f = file(self.CONFIG_FILE, 'r')
-
         try:
+            f = file(self.CONFIG_FILE, 'r')
             self._config = simplejson.load(f)
+            f.close()
         except Exception, e:
+            logging.warning('Unable to load config file')
             self._config = {}
-
-        f.close()
 
     def save(self):
         '''
         Save settings.
         '''
 
-        f = file(self.CONFIG_FILE, 'w+')
-        simplejson.dump(self._config, f, indent=4)
-        f.close()
+        try:
+            f = file(self.CONFIG_FILE, 'w+')
+            simplejson.dump(self._config, f, indent=4)
+            f.close()
+        except Exception, e:
+            logging.warning('Unable to save config file')
 
     def __getitem__(self, key):
         return self.get(key)
