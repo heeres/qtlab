@@ -19,8 +19,6 @@ import gobject
 import Gnuplot
 from time import time
 
-_live_plotting = True
-
 class Plot2D(gobject.GObject):
     '''
     Class to create line plots.
@@ -114,11 +112,9 @@ class Plot2D(gobject.GObject):
         return True
 
     def _new_data_point_cb(self, sender):
-        global _live_plotting #FIXME
-        if ((time() - self._time_of_last_plot) > self.mintime) and _live_plotting:
+        if ((time() - self._time_of_last_plot) > self.mintime) and get_live_plotting():
             self.update_plot()
-
-        self._time_of_last_plot = time()
+            self._time_of_last_plot = time()
 
     def set_auto_update(self):
         '''
@@ -226,6 +222,7 @@ class Plot3D(gobject.GObject):
             None
         '''
 
+        print 'update_plot'
         block_nr = self._data.get_block_nr()
         stopblock = block_nr - 1
         if stopblock < 0:
@@ -253,8 +250,7 @@ class Plot3D(gobject.GObject):
 #self._data.connect('new-data-point', self._received_update_plot_cb)
 
     def _new_data_block_cb(self, sender):
-        global _live_plotting
-        if (((time() - self._time_of_last_plot) > self._min_time_between_plots) and _live_plotting):
+        if (((time() - self._time_of_last_plot) > self._min_time_between_plots) and get_live_plotting()):
             self.update_plot()
             self._time_of_last_plot = time()
 
@@ -301,4 +297,13 @@ class Plot3D(gobject.GObject):
 
 #    def set_maxpoints(self, maxpoints):
 #        self._maxpoints = maxpoints
+
+_live_plotting = True
+def toggle_live_plotting():
+    global _live_plotting
+    _live_plotting = not _live_plotting
+
+def get_live_plotting():
+    global _live_plotting
+    return _live_plotting
 

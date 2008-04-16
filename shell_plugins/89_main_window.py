@@ -31,6 +31,7 @@ class QTLab(gtk.Window):
         self.set_title('QT Lab')
 
         self.connect("delete-event", self._delete_event_cb)
+        gui.get_guisignals().connect("update-gui", self._update_gui_cb)
 
         self.vbox = gtk.VBox()
 
@@ -55,20 +56,27 @@ class QTLab(gtk.Window):
         ]
         self.menu = gui.build_menu(menu)
 
-        self._ins_but = gtk.Button('Instruments')
+        self._ins_but = gtk.Button(_('Instruments'))
         self._ins_but.connect('clicked', self._toggle_visibility_cb, get_inswin())
-        self._tune_but = gtk.Button('Tune')
+        self._tune_but = gtk.Button(_('Tune'))
         self._tune_but.connect('clicked', self._toggle_visibility_cb, get_tunewin())
-        self._source_but = gtk.Button('Source')
+        self._source_but = gtk.Button(_('Source'))
         self._source_but.connect('clicked', self._toggle_visibility_cb, get_sourcewin())
-        self._measure_but = gtk.Button('Measure')
+        self._measure_but = gtk.Button(_('Measure'))
         self._measure_but.connect('clicked', self._toggle_visibility_cb, get_measurewin())
+
+        self._liveplot_but = gtk.Button(_('Live Plotting'))
+        self._liveplot_but.connect('clicked', self._toggle_liveplot_cb)
+        self._stop_but = gtk.Button(_('Stop'))
+        self._stop_but.connect('clicked', self._toggle_stop_cb)
 
         v1 = pack_vbox([
             self._ins_but,
             self._tune_but,
             self._source_but,
-            self._measure_but])
+            self._measure_but,
+            self._liveplot_but,
+            self._stop_but])
 
         self.vbox.pack_start(self.menu, False, False)
         self.vbox.pack_start(v1, False, False)
@@ -118,6 +126,18 @@ class QTLab(gtk.Window):
             self.plot = PlotWindow()
         else:
             print '%r' % self.plot.flags()
+
+    def _update_gui_cb(self, widget):
+        gtk.gdk.threads_enter()
+        while gtk.events_pending():
+            gtk.main_iteration_do(False)
+        gtk.gdk.threads_leave()
+
+    def _toggle_liveplot_cb(self, widget):
+        qtgnuplot.toggle_live_plotting()
+
+    def _toggle_stop_cb(self, widget):
+        gui.set_abort()
 
 def showmain():
     global _labwin
