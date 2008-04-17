@@ -17,6 +17,7 @@
 
 import gobject
 from time import asctime
+from gettext import gettext as _
 
 import instruments
 instruments = instruments.get_instruments()
@@ -99,7 +100,7 @@ class Data(gobject.GObject):
         settings_file.write(text)
         settings_file.close()
         
-    def add_column_to_header(self, instrument, parameter):
+    def add_column_to_header(self, instrument, parameter, units=None):
         '''
         Create the header of the data file. It is called for each collumn
         of data that will be in the data file.
@@ -115,17 +116,20 @@ class Data(gobject.GObject):
         global instruments
         if instruments.get_instruments().has_key(instrument):
             ins = instruments.get(instrument)
+
+            if not ins.get_parameters().has_key(parameter):
+                print __name__ + ': Adding column, but instrument "%s" does not have parameter "%s"' % (instrument, parameter)
+            elif units is None:
+                if ins.get_parameter_options(parameter).has_key('units'):
+                    units = ins.get_parameter_options(parameter)['units']
+                else:
+                    print __name__ + ': Adding column, but unit is not defined for parameter "%s" of instrument "%s"' % (parameter, instrument)
+
         else:
-            print __name__ + ': Failed to add column: instrument "%s" does not exist' % instrument
-            return
-        if not ins.get_parameters().has_key(parameter):
-            print __name__ + ': Failed to add column: instrument "%s" does not have parameter "%s"' % (instrument, parameter)
-            return
-        if ins.get_parameter_options(parameter).has_key('units'):
-            units = ins.get_parameter_options(parameter)['units']
-        else:
-            print __name__ + ': Added column, but unit is not defined for parameter "%s" of instrument "%s"' % (parameter, instrument)
-            units = 'not defined'
+            print __name__ + ': Adding column, but instrument "%s" does not exist' % instrument
+
+        if units is None:
+            units = _('Undefined')
 
         self._col_nr += 1
         self._col_info.append({

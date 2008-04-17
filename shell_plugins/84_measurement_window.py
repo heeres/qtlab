@@ -39,7 +39,8 @@ class StepToggleButton(gtk.ToggleButton):
         self.selected = 0
 
         self.set_label(items[0])
-        self.set_tooltip_text(desc)
+        if hasattr(self, 'set_tooltip_text'):
+            self.set_tooltip_text(desc)
 
         self.connect('clicked', self._toggle_button)
 

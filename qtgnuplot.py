@@ -31,6 +31,7 @@ class Plot2D(gobject.GObject):
 
         self._gnuplot = Gnuplot.Gnuplot()
         self._gnuplot('set grid')
+        self._gnuplot('set style data lines')
 
         self._cols = []
         self._cols.append(cols)
@@ -74,7 +75,7 @@ class Plot2D(gobject.GObject):
         Force an update of the plot.
 
         Input:
-            filename (string): filename of data file
+            None
 
         Output:
             None
@@ -101,10 +102,7 @@ class Plot2D(gobject.GObject):
             if sd is not '':
                 sd += ', '
 
-            # FIXME: Gnuplot should rename the 'with' argument
-            options = {'with': 'lines'}
-
-            sd += 'Gnuplot.File(path, using=%s, every=(None, None, %i, %i), **options)' % \
+            sd += 'Gnuplot.File(path, using=%s, every=(None, None, %i, %i))' % \
                 (str(_cols), startpoint, block_nr)
 
         exec('self._gnuplot.plot(%s)' % sd)
@@ -147,6 +145,11 @@ class Plot2D(gobject.GObject):
         '''
 
         col_info = self._data.get_col_info()
+        if len(col_info) < 1:
+            self._gnuplot.xlabel('')
+            self._gnuplot.ylabel('')
+            return False
+
         colx = col_info[cols[0] - 1]
         coly = col_info[cols[1] - 1]
         self._gnuplot.xlabel('%s %s [%s]' % (colx['instrument'], colx['parameter'], colx['units']))
@@ -211,12 +214,12 @@ class Plot3D(gobject.GObject):
         self._min_time_between_plots = mintime
 #        self._maxpoints = maxpoints
 
-    def update_plot(self, sender):
+    def update_plot(self):
         '''
         Force an update of the plot.
 
         Input:
-            filename (string): filename of data file
+            None
 
         Output:
             None
@@ -282,6 +285,12 @@ class Plot3D(gobject.GObject):
         '''
 
         col_info = self._data.get_col_info()
+        if len(col_info) < 1:
+            self._gnuplot.xlabel('')
+            self._gnuplot.ylabel('')
+            self._gnuplot('set clabel ""')
+            return False
+
         colx = col_info[cols[0] - 1]
         coly = col_info[cols[1] - 1]
         colz = col_info[cols[2] - 1]
