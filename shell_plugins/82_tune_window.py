@@ -86,22 +86,18 @@ class QTTune(gtk.Window):
         ins = self._ins_combo.get_instrument()
         self._param_combo.set_instrument(ins)
         self._function_combo.set_instrument(ins)
-        print 'Selected instrument: %s' % (ins)
 
     def _parameter_changed_cb(self, widget):
         param = self._param_combo.get_parameter()
-        print 'Selected parameter %s' % (param)
 
     def _function_changed_cb(self, widget):
         func = self._function_combo.get_function()
-        print 'Selected function %s' % (func)
 
     def _get_param_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
 
         param = self._param_combo.get_parameter()
         val = ins.get(param)
-        print 'Param: %r, val: %r' % (param, val)
 
         self._param_edit.set_text('%s' % val)
 

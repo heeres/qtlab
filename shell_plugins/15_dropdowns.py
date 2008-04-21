@@ -31,11 +31,19 @@ def pack_vbox(items, expand=True, fill=True):
 #        vbox.pack_start(i)
     return vbox
 
-class InstrumentDropdown(gtk.ComboBoxEntry):
+class QTComboBox(gtk.ComboBox):
+
+    def __init__(self, model):
+        gtk.ComboBox.__init__(self, model=model)
+        cell = gtk.CellRendererText()
+        self.pack_start(cell, True)
+        self.add_attribute(cell, 'text', 0)
+
+class InstrumentDropdown(QTComboBox):
 
     def __init__(self):
         self._ins_list = gtk.ListStore(gobject.TYPE_STRING)
-        gtk.ComboBoxEntry.__init__(self, model=self._ins_list)
+        QTComboBox.__init__(self, model=self._ins_list)
 
         global instruments
         self._instruments = instruments
@@ -71,11 +79,11 @@ class InstrumentDropdown(gtk.ComboBoxEntry):
         except:
             return None
 
-class InstrumentParameterDropdown(gtk.ComboBoxEntry):
+class InstrumentParameterDropdown(QTComboBox):
 
     def __init__(self, instrument=None, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
-        gtk.ComboBoxEntry.__init__(self, model=self._param_list)
+        QTComboBox.__init__(self, model=self._param_list)
 
         self._instrument = instrument
         self._flags = flags
@@ -134,11 +142,11 @@ class InstrumentParameterDropdown(gtk.ComboBoxEntry):
         except:
             return None
 
-class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
+class InstrumentFunctionDropdown(QTComboBox):
 
     def __init__(self, instrument=None):
         self._func_list = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING)
-        gtk.ComboBoxEntry.__init__(self, model=self._func_list)
+        QTComboBox.__init__(self, model=self._func_list)
 
         self._instrument = instrument
 
@@ -183,11 +191,11 @@ class InstrumentFunctionDropdown(gtk.ComboBoxEntry):
         except:
             return None
 
-class AllParametersDropdown(gtk.ComboBoxEntry):
+class AllParametersDropdown(QTComboBox):
 
     def __init__(self, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
-        gtk.ComboBoxEntry.__init__(self, model=self._param_list)
+        QTComboBox.__init__(self, model=self._param_list)
 
         self._flags = flags
         self._types = types
