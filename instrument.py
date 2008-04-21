@@ -336,6 +336,7 @@ class Instrument(gobject.GObject):
                 (3) optional list of extra options
         Output: value of parameter (whatever type the instrument driver returns)
         '''
+
         if name in self._parameters:
             p = self._parameters[name]
         else:
@@ -368,7 +369,9 @@ class Instrument(gobject.GObject):
             print 'Instrument does not implement getting of %s' % base_name
             return None
 
-        return func(**kwargs)
+        value = func(**kwargs) 
+        p['value'] = value
+        return value
 
     def get(self, name, query=True, **kwargs):
         '''
