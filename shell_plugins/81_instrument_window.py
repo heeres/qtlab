@@ -14,6 +14,8 @@ class QTInstrumentFrame(gtk.Frame):
         self._parameters = {}
         self._add_parameters()
 
+        self.show_all()
+
     def _add_parameters(self):
         self._left_box = gtk.VBox()
         self._right_box = gtk.VBox()
