@@ -39,6 +39,9 @@ class QTInstrumentFrame(gtk.Frame):
         if param in self._parameters:
             self._parameters[param].set_text('%s' % val)
 
+    def get_instrument(self):
+        return self._instrument
+
 class QTInstruments(QTWindow):
 
     def __init__(self):
@@ -53,8 +56,15 @@ class QTInstruments(QTWindow):
         instruments.connect('instrument-removed', self._instrument_removed_cb)
         instruments.connect('instrument-changed', self._instrument_changed_cb)
 
+        self._tags_dropdown = TagsDropdown()
+        self._tags_dropdown.connect('changed', self._tag_changed_cb)
+
         self._vbox = gtk.VBox()
         self._vbox.set_border_width(4)
+        self._vbox.pack_start(pack_hbox([
+            gtk.Label(_('Types')),
+            self._tags_dropdown]), False, False)
+
         self._ins_widgets = {}
         self._add_instruments()
 
@@ -97,6 +107,15 @@ class QTInstruments(QTWindow):
 
     def _instrument_changed_cb(self, sender, instrument, changes):
         self._update_instrument(instrument, changes)
+
+    def _tag_changed_cb(self, sender):
+        tag = self._tags_dropdown.get_active_text()
+        for name, widget in self._ins_widgets.iteritems():
+            ins = widget.get_instrument()
+            if tag == 'All' or tag in ins.get_tags():
+                widget.show_all()
+            else:
+                widget.hide_all()
 
 def showinstruments():
     global _inswin

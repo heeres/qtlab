@@ -31,13 +31,17 @@ class Instruments(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
         'instrument-changed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
-                    ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT]))
+                    ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT])),
+        'tags-added': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT]))
     }
 
     def __init__(self):
         gobject.GObject.__init__(self)
 
         self._instruments = {}
+        self._tags = ['All']
 
     def __getitem__(self, key):
         return self.get(key)
@@ -53,6 +57,14 @@ class Instruments(gobject.GObject):
         ins.connect('changed', self._instrument_changed_cb)
         ins.connect('removed', self._instrument_removed_cb)
         self._instruments[ins.get_name()] = ins
+
+        newtags = []
+        for tag in ins.get_tags():
+            if tag not in self._tags:
+                self._tags.append(tag)
+                newtags.append(tag)
+        if len(newtags) > 0:
+            self.emit('tags-added', newtags)
 
     def get(self, name):
         '''
@@ -92,6 +104,13 @@ class Instruments(gobject.GObject):
                 ret.append(name)
 
         return ret
+
+    def get_tags(self):
+        '''
+        Return list of tags present in instruments.
+        '''
+
+        return self._tags
 
     def create(self, name, type, **kwargs):
         '''
