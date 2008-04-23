@@ -1,6 +1,8 @@
 import gobject
 import simplejson
 
+import os
+
 import logging
 
 class QTConfig(gobject.GObject):
@@ -46,7 +48,7 @@ class QTConfig(gobject.GObject):
 
         try:
             f = file(self.CONFIG_FILE, 'w+')
-            simplejson.dump(self._config, f, indent=4)
+            simplejson.dump(self._config, f, indent=4, sort_keys=True)
             f.close()
         except Exception, e:
             logging.warning('Unable to save config file')
@@ -94,9 +96,14 @@ class QTConfig(gobject.GObject):
 
 
 _config = None
+_work_dir = os.getcwd()
 
 def get_config():
     global _config
     if _config is None:
         _config = QTConfig()
     return _config
+
+def get_workdir():
+    global _work_dir
+    return _work_dir

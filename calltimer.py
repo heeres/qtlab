@@ -102,7 +102,7 @@ class CallTimerThread(threading.Thread, gobject.GObject):
     def emit(self, signal, *args):
         gobject.idle_add(self._idle_emit, signal, *args)
 
-class CallTimer():
+class CallTimer:
     '''
     Class to several times do a callback with a specified delay, blocking.
     '''

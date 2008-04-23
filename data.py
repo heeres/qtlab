@@ -16,15 +16,17 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gobject
-from time import asctime
 from gettext import gettext as _
+import os
+import time
 
 import instruments
-instruments = instruments.get_instruments()
+
+import config
 
 class Data(gobject.GObject):
     '''
-    This class should take care of all your data saving needs. 
+    This class should take care of all your data saving needs.
     '''
 
     __gsignals__ = {
@@ -37,31 +39,50 @@ class Data(gobject.GObject):
     }
                            # [gobject.TYPE_PYOBJECT]
 
-    def __init__(self):
+    def __init__(self, basedir=None):
         gobject.GObject.__init__(self)
 
-    def create_datafile(self, filename, dir='data'):
+        if basedir is None:
+            basedir = config.get_config()['datadir']
+
+        if not os.path.isdir(basedir):
+            raise ValueError("directory '%s' doest not exist" % basedir)
+        self._basedir = basedir
+
+        self._instruments = instruments.get_instruments()
+
+    def create_datafile(self, filename, datesubdir=True):
         '''
         Create a new data file.
 
         Input:
             filename (string): defines the data file name (without extension)
-            dir (string): defines the target directory (default = '.')
 
-        Output: 
+        Output:
             None
         '''
 
-        self._filename = filename
-        self._dir = dir
-        self._timestamp = asctime()
+        if datesubdir:
+            dstr = time.strftime('%Y%m%d')
+            self._subdir = dstr
+        else:
+            self._subdir = ''
 
+        path = os.path.join(self._basedir, self._subdir)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        self._fulldir = path
+
+        tstr = time.strftime('%H%M%S')
+        self._filename = tstr + '_' + filename
+
+        self._timestamp = time.asctime()
         self.create_settings_file(self._filename)
 
         header_text  = '# Filename: %s.dat\n' % self._filename
         header_text += '# Timestamp: %s\n\n' % self._timestamp
 
-        self._file = file('%s/%s.dat' % (dir, filename), 'w+')
+        self._file = file('%s/%s.dat' % (self._fulldir, self._filename), 'w+')
         self._file.write(header_text)
         self._file.flush()
 
@@ -83,23 +104,21 @@ class Data(gobject.GObject):
             None
         '''
 
-        global instruments
-
         header  = '# Filename: %s.set\n' % filename
         header += '# Timestamp: %s\n\n' % self._timestamp
 
         text = ''
-        for (iname, ins) in instruments.get_instruments().iteritems():
+        for (iname, ins) in self._instruments.get_instruments().iteritems():
             text += 'Instrument: %s\n' % iname
             for (param, popts) in ins.get_parameters().iteritems():
                 text += '\t%s: %s\n' % (param, ins.get(param, query=False))
-        
-        fname = '%s/%s.set' % (self._dir, filename)
+
+        fname = '%s/%s.set' % (self._fulldir, filename)
         settings_file = file(fname, 'w+')
         settings_file.write(header)
         settings_file.write(text)
         settings_file.close()
-        
+
     def add_column_to_header(self, instrument, parameter, units=None):
         '''
         Create the header of the data file. It is called for each collumn
@@ -113,8 +132,7 @@ class Data(gobject.GObject):
             None
         '''
 
-        global instruments
-        if instruments.get_instruments().has_key(instrument):
+        if self._instruments.get_instruments().has_key(instrument):
             ins = instruments.get(instrument)
 
             if not ins.get_parameters().has_key(parameter):
@@ -122,13 +140,12 @@ class Data(gobject.GObject):
             elif units is None:
                 if ins.get_parameter_options(parameter).has_key('units'):
                     units = ins.get_parameter_options(parameter)['units']
-                else:
-                    print __name__ + ': Adding column, but unit is not defined for parameter "%s" of instrument "%s"' % (parameter, instrument)
 
         else:
             print __name__ + ': Adding column, but instrument "%s" does not exist' % instrument
 
         if units is None:
+            print __name__ + ': Added column, but unit is not defined for parameter "%s" of instrument "%s"' % (parameter, instrument)
             units = _('Undefined')
 
         self._col_nr += 1
@@ -161,7 +178,7 @@ class Data(gobject.GObject):
         '''
         Add a new line to the data file with the values seperated by tabs.
         It will also emit a signal for possible data plots.
-        
+
         Input:
             *values (numbers): a list of comma separated values
 
@@ -209,14 +226,20 @@ class Data(gobject.GObject):
     def get_filename(self):
         return self._filename
 
-    def get_dir(self):
-        return self._dir
+    def get_fulldir(self):
+        return self._fulldir
+
+    def get_subdir(self):
+        return self._subdir
+
+    def get_basedir(self):
+        return self._basedir
 
     def get_line_nr(self):
         return self._line_nr
 
     def get_block_nr(self):
         return self._block_nr
-    
+
     def get_col_info(self):
         return self._col_info

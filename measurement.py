@@ -44,15 +44,8 @@ class Measurement(gobject.GObject):
         self._coords = []
         self._measurements = []
 
-        dstr = time.strftime('%Y%m%d')
-        tstr = time.strftime('%H%M%S')
-        mname = '%s_%s' % (tstr, name)
-        dir = '%s/%s' % (get_config()['datadir'], dstr)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-
         self._data = Data()
-        self._data.create_datafile(mname, dir)
+        self._data.create_datafile(name)
 
     def get_data(self):
         return self._data

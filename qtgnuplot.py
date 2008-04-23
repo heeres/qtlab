@@ -28,10 +28,13 @@ class Plot2D(gobject.GObject):
         gobject.GObject.__init__(self)
 
         self._data = _data
+        self._basedir = self._data.get_basedir()
+        self._dir = None
 
         self._gnuplot = Gnuplot.Gnuplot()
         self._gnuplot('set grid')
         self._gnuplot('set style data lines')
+        self._gnuplot('cd "%s"' % self._basedir)
 
         self._cols = []
         self._cols.append(cols)
@@ -82,7 +85,12 @@ class Plot2D(gobject.GObject):
         '''
 
         filename = self._data.get_filename() + '.dat'
-        dir = self._data.get_dir()
+        dir = self._data.get_subdir()
+        tbasedir = self._data.get_basedir()
+        if self._basedir is not tbasedir:
+            self._gnuplot('cd "%s"' % tbasedir)
+            self._basedir = tbasedir
+
         path = dir + '/' + filename
 
         block_nr = self._data.get_block_nr()
@@ -126,10 +134,15 @@ class Plot2D(gobject.GObject):
         Output:
             None
         '''
-
+        if self._auto_update_hid != None:
+            print 'auto_update already turned on'
+            return
         self._auto_update_hid = self._data.connect('new-data-point', self._new_data_point_cb)
 
     def unset_auto_update(self):
+        if self._auto_update_hid == None:
+            print 'auto_update already turned off'
+            return
         self._data.disconnect(self._auto_update_hid)
         self._auto_update_hid = None
 
@@ -189,6 +202,18 @@ class Plot2D(gobject.GObject):
         else:
             self._maxpoints = maxpoints
 
+    def clear(self):
+        self._gnuplot.clear()
+
+    def save_ps(self):
+        self._gnuplot('set terminal postscript color')
+        self._gnuplot('set output "%s/%s.ps"' % (self._data.get_subdir(),self._data.get_filename()))
+        self._gnuplot('replot')
+        self._gnuplot('set terminal win')
+        self._gnuplot('set output')
+
+
+
 class Plot3D(gobject.GObject):
     '''
     Class to plot x, y, z data.
@@ -198,18 +223,21 @@ class Plot3D(gobject.GObject):
     # 1) does non-rect-grid plotting work?
     # 2) lastpoint/maxpoints not needed in 3d
     # 3) update per point?
-    # 4) filename through event-message but dir not?
 
     def __init__(self, _data, cols=(1, 2, 3), mintime=0.5):
         gobject.GObject.__init__(self)
         self._gnuplot = Gnuplot.Gnuplot()
-        self._gnuplot('set grid')
+        #self._gnuplot('set grid')
         self._gnuplot('set view map')
         #self._gnuplot('set pm3d map')
         self._gnuplot('set style data image')
 
         self._data = _data
+        self._basedir = self._data.get_basedir()
+        self._gnuplot('cd "%s"' % self._basedir)
+        self._dir = None
         self._cols = cols
+        self._auto_update_hid = None
         self._time_of_last_plot = 0
         self._min_time_between_plots = mintime
 #        self._maxpoints = maxpoints
@@ -225,7 +253,6 @@ class Plot3D(gobject.GObject):
             None
         '''
 
-        print 'update_plot'
         block_nr = self._data.get_block_nr()
         stopblock = block_nr - 1
         if stopblock < 0:
@@ -236,7 +263,12 @@ class Plot3D(gobject.GObject):
 #            startpoint = 1
 
         filename = self._data.get_filename() + '.dat'
-        dir = self._data.get_dir()
+        dir = self._data.get_subdir()
+        tbasedir = self._data.get_basedir()
+        if self._basedir is not tbasedir:
+            self._gnuplot('cd "%s"' % tbasedir)
+            self._basedir = tbasedir
+
         path = dir + '/' + filename
 
         self.set_labels(self._cols)
@@ -258,7 +290,26 @@ class Plot3D(gobject.GObject):
             self._time_of_last_plot = time()
 
     def set_auto_update_block(self):
-        self._data.connect('new-data-block', self._new_data_block_cb)
+        '''
+        Set the plot to auto-update each time a data block is completed in the data file.
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        if self._auto_update_hid != None:
+            print 'auto_update_block already turned on'
+            return
+        self._auto_update_hid = self._data.connect('new-data-block', self._new_data_block_cb)
+
+    def unset_auto_update_block(self):
+        if self._auto_update_hid == None:
+            print 'auto_update_block already turned off'
+            return
+        self._data.disconnect(self._auto_update_hid)
+        self._auto_update_hid = None
 
     def reset_cols(self, cols):
         '''
@@ -303,6 +354,16 @@ class Plot3D(gobject.GObject):
 
     def set_mintime(self, mintime):
         self._min_time_between_plots = mintime
+
+    def clear(self):
+        self._gnuplot.clear()
+
+    def save_ps(self):
+        self._gnuplot('set terminal postscript color')
+        self._gnuplot('set output "%s/%s.ps"' % (self._data.get_subdir(),self._data.get_filename()))
+        self._gnuplot('replot')
+        self._gnuplot('set terminal win')
+        self._gnuplot('set output')
 
 #    def set_maxpoints(self, maxpoints):
 #        self._maxpoints = maxpoints

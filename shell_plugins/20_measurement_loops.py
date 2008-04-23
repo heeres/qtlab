@@ -1,4 +1,6 @@
 #20_measurement_loops.py, measurement loops for lab environment
+import os
+import shutil
 
 def _get_steps(start, end, steps, stepsize):
     if steps == 0 and stepsize == 0:
@@ -48,3 +50,32 @@ def measure2d(
     m.add_measurement(read_ins, read_var)
 
     m.start()
+
+def qtrun(filepath, data=data):
+    if not os.path.isfile(filepath):
+        raise ValueError("file '%s' does not exist" % filepath)
+
+    dir, filename = os.path.split(filepath)
+    name, ext = os.path.splitext(filename, ext)
+
+    if ext != '.py':
+        raise ValueError("file '%s' is not of type .py" % filepath)
+
+    data.create_datafile(filename)
+    tstr_filename = data.get_filename() + '.py'
+    fulldir = data.get_fulldir()
+
+    if os.path.isfile(tstr_filename):
+        raise ValueError("file '%s' already exists, could not copy" % tstr_filename)
+    shutil.copy(filepath, fulldir + '/' + tstr_filename)
+
+    plot2d.unset_auto_update()
+    plot3d.unset_auto_update_block()
+
+    try:
+        execfile(fulldir + '/' + tstr_filename, globals())
+    except Exception, e:
+        data.close_datafile()
+        print '\n    => Measurement Aborted: %s <=' % e
+
+    data.close_datafile()
