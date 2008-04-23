@@ -101,9 +101,7 @@ class Measurement(gobject.GObject):
 
         self._add_coordinate_options(coord, **kwargs)
 
-        print 'Added coordinate'
         self._data.add_column_to_header(ins.get_name(), var)
-        print 'Added column header'
 
     def add_coordinate_func(self, func, start, end, **kwargs):
         '''
@@ -218,6 +216,10 @@ class Measurement(gobject.GObject):
         # Set loop variables
         for i in xrange(len(coords)):
             if delta[i] != 0:
+
+                if i != 0:
+                    self._data.new_data_block()
+
                 val = coords[i]
                 if 'ins' in self._coords[i]:
                     ins = self._coords[i]['ins']

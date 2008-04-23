@@ -360,7 +360,7 @@ class QTMeasure(gtk.Window):
             self._plot.set_auto_update()
         elif ncoord == 2:
             self._plot = qtgnuplot.Plot3D(data)
-            self._plot.set_auto_update()
+            self._plot.set_auto_update_block()
         else:
             logging.warning('No plot available')
 
