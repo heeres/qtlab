@@ -1,6 +1,9 @@
 #20_measurement_loops.py, measurement loops for lab environment
+
 import os
 import shutil
+import copy
+import calltimer
 
 def _get_steps(start, end, steps, stepsize):
     if steps == 0 and stepsize == 0:
@@ -56,7 +59,7 @@ def qtrun(filepath, data=data):
         raise ValueError("file '%s' does not exist" % filepath)
 
     dir, filename = os.path.split(filepath)
-    name, ext = os.path.splitext(filename, ext)
+    name, ext = os.path.splitext(filename)
 
     if ext != '.py':
         raise ValueError("file '%s' is not of type .py" % filepath)
@@ -73,9 +76,17 @@ def qtrun(filepath, data=data):
     plot3d.unset_auto_update_block()
 
     try:
-        execfile(fulldir + '/' + tstr_filename, globals())
+        fn = fulldir + '/' + tstr_filename
+
+        # Make sure we don't mess up our globals
+        gvars = copy.copy(globals())
+        execfile(fn, gvars)
     except Exception, e:
         data.close_datafile()
         print '\n    => Measurement Aborted: %s <=' % e
+    finally:
+        data.close_datafile()
 
-    data.close_datafile()
+def qtrun_thread(filepath, data=data):
+    calltimer.ThreadCall(qtrun, filepath, data)
+
