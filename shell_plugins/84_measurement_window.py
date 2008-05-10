@@ -233,15 +233,10 @@ class QTMeasureVarSettings(gobject.GObject):
         self._scale.set_sensitive(sensitive)
         self._units.set_sensitive(sensitive)
 
-class QTMeasure(gtk.Window):
+class QTMeasure(QTWindow):
 
     def __init__(self):
-        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.move(410, 410)
-
-        self.set_size_request(400, 580)
-        self.set_border_width(1)
-        self.set_title(_('Measure'))
+        QTWindow.__init__(self, 'Measure')
 
         self.connect("delete-event", self._delete_event_cb)
 
