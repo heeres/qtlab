@@ -133,7 +133,7 @@ class Data(gobject.GObject):
         '''
 
         if self._instruments.get_instruments().has_key(instrument):
-            ins = instruments.get(instrument)
+            ins = self._instruments.get(instrument)
 
             if not ins.get_parameters().has_key(parameter):
                 print __name__ + ': Adding column, but instrument "%s" does not have parameter "%s"' % (instrument, parameter)
