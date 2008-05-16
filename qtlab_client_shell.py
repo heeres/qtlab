@@ -3,6 +3,9 @@ import os.path
 
 def insert_in_file_list(entries, entry):
     adddir, addname = entry
+    if os.path.splitext(addname)[1] != ".py":
+        return
+
     index = 0
     for (dir, name) in entries:
         if name[0] > addname[0] or (name[0] == addname[0] and name[1] > addname[1]):
