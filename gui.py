@@ -17,6 +17,7 @@
 
 import gtk
 import gobject
+import threading
 
 from gettext import gettext as _
 
@@ -24,7 +25,10 @@ class GuiSignals(gobject.GObject):
 
     __gsignals__ = {
             'update-gui': (gobject.SIGNAL_RUN_FIRST,
-                gobject.TYPE_NONE,())
+                gobject.TYPE_NONE,()),
+            'register-global': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,
+                ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT]))
     }
 
     def __init__(self):
@@ -33,16 +37,23 @@ class GuiSignals(gobject.GObject):
     def update_gui(self):
         self.emit('update-gui')
 
-_guisignals = None
+    def register_global(self, name, val):
+        self.emit('register-global', name, val)
+
+try:
+    _guisignals
+except NameError:
+    _guisignals = GuiSignals()
 
 def get_guisignals():
     global _guisignals
-    if _guisignals is None:
-        _guisignals = GuiSignals()
     return _guisignals
 
 def update_gui():
     get_guisignals().update_gui()
+
+def register_global(name, val):
+    get_guisignals().register_global(name, val)
 
 _abort = False
 def check_abort():
@@ -55,7 +66,7 @@ def set_abort():
     global _abort
     _abort = True
 
-def build_menu(tree, root=True):
+def build_menu(tree, accelgroup=None, root=True):
     """Build a gtk menu, including submenu's
 
     tree is an array of items, each item being a dictionary with:
@@ -74,9 +85,16 @@ def build_menu(tree, root=True):
         if element.has_key('icon'):
             pass
         if element.has_key('submenu'):
-            item.set_submenu(build_menu(element['submenu'], root=False))
-        elif element.has_key('action'):
+            item.set_submenu(build_menu(element['submenu'],
+                root=False, accelgroup=accelgroup))
+        if element.has_key('action'):
             item.connect('activate', element['action'])
+        if element.has_key('accel') and accelgroup is not None:
+            (key, mod) = gtk.accelerator_parse(element['accel'])
+            item.add_accelerator('activate', accelgroup, key, mod,
+                gtk.ACCEL_VISIBLE)
+
         menu.add(item)
 
     return menu
+
