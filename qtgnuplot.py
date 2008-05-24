@@ -213,6 +213,14 @@ class Plot2D(gobject.GObject):
         self._gnuplot('set output')
         self._gnuplot('replot')
 
+    def save_png(self):
+        self._gnuplot('set terminal png')
+        self._gnuplot('set output "%s/%s.png"' % (self._data.get_subdir(),self._data.get_filename()))
+        self._gnuplot('replot')
+        self._gnuplot('set terminal win')
+        self._gnuplot('set output')
+        self._gnuplot('replot')
+
 
 
 class Plot3D(gobject.GObject):
@@ -366,6 +374,15 @@ class Plot3D(gobject.GObject):
         self._gnuplot('set terminal win')
         self._gnuplot('set output')
         self._gnuplot('replot')
+
+    def save_png(self):
+        self._gnuplot('set terminal png')
+        self._gnuplot('set output "%s/%s.png"' % (self._data.get_subdir(),self._data.get_filename()))
+        self._gnuplot('replot')
+        self._gnuplot('set terminal win')
+        self._gnuplot('set output')
+        self._gnuplot('replot')
+
 
 #    def set_maxpoints(self, maxpoints):
 #        self._maxpoints = maxpoints
