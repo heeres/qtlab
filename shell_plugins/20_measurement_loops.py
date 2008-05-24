@@ -64,7 +64,7 @@ def qtrun(filepath, data=data):
     if ext != '.py':
         raise ValueError("file '%s' is not of type .py" % filepath)
 
-    data.create_datafile(filename)
+    data.create_datafile(name)
     tstr_filename = data.get_filename() + '.py'
     fulldir = data.get_fulldir()
 
