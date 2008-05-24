@@ -72,9 +72,6 @@ def qtrun(filepath, data=data):
         raise ValueError("file '%s' already exists, could not copy" % tstr_filename)
     shutil.copy(filepath, fulldir + '/' + tstr_filename)
 
-    plot2d.unset_auto_update()
-    plot3d.unset_auto_update_block()
-
     try:
         fn = fulldir + '/' + tstr_filename
 
