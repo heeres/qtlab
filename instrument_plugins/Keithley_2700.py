@@ -38,7 +38,7 @@ class Keithley_2700(Instrument):
     1) Fix docstrings
     2) Fix formats
     '''
-    
+
     def __init__(self, name, address, reset=False):
         '''
         Initializes the Keithley_2700, and communicates with the wrapper.
@@ -605,12 +605,12 @@ class Keithley_2700(Instrument):
         '''
         For internal use only!!
         Changes the value of the parameter for the function specified
-    
+
         Input:
-            func (string) : 
+            func (string) :
             par (string)  :
             val (depends??) :
-    
+
         Output:
             None
         '''
@@ -624,11 +624,11 @@ class Keithley_2700(Instrument):
         For internal use only!!
         Reads the value of the parameter for the function specified
         from the instrument
-    
+
         Input:
-            func (string) : 
+            func (string) :
             par (string)  :
-    
+
         Output:
             val (depends??) :
         '''
