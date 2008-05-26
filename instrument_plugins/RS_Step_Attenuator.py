@@ -29,7 +29,7 @@ class RS_Step_Attenuator(Instrument):
     Initialize with
     <name> = instruments.create('<name>', 'RS_Step_Attenuator', address='<GBIP address>')
     '''
-    
+
     def __init__(self, name, address):
         '''
         Initializes the RS_Step_Attenuator, and communicates with the wrapper.
