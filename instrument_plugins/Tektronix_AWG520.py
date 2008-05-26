@@ -40,7 +40,7 @@ class Tektronix_AWG520(Instrument):
     2) Remove test_send??
     3) Add docstrings
     '''
-    
+
     def __init__(self, name, address, reset=False, clock=1e9, numpoints=1000):
         '''
         Initializes the AWG520.
@@ -649,7 +649,7 @@ class Tektronix_AWG520(Instrument):
 
     def _do_set_status(self, status, channel):
         '''
-        Sets the status of designated channel. 
+        Sets the status of designated channel.
 
         Input:
             status (string) : 'On' or 'Off'
