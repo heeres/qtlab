@@ -32,6 +32,8 @@ class QTLab(gtk.Window):
 
         self.connect("delete-event", self._delete_event_cb)
         gui.get_guisignals().connect("update-gui", self._update_gui_cb)
+        gui.get_guisignals().connect("register-global",
+            self._register_global_cb)
 
         self.vbox = gtk.VBox()
 
@@ -132,6 +134,10 @@ class QTLab(gtk.Window):
         while gtk.events_pending():
             gtk.main_iteration_do(False)
         gtk.gdk.threads_leave()
+
+    def _register_global_cb(self, sender, name, val):
+        code = 'global %s\n%s = %s' % (name, name, val)
+        exec(code, globals())
 
     def _toggle_liveplot_cb(self, widget):
         qtgnuplot.toggle_live_plotting()
