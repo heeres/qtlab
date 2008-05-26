@@ -211,6 +211,7 @@ class Plot2D(gobject.GObject):
         self._gnuplot('replot')
         self._gnuplot('set terminal win')
         self._gnuplot('set output')
+        self._gnuplot('replot')
 
 
 
@@ -364,6 +365,7 @@ class Plot3D(gobject.GObject):
         self._gnuplot('replot')
         self._gnuplot('set terminal win')
         self._gnuplot('set output')
+        self._gnuplot('replot')
 
 #    def set_maxpoints(self, maxpoints):
 #        self._maxpoints = maxpoints
