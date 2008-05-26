@@ -100,7 +100,7 @@ class Instruments(gobject.GObject):
         for path_fn in filelist:
             path, fn = os.path.split(path_fn)
             name, ext = os.path.splitext(fn)
-            if ext == '.py' and name != "__init__":
+            if ext == '.py' and name != "__init__" and name[0] != '_':
                 ret.append(name)
 
         return ret
