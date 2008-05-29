@@ -40,6 +40,9 @@ class Instrument(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
         'removed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT])),
+        'parameter-added': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
                     ([gobject.TYPE_PYOBJECT]))
     }
 
@@ -232,6 +235,8 @@ class Instrument(gobject.GObject):
             self._probe_ids.append(gobject.timeout_add(interval,
                 lambda: self.get(name)))
 
+        self.emit('parameter-added', name)
+
     def get_parameter_options(self, name):
         '''
         Return list of options for paramter.
@@ -404,7 +409,7 @@ class Instrument(gobject.GObject):
             result = self._get_value(name, query, **kwargs)
             changed[name] = result
 
-        if len(changed) > 0:
+        if len(changed) > 0 and query:
             self.emit('changed', changed)
 
         return result
