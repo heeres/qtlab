@@ -338,6 +338,23 @@ class Instrument(gobject.GObject):
         '''
         return self._parameters
 
+    def format_parameter_value(self, param, val):
+        opt = self.get_parameter_options(param)
+        if 'format' in opt:
+            try:
+                valstr = opt['format'] % val
+            except:
+                valstr = '%s' % val
+        else:
+            valstr = '%s' % val
+
+        if 'units' in opt:
+            unitstr = ' %s' % opt['units']
+        else:
+            unitstr = ''
+
+        return '%s%s' % (valstr, unitstr)
+
     def _get_value(self, name, query=True, **kwargs):
         '''
         Private wrapper function to get a value.

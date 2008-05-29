@@ -31,30 +31,44 @@ class QTInstrumentFrame(gtk.Frame):
         self._parameters = {}
         self._add_parameters()
 
+        ins.connect('parameter-added', self._parameter_added_cb)
+
         self.show_all()
+
+    def _add_parameter_by_name(self, param):
+        popts = self._instrument.get_parameter_options(param)
+
+        plabel = gtk.Label(param)
+        plabel.set_justify(gtk.JUSTIFY_RIGHT)
+        plabel.show()
+        self._left_box.pack_start(plabel, False, False)
+
+        vlabel = gtk.Label(self._instrument.format_parameter_value(param,
+            self._instrument.get(param, query=False)))
+        vlabel.set_justify(gtk.JUSTIFY_LEFT)
+        vlabel.show()
+        self._right_box.pack_start(vlabel, False, False)
+
+        self._parameters[param] = vlabel
 
     def _add_parameters(self):
         self._left_box = gtk.VBox()
         self._right_box = gtk.VBox()
 
-        parameters = self._instrument.get_parameters()
-        for (param, popts) in dict_to_ordered_tuples(parameters):
-
-            plabel = gtk.Label(param)
-            plabel.set_justify(gtk.JUSTIFY_RIGHT)
-            self._left_box.pack_start(plabel, False, False)
-
-            vlabel = gtk.Label('%s' % self._instrument.get(param, query=False))
-            vlabel.set_justify(gtk.JUSTIFY_LEFT)
-            self._right_box.pack_start(vlabel, False, False)
-
-            self._parameters[param] = vlabel
+        parameters = self._instrument.get_parameter_names()
+        parameters.sort()
+        for param in parameters:
+            self._add_parameter_by_name(param)
 
         self.add(pack_hbox([self._left_box, self._right_box]))
 
+    def _parameter_added_cb(self, sender, name):
+        self._add_parameter_by_name(name)
+
     def update_parameter(self, param, val):
         if param in self._parameters:
-            self._parameters[param].set_text('%s' % val)
+            self._parameters[param].set_text(
+                self._instrument.format_parameter_value(param, val))
 
     def get_instrument(self):
         return self._instrument
