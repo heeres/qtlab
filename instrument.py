@@ -67,6 +67,7 @@ class Instrument(gobject.GObject):
 
         self._parameters = {}
         self._functions = {}
+        self._probe_ids = []
 
         self._default_read_var = None
         self._default_write_var = None
@@ -226,6 +227,11 @@ class Instrument(gobject.GObject):
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
 
+        if 'probe_interval' in options:
+            interval = options['probe_interval']
+            self._probe_ids.append(gobject.timeout_add(interval,
+                lambda: self.get(name)))
+
     def get_parameter_options(self, name):
         '''
         Return list of options for paramter.
@@ -369,7 +375,7 @@ class Instrument(gobject.GObject):
             print 'Instrument does not implement getting of %s' % base_name
             return None
 
-        value = func(**kwargs) 
+        value = func(**kwargs)
         p['value'] = value
         return value
 
@@ -465,7 +471,7 @@ class Instrument(gobject.GObject):
     def set(self, name, value, **kwargs):
         '''
         Set one or more Instrument parameter values.
-        
+
         Checks whether the Instrument is locked and checks value bounds,
         if specified by minval / maxval.
 
