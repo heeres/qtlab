@@ -1,5 +1,6 @@
 # data.py, Data class
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
+# Reinier Heeres <reinier@heeres.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,7 +40,18 @@ class Data(gobject.GObject):
     }
                            # [gobject.TYPE_PYOBJECT]
 
-    def __init__(self, basedir=None):
+    def __init__(self, basedir=None, filepath=None):
+        """
+        Create Data object
+
+        Input:
+            basedir (string): base directory for new files
+            filename (string): file to associate with
+
+        Output:
+            None
+        """
+
         gobject.GObject.__init__(self)
 
         if basedir is None:
@@ -49,14 +61,30 @@ class Data(gobject.GObject):
             raise ValueError("directory '%s' doest not exist" % basedir)
         self._basedir = basedir
 
+        self._name = ''
+        self._filename = ''
+        self._subdir = ''
+        self._fulldir = ''
+        self._timestamp = ''
+        self._settings_filename = ''
+        if filepath is not None:
+            self.set_filepath(filepath)
+
+        self._file = None
+
         self._instruments = instruments.get_instruments()
 
-    def create_datafile(self, filename, datesubdir=True):
+    def create_datafile(self, name, datesubdir=True, timesubdir=False):
         '''
-        Create a new data file.
+        Create a new data file. It will be create in /<basedir>/<subdirs>/.
+        The 'datesubdir' and 'timesubdir' options determine whether those
+        subdirectories will be created.
+        The name of the file will be <time>_<name>.dat
 
         Input:
-            filename (string): defines the data file name (without extension)
+            name (string): name of the data set
+            datesubdir (boolean): whether or not to create a date sub dir
+            timesubdir (boolean): whether or not to create a time sub dir
 
         Output:
             None
@@ -68,21 +96,24 @@ class Data(gobject.GObject):
         else:
             self._subdir = ''
 
+        tstr = time.strftime('%H%M%S')
+        if timesubdir:
+            self._subdir = os.path.join(self._subdir, '%s' % tstr)
+
         path = os.path.join(self._basedir, self._subdir)
         if not os.path.isdir(path):
             os.makedirs(path)
         self._fulldir = path
 
-        tstr = time.strftime('%H%M%S')
-        self._filename = tstr + '_' + filename
+        self._filename = '%s_%s.dat' % (tstr, name)
 
         self._timestamp = time.asctime()
-        self.create_settings_file(self._filename)
+        self.create_settings_file('%s_%s.set' % (tstr, name))
 
-        header_text  = '# Filename: %s.dat\n' % self._filename
+        header_text  = '# Filename: %s\n' % self._filename
         header_text += '# Timestamp: %s\n\n' % self._timestamp
 
-        self._file = file('%s/%s.dat' % (self._fulldir, self._filename), 'w+')
+        self._file = file('%s/%s' % (self._fulldir, self._filename), 'w+')
         self._file.write(header_text)
         self._file.flush()
 
@@ -98,13 +129,13 @@ class Data(gobject.GObject):
         instrument settings to a file.
 
         Input:
-            filename (string): name of settings file (without extension)
+            name (string): name of settings file.
 
         Output:
             None
         '''
 
-        header  = '# Filename: %s.set\n' % filename
+        header  = '# Filename: %s\n' % filename
         header += '# Timestamp: %s\n\n' % self._timestamp
 
         text = ''
@@ -113,8 +144,8 @@ class Data(gobject.GObject):
             for (param, popts) in ins.get_parameters().iteritems():
                 text += '\t%s: %s\n' % (param, ins.get(param, query=False))
 
-        fname = '%s/%s.set' % (self._fulldir, filename)
-        settings_file = file(fname, 'w+')
+        self._settings_filename = filename
+        settings_file = file('%s/%s' % (self._fulldir, self._settings_filename), 'w+')
         settings_file.write(header)
         settings_file.write(text)
         settings_file.close()
@@ -223,16 +254,37 @@ class Data(gobject.GObject):
 
         self._file.close()
 
+    def get_name(self):
+        return self._name
+
     def get_filename(self):
+        '''Get filename (not including path)'''
         return self._filename
 
+    def get_filepath(self):
+        '''Get filename (including path)'''
+        return '%s/%s' % (self._fulldir, self._filename)
+
+    def set_filepath(self, path):
+        dir, fn = os.path.split(path)
+        if dir.startswith(self._basedir):
+            self._subdir = dir[len(self._basedir):]
+        else:
+            self._basedir = dir
+            self._subdir = ''
+        self._fulldir = dir
+        self._filename = fn
+
     def get_fulldir(self):
+        '''Get directory containing the file'''
         return self._fulldir
 
     def get_subdir(self):
+        '''Get directory containing the file with respect to the basedir'''
         return self._subdir
 
     def get_basedir(self):
+        '''Get base directory '''
         return self._basedir
 
     def get_line_nr(self):
