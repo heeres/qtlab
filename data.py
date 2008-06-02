@@ -20,6 +20,7 @@ import gobject
 from gettext import gettext as _
 import os
 import time
+import numpy
 
 import instruments
 
@@ -71,6 +72,7 @@ class Data(gobject.GObject):
             self.set_filepath(filepath)
 
         self._file = None
+        self._data = None
 
         self._instruments = instruments.get_instruments()
 
@@ -295,3 +297,25 @@ class Data(gobject.GObject):
 
     def get_col_info(self):
         return self._col_info
+
+    def get_array(self):
+        """
+        Read associated data file and return data as a numpy array
+        """
+
+        f = file(os.path.join(self._fulldir, self._filename), 'r')
+        data = []
+
+        for line in f:
+            # Strip comment
+            commentpos = line.find('#')
+            if commentpos != -1:
+                line = line[:commentpos]
+
+            line = line.rstrip(' \n\t')
+
+            fields = line.split()
+            if len(fields) > 0:
+                data.append(fields)
+
+        return numpy.array(data)
