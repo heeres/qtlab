@@ -31,12 +31,6 @@ class Keithley_2700(Instrument):
     Initialize with
     <name> = instruments.create('<name>', 'Keithley_2700', address='<GBIP address>',
         reset=<bool>)
-
-    The reset is optional, default is False
-
-    TODO
-    1) Fix docstrings
-    2) Fix formats
     '''
 
     def __init__(self, name, address, reset=False):
@@ -46,15 +40,14 @@ class Keithley_2700(Instrument):
         Input:
             name (string)    : name of the instrument
             address (string) : GPIB address
-            reset (bool)     : resets to default values, default=false
+            reset (bool)     : resets to default values
 
         Output:
             None
         '''
         # Initialize wrapper functions
+        logging.info(__name__ + ' : Initializing instrument Keithley_2700')
         Instrument.__init__(self, name, tags=['physical'])
-
-        logging.debug(__name__ + ' : Initializing instrument')
 
         # Add some global constants
         self._address = address
@@ -65,28 +58,28 @@ class Keithley_2700(Instrument):
         # Add parameters to wrapper
         self.add_parameter('range',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='', minval=0.1, maxval=1000)
+            units='', minval=0.1, maxval=1000, type=types.FloatType)
         self.add_parameter('trigger_mode',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='')
         self.add_parameter('trigger_count',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='num')
+            units='num', type=types.IntType)
         self.add_parameter('trigger_delay',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='sec', minval=0, maxval=999999.999)
+            units='sec', minval=0, maxval=999999.999, type=types.FloatType)
         self.add_parameter('trigger_source',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='')
         self.add_parameter('trigger_timer',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='sec', minval=0.001, maxval=99999.999)
+            units='sec', minval=0.001, maxval=99999.999, type=types.FloatType)
         self.add_parameter('mode',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='')
         self.add_parameter('digits',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='num', minval=4, maxval=7)
+            units='num', minval=4, maxval=7, type=types.IntType)
         self.add_parameter('readval', flags=Instrument.FLAG_GET, units='arb. units',
             type=types.FloatType)
         self.add_parameter('readlastval', flags=Instrument.FLAG_GET, units='arb. units',
@@ -164,7 +157,7 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            value (string) : current value on input  FIXME make float
+            value (string) : current value on input
         '''
         # needs to be enhanced!! Depends on trigger
         logging.debug(__name__ + ' : Trigger and read')
@@ -178,7 +171,7 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            value(string) : last triggered value on input
         '''
         logging.debug(__name__ + ' : Read last data')
         return self._visainstrument.ask('DATA?')
@@ -191,10 +184,11 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            value(float) : last triggerd value on input
         '''
-        tekst = self.readlast()
-        return float(tekst[0:15])
+        logging.debug(__name__ + ' : Read last value')
+        text = self._visainstrument.ask('DATA?')
+        return float(text[0:15])
 
     def _do_get_readval(self):
         '''
@@ -206,10 +200,11 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            value(float) : currrent value on input
         '''
-        tekst = self.read()
-        return float(tekst[0:15])
+        logging.debug(__name__ + ' : Read current value')
+        text = self._visainstrument.ask('READ?')
+        return float(text[0:15])
 
     def set_mode_volt_ac(self):
         '''
@@ -221,6 +216,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to AC Voltage')
         self._do_set_mode('VOLT:AC')
 
     def set_mode_volt_dc(self):
@@ -233,6 +229,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to DC Voltage')
         self._do_set_mode('VOLT:DC')
 
     def set_mode_curr_ac(self):
@@ -245,6 +242,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to AC Current')
         self._do_set_mode('CURR:AC')
 
     def set_mode_curr_dc(self):
@@ -257,6 +255,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to DC Current')
         self._do_set_mode('CURR:DC')
 
     def set_mode_res(self):
@@ -269,6 +268,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to Resistance')
         self._do_set_mode('RES')
 
     def set_mode_fres(self):
@@ -281,6 +281,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to "four wire resistance"')
         self._do_set_mode('FRES')
 
     def set_mode_temp(self):
@@ -293,6 +294,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to Temperature')
         self._do_set_mode('TEMP')
 
     def set_mode_freq(self):
@@ -305,19 +307,25 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set mode to Frequency')
         self._do_set_mode('FREQ')
 
     def set_range_auto(self, mode=None):
         '''
-        Set range to Auto
+        Set range to Auto for the mode specified.
+        If mode=None the current mode is assumed
 
         Input:
-            None
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set range to auto')
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         self._set_func_par_value(mode,'RANG:AUTO', 'ON')
 
@@ -331,6 +339,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set Trigger to continuous mode')
         self._do_set_trigger_mode('ON')
 
     def set_trigger_disc(self):
@@ -343,6 +352,7 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set Trigger to discrete mode')
         self._do_set_trigger_mode('OFF')
 
     def reset_trigger(self):
@@ -361,87 +371,120 @@ class Keithley_2700(Instrument):
 # parameters
     def _do_set_range(self, val, mode=None):
         '''
-        Set range to the specified value
+        Set range to the specified value for the
+        designated mode. If mode=None, the current mode is assumed
 
         Input:
-            None
+            val (float)   : Range in specified units
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set range to %s' % val)
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         self._set_func_par_value(mode,'RANG', val)
 
     def _do_get_range(self, mode=None):
         '''
-        Get range
+        Get range for the specified mode.
+        If mode=None, the current mode is assumed.
 
         Input:
-            None
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
-            None
+            range (float) : Range in the specified units
         '''
+        logging.debug(__name__ + ' : Get range')
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         return self._get_func_par(mode, 'RANG')
 
     def _do_set_digits(self, val, mode=None):
         '''
         Set digits to the specified value ?? Which values are alowed?
+        If mode=None the current mode is assumed
 
         Input:
-            None
+            val (int)     : Number of digits
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set digits to %s' % val)
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         self._set_func_par_value(mode,'DIG', val)
 
     def _do_get_digits(self, mode=None):
         '''
         Get digits
+        If mode=None the current mode is assumed
 
         Input:
-            None
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
-            None
+            digits (int) : Number of digits
         '''
+        logging.debug(__name__ + ' : Getting digits')
         if mode is None:
             mode = self._do_get_mode(query=False)
-        return self._get_func_par(mode, 'DIG')
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
+            mode = self._do_get_mode(query=False)
+        return int(self._get_func_par(mode, 'DIG'))
 
     def _do_set_integrationtime(self, val, mode=None):
         '''
         Set integration time to the specified value
+        If mode=None the current mode is assumed
 
         Input:
-            None
+            val (float)   : Integration time in seconds
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set integration time to %s' % val)
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         self._set_func_par_value(mode,'APER', val)
 
     def _do_get_integrationtime(self, mode=None):
         '''
         Get integration time
+        If mode=None the current mode is assumed
 
         Input:
-            None
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
-            None
+            time (float) : Integration time in seconds
         '''
+        logging.debug(__name__ + ' : Read integration time from instrument')
         if mode is None:
             mode = self._do_get_mode(query=False)
-        return self._get_func_par(mode, 'APER')
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
+            mode = self._do_get_mode(query=False)
+        return float(self._get_func_par(mode, 'APER'))
 
 # core functionality
     def _do_set_trigger_mode(self, mode):
@@ -449,12 +492,16 @@ class Keithley_2700(Instrument):
         Set trigger mode to the specified value 'ON' or 'OFF'
 
         Input:
-            None
+            mode (string) : mode to set property for. Choose from self._modes
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set trigger mode to %s' % mode)
         if mode is None:
+            mode = self._do_get_mode(query=False)
+        if mode not in self._modes:
+            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
             mode = self._do_get_mode(query=False)
         self._set_func_par_value('INIT', 'CONT', mode)
 
@@ -466,8 +513,9 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            mode (string) : returns the current trigger mode
         '''
+        logging.debug(__name__ + ' : Read trigger mode from instrument')
         return self._get_func_par('INIT', 'CONT')
 
     def _do_set_trigger_count(self, val):
@@ -476,11 +524,12 @@ class Keithley_2700(Instrument):
         if val>9999 count is set to INF
 
         Input:
-            None
+            val (int) : trigger count
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set trigger count to %s' % val)
         if (val>9999):
             val='INF'
         self._set_func_par_value('TRIG', 'COUN', val)
@@ -493,20 +542,22 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            count (int) : Trigger count
         '''
-        return self._get_func_par('TRIG', 'COUN')
+        logging.debug(__name__ + ' : Read trigger count from instrument')
+        return int(self._get_func_par('TRIG', 'COUN'))
 
     def _do_set_trigger_delay(self, val):
         '''
         Set trigger delay to the specified value
 
         Input:
-            None
+            val (float) : Trigger delay in seconds
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set trigger delay to %s' % val)
         self._set_func_par_value('TRIG', 'DEL', val)
 
     def _do_get_trigger_delay(self):
@@ -517,20 +568,22 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            delay (float) : Delay in seconds
         '''
-        return self._get_func_par('TRIG', 'DEL')
+        logging.debug(__name__ + ' : Get trigger delay')
+        return float(self._get_func_par('TRIG', 'DEL'))
 
     def _do_set_trigger_source(self, val):
         '''
         Set trigger source
 
         Input:
-            None
+            val (string) : Trigger source
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set Trigger source to %s' % val)
         self._set_func_par_value('TRIG', 'SOUR', val)
 
     def _do_get_trigger_source(self):
@@ -541,8 +594,9 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            source (string) : The trigger source
         '''
+        logging.debug(__name__ + ' : Getting trigger source')
         return self._get_func_par('TRIG', 'SOUR')
 
     def _do_set_trigger_timer(self, val):
@@ -550,11 +604,12 @@ class Keithley_2700(Instrument):
         Set the trigger timer
 
         Input:
-            None
+            val (float) : the value to be set
 
         Output:
             None
         '''
+        logging.debug(__name__ + ' : Set trigger timer to %s' % val)
         self._set_func_par_value('TRIG', 'TIM', val)
 
     def _do_get_trigger_timer(self):
@@ -565,16 +620,17 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            timer (float) : Value of timer
         '''
-        return self._get_func_par('TRIG', 'TIM')
+        logging.debug(__name__ + ' : Get trigger timer')
+        return float(self._get_func_par('TRIG', 'TIM'))
 
     def _do_set_mode(self, mode):
         '''
         Set the mode to the specified value
 
         Input:
-            None
+            mode (string) : mode to be set. Choose from self._modes
 
         Output:
             None
@@ -584,7 +640,7 @@ class Keithley_2700(Instrument):
             string = ':CONF:%s' %mode
             self._visainstrument.write(string)
         else:
-            print 'invalid mode!'
+            logging.error(__name__ + ' : invalid mode %s' % mode)
 
     def _do_get_mode(self):
         '''
@@ -594,7 +650,7 @@ class Keithley_2700(Instrument):
             None
 
         Output:
-            None
+            mode (string) : Current mode
         '''
         logging.debug(__name__ + ' : Reading mode from instrument')
         string = ':CONF?'
@@ -609,7 +665,7 @@ class Keithley_2700(Instrument):
         Input:
             func (string) :
             par (string)  :
-            val (depends??) :
+            val (depends) :
 
         Output:
             None
@@ -630,7 +686,7 @@ class Keithley_2700(Instrument):
             par (string)  :
 
         Output:
-            val (depends??) :
+            val (string) :
         '''
         string = ':%s:%s?' %(func, par)
         logging.debug(__name__ + ' : ask instrument for %s' %string)
