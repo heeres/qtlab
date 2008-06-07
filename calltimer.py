@@ -17,9 +17,22 @@
 
 import time
 import gobject
+import sys
 
 gobject.threads_init()
 import threading
+
+def qttime():
+    global _time_func
+    try:
+        _time_func
+    except:
+        if sys.platform in ['win32', 'cygwin']:
+            _time_func = time.clock
+        else:
+            _time_func = time.time
+
+    return _time_func()
 
 class CallTimerThread(threading.Thread, gobject.GObject):
     '''
@@ -58,7 +71,7 @@ class CallTimerThread(threading.Thread, gobject.GObject):
         self._stop_requested = False
 
     def run(self):
-        tstart = time.time()
+        tstart = qttime()
         extra_delay = 0
 
         i = 0
@@ -75,7 +88,7 @@ class CallTimerThread(threading.Thread, gobject.GObject):
                 break
 
             # delay
-            tn = time.time()
+            tn = qttime()
             req_delay = tstart + extra_delay / 1000.0 + float(i) * self._delay / 1000.0 - tn
             if req_delay > 0:
                 time.sleep(req_delay)
@@ -126,7 +139,7 @@ class CallTimer:
         self._kwargs = kwargs
 
     def start(self):
-        tstart = time.time()
+        tstart = qttime()
 
         i = 0
         while i < self._n:
@@ -137,7 +150,7 @@ class CallTimer:
                 break
 
             # delay
-            tn = time.time()
+            tn = qttime()
             req_delay = tstart + float(i) * self._delay / 1000.0 - tn
             if req_delay > 0:
                 time.sleep(req_delay)
