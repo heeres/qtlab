@@ -18,6 +18,8 @@
 import types
 import gobject
 import copy
+import time
+import math
 
 import logging
 
@@ -147,16 +149,19 @@ class Instrument(gobject.GObject):
         '_do_get_<name>' and '_do_set_<name>'. The latter functions should
         be implemented in the instrument driver.
 
-        Input:  (1) the name of the parameter (string)
-                (2) optional keywords:
-                    (1) type: types.FloatType, types.StringType, etc.
-                    (2) flags: bitwise or of Instrument.FLAG_ constants.
-                        If not set, GETSET is default
-                    (3) channels: tuple. Automagically create channels, e.g.
-                        (1, 4) will make channels 1, 2, 3, 4.
-                    (3) minval, maxval (bound checking)
-                    (4) units, string describing the units of this parameter
-                    (5) tags, array of tags for this parameter
+        Input:
+            name (string): the name of the parameter (string)
+            optional keywords:
+                type: types.FloatType, types.StringType, etc.
+                flags: bitwise or of Instrument.FLAG_ constants.
+                    If not set, FLAG_GETSET is default
+                channels: tuple. Automagically create channels, e.g.
+                    (1, 4) will make channels 1, 2, 3, 4.
+                minval, maxval: values for bound checking
+                units (string): units for this parameter
+                maxstep (float): maximum step size when changing parameter
+                stepdelay (float): delay when setting steps (in milliseconds)
+                tags (array): tags for this parameter
         Output: None
         '''
         options = kwargs
@@ -483,7 +488,36 @@ class Instrument(gobject.GObject):
             print 'Instrument does not implement setting of %s' % base_name
             return None
 
-        ret = func(value, **kwargs)
+        if 'maxstep' in p:
+            curval = p['value']
+
+            delta = curval - value
+            if delta < 0:
+                sign = 1
+            else:
+                sign = -1
+
+            if 'stepdelay' in p:
+                delay = p['stepdelay']
+            else:
+                delay = 50
+
+            while math.fabs(delta) > 0:
+                if math.fabs(delta) > p['maxstep']:
+                    curval += sign * p['maxstep']
+                    delta += sign * p['maxstep']
+                else:
+                    curval = value
+                    delta = 0
+
+                ret = func(curval, **kwargs)
+
+                if delta != 0:
+                    time.sleep(delay / 1000.0)
+
+        else:
+            ret = func(value, **kwargs)
+
         if p['flags'] & self.FLAG_GET_AFTER_SET:
             ret = self._get_value(name, **kwargs)
 
