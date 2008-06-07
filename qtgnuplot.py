@@ -18,6 +18,7 @@
 import gobject
 import Gnuplot
 from time import time
+import os
 
 class Plot2D(gobject.GObject):
     '''
@@ -84,14 +85,15 @@ class Plot2D(gobject.GObject):
             None
         '''
 
-        filename = self._data.get_filename() + '.dat'
+        filedir = self._data.get_fulldir()
+        filename = self._data.get_filename()
         dir = self._data.get_subdir()
         tbasedir = self._data.get_basedir()
         if self._basedir is not tbasedir:
             self._gnuplot('cd "%s"' % tbasedir)
             self._basedir = tbasedir
 
-        path = dir + '/' + filename
+        path = str(os.path.join(dir, filename))
 
         block_nr = self._data.get_block_nr()
         line_nr = self._data.get_line_nr()
@@ -271,14 +273,15 @@ class Plot3D(gobject.GObject):
 #        if startpoint < 1:
 #            startpoint = 1
 
-        filename = self._data.get_filename() + '.dat'
+        filedir = self._data.get_fulldir()
+        filename = self._data.get_filename()
         dir = self._data.get_subdir()
         tbasedir = self._data.get_basedir()
         if self._basedir is not tbasedir:
             self._gnuplot('cd "%s"' % tbasedir)
             self._basedir = tbasedir
 
-        path = dir + '/' + filename
+        path = str(os.path.join(dir, filename))
 
         self.set_labels(self._cols)
 
