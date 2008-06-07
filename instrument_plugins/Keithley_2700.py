@@ -138,6 +138,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Get all relevant data from device')
+        self.get_mode()
         self.get_range()
         self.get_trigger_mode()
         self.get_trigger_count()
@@ -323,10 +324,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Set range to auto')
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         self._set_func_par_value(mode,'RANG:AUTO', 'ON')
 
     def set_trigger_cont(self):
@@ -383,10 +384,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Set range to %s' % val)
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         self._set_func_par_value(mode,'RANG', val)
 
     def _do_get_range(self, mode=None):
@@ -402,10 +403,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Get range')
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         return self._get_func_par(mode, 'RANG')
 
     def _do_set_digits(self, val, mode=None):
@@ -422,10 +423,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Set digits to %s' % val)
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         self._set_func_par_value(mode,'DIG', val)
 
     def _do_get_digits(self, mode=None):
@@ -441,10 +442,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Getting digits')
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         return int(self._get_func_par(mode, 'DIG'))
 
     def _do_set_integrationtime(self, val, mode=None):
@@ -461,10 +462,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Set integration time to %s' % val)
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         self._set_func_par_value(mode,'APER', val)
 
     def _do_get_integrationtime(self, mode=None):
@@ -480,10 +481,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Read integration time from instrument')
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         return float(self._get_func_par(mode, 'APER'))
 
 # core functionality
@@ -499,10 +500,10 @@ class Keithley_2700(Instrument):
         '''
         logging.debug(__name__ + ' : Set trigger mode to %s' % mode)
         if mode is None:
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         if mode not in self._modes:
             logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self._do_get_mode(query=False)
+            mode = self.get_mode(query=False)
         self._set_func_par_value('INIT', 'CONT', mode)
 
     def _do_get_trigger_mode(self):
