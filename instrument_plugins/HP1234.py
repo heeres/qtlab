@@ -29,9 +29,10 @@ class HP1234(Instrument):
                 tags=['measure'],
                 units='mV')
         self.add_parameter('output', type=types.FloatType,
-                flags=Instrument.FLAG_SET,
+                flags=Instrument.FLAG_GETSET,
                 channels=(1, 4), channel_prefix='ch%d_',
                 minval=0, maxval=10,
+                maxstep=0.1, stepdelay=50,
                 tags=['sweep'],
                 units='mV')
 
@@ -47,6 +48,8 @@ class HP1234(Instrument):
         else:
             print 'HP1234 address %s' % address
 
+        self.reset()
+
     def _do_get_value(self):
         return 1
 
@@ -61,6 +64,9 @@ class HP1234(Instrument):
     def _do_get_input(self, channel):
         return channel * channel
 
+    def _do_get_output(self, channel):
+        return 0
+
     def _do_set_output(self, val, channel, times2=False):
         if times2:
             val *= 2
@@ -72,6 +78,8 @@ class HP1234(Instrument):
     def reset(self, **kwargs):
         """Reset HP1234"""
 
-        print 'Resetting...'
-
-        return 1
+        self.get_ch1_output()
+        self.get_ch2_output()
+        self.get_ch3_output()
+        self.get_ch4_output()
+        return True
