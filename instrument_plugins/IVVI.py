@@ -60,8 +60,8 @@ class IVVI(Instrument):
 
         # Set parameters
         self._address = address
-        self.numdacs = numdacs
-        self.pol_num = range(self.numdacs)
+        self._numdacs = numdacs
+        self.pol_num = range(self._numdacs)
 
         # Add functions
         self.add_function('reset')
@@ -78,20 +78,22 @@ class IVVI(Instrument):
         # Add the rest of the parameters
         self.add_parameter('dac', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, self.numdacs),
+            channels=(1, self._numdacs),
             minval=self.pol_num[0] * 1000.0,
             maxval=self.pol_num[0] * 1000.0 + 4000.0,
-            maxstep=50, stepdelay=50
+            maxstep=10, stepdelay=50,
             units='mV', format='%.02f')
 
         self._askdacs = True
 
         self.add_parameter('pol_dac', type=types.StringType,
-            flags=Instrument.FLAG_GET, channels=(1,self.numdacs))
+            flags=Instrument.FLAG_GET, channels=(1, self._numdacs))
 
         for j in range(numdacs/4):
             tekst = "pol_dacs_%s_to_%s" % (str(4*j+1),str(4*j+4))
             getattr(self, "set_" + tekst)(polarity[j])
+
+        self.add_function('set_dacs_zero')
 
         self._open_serial_connection()
 
@@ -163,7 +165,7 @@ class IVVI(Instrument):
             None
         '''
         logging.info(__name__ + ' : resetting instrument')
-        for i in range(1, self.numdacs+1):
+        for i in range(1, self._numdacs + 1):
             getattr(self, "set_dac" + str(i))(0.0)
         self.get_all()
 
@@ -179,7 +181,7 @@ class IVVI(Instrument):
             None
         '''
         logging.info(__name__ + ' : get all')
-        for i in range(1, self.numdacs+1):
+        for i in range(1, self._numdacs + 1):
             getattr(self, "get_dac" + str(i))()
             getattr(self, "get_pol_dac" + str(i))()
 
@@ -201,15 +203,15 @@ class IVVI(Instrument):
         dataL = bytevalue - dataH*256
         return (dataH, dataL)
 
-    def _numbers_to_voltages(self, numbers):
+    def _numbers_to_mvoltages(self, numbers):
         '''
         Converts a list of bytes to a list containing
         the corresponding voltages
         '''
         logging.debug(__name__ + ' : Converting numbers to voltages')
-        values = range(self.numdacs)
-        for i in range(self.numdacs):
-            values[i] = (numbers[2 + 2*i]*256 + numbers[3 + 2*i])/65535.0*4.0+self.pol_num[i]
+        values = range(self._numdacs)
+        for i in range(self._numdacs):
+            values[i] = ((numbers[2 + 2*i]*256 + numbers[3 + 2*i])/65535.0*4.0+self.pol_num[i]) * 1000.0
         return values
 
     # Communication with device
@@ -221,11 +223,11 @@ class IVVI(Instrument):
             channel (int) : 1 based index of the dac
 
         Output:
-            voltage (float) : dacvalue in Volts
+            voltage (float) : dacvalue in mV
         '''
         logging.debug(__name__ + ' : reading voltage from dac%s' % channel)
-        voltages = self._get_dac()
-        return voltages[channel-1]
+        mvoltages = self._get_dac()
+        return mvoltages[channel - 1]
 
     def _do_set_dac(self, mvoltage, channel):
         '''
@@ -253,13 +255,13 @@ class IVVI(Instrument):
             None
 
         Output:
-            voltages (float[]) : list containing all dacvoltages
+            voltages (float[]) : list containing all dacvoltages (in mV)
         '''
         logging.debug(__name__ + ' : getting dac voltages from instrument')
         message = "%c%c%c%c" % (4, 0, 18, 2)
         reply = self._send_and_read(message)
-        voltages = self._numbers_to_voltages(reply)
-        return voltages
+        mvoltages = self._numbers_to_mvoltages(reply)
+        return mvoltages
 
     def _send_and_read(self, message):
         '''
@@ -359,3 +361,7 @@ class IVVI(Instrument):
             return 'POS'
         else:
             return 'Invalid polarity in memory'
+
+    def set_dacs_zero(self):
+        for i in xrange(self._numdacs):
+            self.set('dac%d' % (i + 1), 0)
