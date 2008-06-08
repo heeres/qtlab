@@ -1,6 +1,7 @@
-# HP_8657B.py class, to perform the communication between the Wrapper and the device
+# _HP_8657.py HP 8657A/B signal generator driver
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
 # Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,18 +23,17 @@ import types
 import logging
 from time import sleep
 
-class HP_8657B(Instrument):
+class HP_8657(Instrument):
     '''
-    This is the python driver for the HP 8657B
-    signal generator
+    This is the python driver for the HP 8657A/B signal generator
 
     Usage:
     Initialise with
-    <name> = instruments.create('<name>', 'HP_8657B', address='<GPIB address>',
+    <name> = instruments.create('<name>', 'HP_8657A/B', address='<GPIB address>',
         reset=<bool>, freq=<float>, pow=<float>)
 
     The last three parameters are optional. Default parameters are
-    reset=False, freq=1e9, pow=-143.4
+    reset=False, freq=1e6, pow=None (minimum)
 
     Note that readout of device is not implemented
 
@@ -42,9 +42,30 @@ class HP_8657B(Instrument):
     3. Units
     '''
 
-    def __init__(self, name, address, reset=False, freq=1e9, pow=-143.4):
+    LIMITS = {
+        '8656B': {
+            'minfreq': 100e3,
+            'maxfreq': 990e6,
+            'minpow': -127,
+            'maxpow': 13
+        },
+        '8657A': {
+            'minfreq': 100e3,
+            'maxfreq': 1040e6,
+            'minpow': -143.5,
+            'maxpow': 13
+        },
+        '8657B': {
+            'minfreq': 100e3,
+            'maxfreq': 2060e6,
+            'minpow': -143.5,
+            'maxpow': 13
+        }
+    }
+
+    def __init__(self, name, address, type, reset=False, freq=1e6, pow=None):
         '''
-        Initializes the HP_8657B, and communicates with the wrapper.
+        Initializes the HP_8657A/B, and communicates with the wrapper.
         This instrument does not support GPIB talking, so 'get' functions
         are not available.
         Only use with reset=True, otherwise warning will be given.
@@ -59,15 +80,17 @@ class HP_8657B(Instrument):
         logging.info(__name__ + ' : Initializing instrument')
         Instrument.__init__(self, name, tags=['physical'])
 
+        lim = HP_8657.LIMITS[type]
+
         self._address = address
         self._visainstrument = visa.instrument(self._address)
         sleep(1)
 
         # Implement parameters
         self.add_parameter('frequency', type=types.FloatType, flags=Instrument.FLAG_SET,
-            minval=0.1e6, maxval=2060e6, units='Hz')
+            minval=lim['minfreq'], maxval=lim['maxfreq'], units='Hz')
         self.add_parameter('power', type=types.FloatType, flags=Instrument.FLAG_SET,
-            minval=-143.5, maxval=17, units='dBm')
+            minval=lim['minpow'], maxval=lim['maxpow'], units='dBm')
         self.add_parameter('status', type=types.StringType,
             flags=Instrument.FLAG_SET)
 
@@ -76,7 +99,9 @@ class HP_8657B(Instrument):
 
         # (re)set device to specified values
         if reset:
-            self.reset(freq,pow)
+            if pow is None:
+                pow = lim['minpow']
+            self.reset(freq, pow)
         else:
             logging.warning('instrument does not support getting of values \
                 you need to run set_power and set_frequency manually!')
