@@ -1,8 +1,10 @@
-from instruments import Instruments, get_instruments
-instruments = get_instruments()
+import qt
 
-from config import QTConfig, get_config
-config = get_config()
+from instruments import get_instruments
+qt.instruments = get_instruments()
+
+from config import get_config
+qt.config = get_config()
 
 from data import Data
 data = Data()

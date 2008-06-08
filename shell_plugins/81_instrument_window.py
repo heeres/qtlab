@@ -20,6 +20,8 @@ import gobject
 
 from gettext import gettext as _
 
+import qt
+
 class QTInstrumentFrame(gtk.Frame):
 
     def __init__(self, ins, **kwargs):
@@ -80,12 +82,11 @@ class QTInstruments(QTWindow):
 
         self.connect("delete-event", self._delete_event_cb)
 
-        global instruments
-        self._instruments = instruments
+        self._instruments = qt.instruments
 
-        instruments.connect('instrument-added', self._instrument_added_cb)
-        instruments.connect('instrument-removed', self._instrument_removed_cb)
-        instruments.connect('instrument-changed', self._instrument_changed_cb)
+        qt.instruments.connect('instrument-added', self._instrument_added_cb)
+        qt.instruments.connect('instrument-removed', self._instrument_removed_cb)
+        qt.instruments.connect('instrument-changed', self._instrument_changed_cb)
 
         self._tags_dropdown = TagsDropdown()
         self._tags_dropdown.connect('changed', self._tag_changed_cb)

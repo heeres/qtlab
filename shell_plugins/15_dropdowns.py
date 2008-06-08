@@ -17,6 +17,8 @@
 
 import gtk
 
+import qt
+
 def pack_hbox(items, expand=True, fill=True):
     hbox = gtk.HBox()
     for i in items:
@@ -45,7 +47,7 @@ class InstrumentDropdown(QTComboBox):
         self._ins_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._ins_list)
 
-        self._instruments = get_instruments()
+        self._instruments = qt.instruments
         for name, ins in self._instruments.get_instruments().iteritems():
             self._ins_list.append([ins.get_name()])
 
@@ -88,7 +90,7 @@ class InstrumentParameterDropdown(QTComboBox):
         self._flags = flags
         self._types = types
 
-        self._instruments = get_instruments()
+        self._instruments = qt.instruments
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
 
     def set_flags(self, flags):
@@ -112,8 +114,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
-            global instruments
-            ins = instruments[ins]
+            ins = qt.instruments[ins]
 
         if self._instrument == ins:
             return True
@@ -148,7 +149,7 @@ class InstrumentFunctionDropdown(QTComboBox):
 
         self._instrument = instrument
 
-        self._instruments = get_instruments()
+        self._instruments = qt.instruments
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
 
     def _instrument_removed_cb(self, sender, instrument):
@@ -161,8 +162,7 @@ class InstrumentFunctionDropdown(QTComboBox):
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
-            global instruments
-            ins = instruments[ins]
+            ins = qt.instruments[ins]
 
         if self._instrument == ins:
             return True
@@ -198,8 +198,7 @@ class AllParametersDropdown(QTComboBox):
         self._types = types
         self.update_list()
 
-        global instruments
-        self._instruments = instruments
+        self._instruments = qt.instruments
         self._instruments.connect('instrument-added', self._instrument_added_cb)
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
@@ -226,8 +225,7 @@ class AllParametersDropdown(QTComboBox):
     def update_list(self):
         self._param_list.clear()
 
-        global instruments
-        inslist = instruments.get_instruments()
+        inslist = qt.instruments.get_instruments()
         for (insname, ins) in inslist.iteritems():
             params = ins.get_parameters()
             for varname, options in dict_to_ordered_tuples(params):
@@ -259,7 +257,7 @@ class TagsDropdown(QTComboBox):
         self._tags = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._tags)
 
-        self._instruments = get_instruments()
+        self._instruments = qt.instruments
         self._instruments.connect('tags-added', self._tags_added_cb)
 
         for i in self._instruments.get_tags():

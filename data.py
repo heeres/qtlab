@@ -22,7 +22,7 @@ import os
 import time
 import numpy
 
-import instruments
+import qt
 
 import config
 
@@ -74,7 +74,7 @@ class Data(gobject.GObject):
         self._file = None
         self._data = None
 
-        self._instruments = instruments.get_instruments()
+        self._instruments = qt.instruments
 
     def create_datafile(self, name, datesubdir=True, timesubdir=False):
         '''
