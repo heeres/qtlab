@@ -467,7 +467,8 @@ class Instrument(gobject.GObject):
             elif p['type'] == types.StringType:
                 pass
             else:
-                print 'Unsupported type: %r' % p['type']
+                logging.warning('Unsupported type %s for parameter %s',
+                    p['type'], name)
 
         if 'minval' in p and value < p['minval']:
             print 'Trying to set too small value: %s' % value
