@@ -42,6 +42,9 @@ class QTComboBox(gtk.ComboBox):
         self.add_attribute(cell, 'text', 0)
 
 class InstrumentDropdown(QTComboBox):
+    '''
+    Dropdown to select an instrument.
+    '''
 
     def __init__(self):
         self._ins_list = gtk.ListStore(gobject.TYPE_STRING)
@@ -81,6 +84,9 @@ class InstrumentDropdown(QTComboBox):
             return None
 
 class InstrumentParameterDropdown(QTComboBox):
+    '''
+    Dropdown to select a parameter from a given instrument.
+    '''
 
     def __init__(self, instrument=None, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
@@ -109,8 +115,11 @@ class InstrumentParameterDropdown(QTComboBox):
             print 'Instrument for dropdown removed: %s' % instrument
             self.set_instrument(None)
 
-    def _instrument_changed_cb(self, sender, instrument, changes):
-        return
+    def _parameter_added_cb(self, sender, param):
+        #FIXME: this needs to be improved
+        ins = self._instrument
+        self.set_instrument(None)
+        self.set_instrument(ins)
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
@@ -122,6 +131,9 @@ class InstrumentParameterDropdown(QTComboBox):
         self._instrument = ins
         self._param_list.clear()
         if ins is not None:
+
+            self._instrument.connect('parameter-added', self._parameter_added_cb)
+
             for (name, options) in dict_to_ordered_tuples(ins.get_parameters()):
                 if len(self._types) > 0 and options['type'] not in self._types:
                     continue
@@ -142,6 +154,9 @@ class InstrumentParameterDropdown(QTComboBox):
             return None
 
 class InstrumentFunctionDropdown(QTComboBox):
+    '''
+    Dropdown to select a function from a given instrument.
+    '''
 
     def __init__(self, instrument=None):
         self._func_list = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING)
@@ -189,6 +204,9 @@ class InstrumentFunctionDropdown(QTComboBox):
             return None
 
 class AllParametersDropdown(QTComboBox):
+    '''
+    Dropdown to select a parameter from any instrument.
+    '''
 
     def __init__(self, flags=Instrument.FLAG_GETSET, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
@@ -196,6 +214,7 @@ class AllParametersDropdown(QTComboBox):
 
         self._flags = flags
         self._types = types
+        self._parameter_added_hids = {}
         self.update_list()
 
         self._instruments = qt.instruments
@@ -224,9 +243,14 @@ class AllParametersDropdown(QTComboBox):
 
     def update_list(self):
         self._param_list.clear()
+        for ins, hid in self._parameter_added_hids.iteritems():
+            ins.disconnect(hid)
 
         inslist = qt.instruments.get_instruments()
         for (insname, ins) in inslist.iteritems():
+            self._parameter_added_hids[ins] = ins.connect('parameter-added',
+                self._parameter_added_cb)
+
             params = ins.get_parameters()
             for varname, options in dict_to_ordered_tuples(params):
                 if options['flags'] & self._flags:
@@ -250,6 +274,9 @@ class AllParametersDropdown(QTComboBox):
 
         except Exception, e:
             return None
+
+    def _parameter_added_cb(self, sender, param):
+        self.update_list()
 
 class TagsDropdown(QTComboBox):
 
