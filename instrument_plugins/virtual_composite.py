@@ -56,6 +56,11 @@ class virtual_composite(Instrument):
         same value. See add_variable_combined for more info.
         '''
 
+        if 'units' not in kwargs:
+            opt = ins1.get_parameter_options(par1)
+            if 'units' in opt:
+                kwargs['units'] = opt['units']
+
         self.add_variable_combined(combined_name, [
             {
                 'instrument': ins1,
