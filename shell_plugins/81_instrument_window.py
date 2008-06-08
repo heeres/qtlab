@@ -18,7 +18,7 @@
 import gtk
 import gobject
 
-from gettext import gettext as _
+from gettext import gettext as _L
 
 import qt
 
@@ -35,7 +35,7 @@ class QTInstrumentFrame(gtk.Frame):
 
         ins.connect('parameter-added', self._parameter_added_cb)
 
-        self.show_all()
+        self.show()
 
     def _add_parameter_by_name(self, param):
         popts = self._instrument.get_parameter_options(param)
@@ -88,17 +88,25 @@ class QTInstrumentFrame(gtk.Frame):
 
     def _add_parameters(self):
         self._name_box = gtk.VBox()
+        self._name_box.show()
         self._val_box = gtk.VBox()
+        self._val_box.show()
         self._range_box = gtk.VBox()
+        self._range_box.show()
         self._rate_box = gtk.VBox()
+        self._rate_box.hide()
 
         parameters = self._instrument.get_parameter_names()
         parameters.sort()
         for param in parameters:
             self._add_parameter_by_name(param)
 
-        self.add(pack_hbox([self._name_box, self._val_box, self._range_box,
-            self._rate_box]))
+        hbox = pack_hbox([self._name_box, self._val_box, self._range_box,
+            self._rate_box])
+        hbox.show()
+        self.add(hbox)
+
+        self.show()
 
     def _parameter_added_cb(self, sender, name):
         self._add_parameter_by_name(name)
@@ -110,6 +118,18 @@ class QTInstrumentFrame(gtk.Frame):
 
     def get_instrument(self):
         return self._instrument
+
+    def toggle_range_column(self):
+        if self._range_box.props.visible:
+            self._range_box.hide()
+        else:
+            self._range_box.show()
+
+    def toggle_rate_column(self):
+        if self._rate_box.props.visible:
+            self._rate_box.hide()
+        else:
+            self._rate_box.show()
 
 class QTInstruments(QTWindow):
 
@@ -126,17 +146,32 @@ class QTInstruments(QTWindow):
 
         self._tags_dropdown = TagsDropdown()
         self._tags_dropdown.connect('changed', self._tag_changed_cb)
+        self._tags_dropdown.show()
 
         self._vbox = gtk.VBox()
         self._vbox.set_border_width(4)
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Types')),
+            gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
+
+        self._range_toggle = gtk.ToggleButton(_L('Range'))
+        self._range_toggle.set_active(True)
+        self._range_toggle.connect('toggled', self._range_toggled_cb)
+        self._rate_toggle = gtk.ToggleButton(_L('Rate'))
+        self._rate_toggle.set_active(False)
+        self._rate_toggle.connect('toggled', self._rate_toggled_cb)
+
+        self._vbox.pack_start(pack_hbox([
+            self._range_toggle,
+            self._rate_toggle], True, True))
+
+        self._vbox.show_all()
 
         self._ins_widgets = {}
         self._add_instruments()
 
         self._scrolled_win = gtk.ScrolledWindow()
+        self._scrolled_win.show()
         self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self._scrolled_win.add_with_viewport(self._vbox)
         self.add(self._scrolled_win)
@@ -184,6 +219,14 @@ class QTInstruments(QTWindow):
                 widget.show_all()
             else:
                 widget.hide_all()
+
+    def _range_toggled_cb(self, sender):
+        for name, widget in self._ins_widgets.iteritems():
+            widget.toggle_range_column()
+
+    def _rate_toggled_cb(self, sender):
+        for name, widget in self._ins_widgets.iteritems():
+            widget.toggle_rate_column()
 
 def showinstruments():
     global _inswin

@@ -33,7 +33,7 @@ class QTWindow(gtk.Window):
         self.connect('hide', lambda x: self._show_hide_cb(x, False))
 
     def _do_show(self):
-        self.show_all()
+        self.show()
 
     def _size_allocate_cb(self, sender, alloc):
         self._config.set('%s_size' % self._title, (alloc.width, alloc.height))
