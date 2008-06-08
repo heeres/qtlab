@@ -43,26 +43,62 @@ class QTInstrumentFrame(gtk.Frame):
         plabel = gtk.Label(param)
         plabel.set_justify(gtk.JUSTIFY_RIGHT)
         plabel.show()
-        self._left_box.pack_start(plabel, False, False)
+        self._name_box.pack_start(plabel, False, False)
 
         vlabel = gtk.Label(self._instrument.format_parameter_value(param,
             self._instrument.get(param, query=False)))
         vlabel.set_justify(gtk.JUSTIFY_LEFT)
         vlabel.show()
-        self._right_box.pack_start(vlabel, False, False)
+        self._val_box.pack_start(vlabel, False, False)
+
+        self._add_range_info(param, popts)
+        self._add_rate_info(param, popts)
 
         self._parameters[param] = vlabel
 
+    def _add_range_info(self, param, popts):
+        text = ''
+        if 'minval' in popts or 'maxval' in popts:
+            text = '['
+            if 'minval' in popts:
+                text += '%s' % popts['minval']
+            text += ' - '
+            if 'maxval' in popts:
+                text += '%s' % popts['maxval']
+            text += ']'
+
+        rlabel = gtk.Label(text)
+        rlabel.set_justify(gtk.JUSTIFY_LEFT)
+        rlabel.show()
+        self._range_box.pack_start(rlabel, False, False)
+
+    def _add_rate_info(self, param, popts):
+        text = ''
+        if 'maxstep' in popts:
+            text += '%s' % popts['maxstep']
+            if 'stepdelay' in popts:
+                text += ' / %sms' % popts['stepdelay']
+            else:
+                test += ' / 100ms'
+
+        rlabel = gtk.Label(text)
+        rlabel.set_justify(gtk.JUSTIFY_LEFT)
+        rlabel.show()
+        self._rate_box.pack_start(rlabel, False, False)
+
     def _add_parameters(self):
-        self._left_box = gtk.VBox()
-        self._right_box = gtk.VBox()
+        self._name_box = gtk.VBox()
+        self._val_box = gtk.VBox()
+        self._range_box = gtk.VBox()
+        self._rate_box = gtk.VBox()
 
         parameters = self._instrument.get_parameter_names()
         parameters.sort()
         for param in parameters:
             self._add_parameter_by_name(param)
 
-        self.add(pack_hbox([self._left_box, self._right_box]))
+        self.add(pack_hbox([self._name_box, self._val_box, self._range_box,
+            self._rate_box]))
 
     def _parameter_added_cb(self, sender, name):
         self._add_parameter_by_name(name)
