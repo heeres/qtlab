@@ -1,6 +1,7 @@
 # IVVI.py class, to perform the communication between the Wrapper and the device
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
 # Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +37,8 @@ class IVVI(Instrument):
     2) explain everything /rewrite init
     '''
 
+    #FIXME: self._askdacs stuff is messy!
+
     def __init__(self, name, address, reset=False, numdacs=8,
         polarity=['BIP', 'BIP', 'BIP', 'BIP']):
         '''
@@ -66,8 +69,8 @@ class IVVI(Instrument):
         self._askdacs = False # what does this do?
 
         # Create functions to set the dacpolarity for each set of dacs, and add them to the wrapper
-        for j in range(numdacs/4):
-            tekst = "pol_dacs_%s_to_%s" % (str(4*j+1),str(4*j+4))
+        for j in range(numdacs / 4):
+            tekst = "pol_dacs_%s_to_%s" % (str(4*j+1), str(4*j+4))
             self.add_parameter(tekst, type=types.StringType,
                 flags=Instrument.FLAG_SET)
             getattr(self, "set_" + tekst)(polarity[j])
@@ -75,10 +78,13 @@ class IVVI(Instrument):
         # Add the rest of the parameters
         self.add_parameter('dac', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1,self.numdacs), minval=self.pol_num[0],
-            maxval=self.pol_num[0] + 4.0, units='Volts')
+            channels=(1, self.numdacs),
+            minval=self.pol_num[0] * 1000.0,
+            maxval=self.pol_num[0] * 1000.0 + 4000.0,
+            maxstep=50, stepdelay=50
+            units='mV', format='%.02f')
 
-        self._askdacs=True
+        self._askdacs = True
 
         self.add_parameter('pol_dac', type=types.StringType,
             flags=Instrument.FLAG_GET, channels=(1,self.numdacs))
@@ -221,20 +227,20 @@ class IVVI(Instrument):
         voltages = self._get_dac()
         return voltages[channel-1]
 
-    def _do_set_dac(self, voltage, channel):
+    def _do_set_dac(self, mvoltage, channel):
         '''
         Sets the specified dac to the specified voltage
 
         Input:
-            voltage (float) : dacvoltage
-            channel (int)   : 1 based index of the dac
+            mvoltage (float) : output voltage in mV
+            channel (int)    : 1 based index of the dac
 
         Output:
             reply (string) : errormessage
         '''
-        logging.debug(__name__ + ' : setting voltage of dac%s to %s Volts'
-          % (channel, voltage))
-        (DataH,DataL) = self._voltage_to_bytes(voltage - self.pol_num[channel-1])
+        logging.debug(__name__ + ' : setting voltage of dac%s to %.01f mV' % \
+            (channel, mvoltage))
+        (DataH, DataL) = self._voltage_to_bytes(mvoltage / 1000.0 - self.pol_num[channel-1])
         message = "%c%c%c%c%c%c%c" % (7, 0, 2, 1, channel, DataH, DataL)
         reply = self._send_and_read(message)
         return reply
@@ -329,8 +335,8 @@ class IVVI(Instrument):
                 logging.error(__name__ + ' : Try to set invalid dacpolarity')
 
             if (self._askdacs):
-                self.set_parameter_bounds('dac' + str(i+1),self.pol_num[i],
-                    4+self.pol_num[i])
+                self.set_parameter_bounds('dac' + str(i+1), self.pol_num[i] * 1000.0,
+                    4000.0 + self.pol_num[i] * 1000.0)
 
     def _do_get_pol_dac(self, channel):
         '''
