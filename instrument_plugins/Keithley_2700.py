@@ -1,6 +1,7 @@
-# Keithley_2700.py class, to perform the communication between the Wrapper and the device
+# Keithley_2700.py driver for Keithley 2700 DMM
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
 # Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -61,32 +62,32 @@ class Keithley_2700(Instrument):
             units='', minval=0.1, maxval=1000, type=types.FloatType)
         self.add_parameter('trigger_mode',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='')
+            type=types.StringType, units='')
         self.add_parameter('trigger_count',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='num', type=types.IntType)
+            units='#', type=types.IntType)
         self.add_parameter('trigger_delay',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='sec', minval=0, maxval=999999.999, type=types.FloatType)
+            units='s', minval=0, maxval=999999.999, type=types.FloatType)
         self.add_parameter('trigger_source',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='')
         self.add_parameter('trigger_timer',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='sec', minval=0.001, maxval=99999.999, type=types.FloatType)
+            units='s', minval=0.001, maxval=99999.999, type=types.FloatType)
         self.add_parameter('mode',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='')
+            type=types.StringType, units='')
         self.add_parameter('digits',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='num', minval=4, maxval=7, type=types.IntType)
-        self.add_parameter('readval', flags=Instrument.FLAG_GET, units='arb. units',
+            units='#', minval=4, maxval=7, type=types.IntType)
+        self.add_parameter('readval', flags=Instrument.FLAG_GET, units='AU',
             type=types.FloatType)
-        self.add_parameter('readlastval', flags=Instrument.FLAG_GET, units='arb. units',
+        self.add_parameter('readlastval', flags=Instrument.FLAG_GET, units='AU',
             type=types.FloatType)
         self.add_parameter('integrationtime',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            units='num', type=types.FloatType, minval=2e-4, maxval=1)
+            units='#', type=types.FloatType, minval=2e-4, maxval=1)
 
         # Add functions to wrapper
         self.add_function('set_mode_volt_ac')
@@ -111,6 +112,7 @@ class Keithley_2700(Instrument):
             self.reset()
         else:
             self.get_all()
+            self.set_defaults()
 
 # functions
     def reset(self):
@@ -127,6 +129,21 @@ class Keithley_2700(Instrument):
         self._visainstrument.write('*RST')
         self.get_all()
 
+    def set_defaults(self):
+        self._visainstrument.write('SYST:PRES')
+
+        self.set_mode_volt_dc()
+        self.set_digits(7)
+        self.set_trigger_cont()
+
+        self._visainstrument.write('SENS:VOLT:DC:RANGE 10')
+        self._visainstrument.write('SENS:VOLT:DC:NPLC 1')
+        self._visainstrument.write('SENS:VOLT:DC:AVER:COUN 3')
+        self._visainstrument.write('SENS:VOLT:DC:AVER:WIND 0')
+        self._visainstrument.write('SENS:VOLT:DC:AVER:STAT ON')
+        self._visainstrument.write(':FORM:ELEM READ')
+        self._visainstrument.write('SYST:AZERO:STATE OFF')
+        
     def get_all(self):
         '''
         Reads all relevant parameters from instrument
@@ -218,7 +235,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to AC Voltage')
-        self._do_set_mode('VOLT:AC')
+        self.set_mode('VOLT:AC')
 
     def set_mode_volt_dc(self):
         '''
@@ -231,7 +248,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to DC Voltage')
-        self._do_set_mode('VOLT:DC')
+        self.set_mode('VOLT:DC')
 
     def set_mode_curr_ac(self):
         '''
@@ -244,7 +261,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to AC Current')
-        self._do_set_mode('CURR:AC')
+        self.set_mode('CURR:AC')
 
     def set_mode_curr_dc(self):
         '''
@@ -257,7 +274,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to DC Current')
-        self._do_set_mode('CURR:DC')
+        self.set_mode('CURR:DC')
 
     def set_mode_res(self):
         '''
@@ -270,7 +287,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to Resistance')
-        self._do_set_mode('RES')
+        self.set_mode('RES')
 
     def set_mode_fres(self):
         '''
@@ -283,7 +300,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to "four wire resistance"')
-        self._do_set_mode('FRES')
+        self.set_mode('FRES')
 
     def set_mode_temp(self):
         '''
@@ -296,7 +313,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to Temperature')
-        self._do_set_mode('TEMP')
+        self.set_mode('TEMP')
 
     def set_mode_freq(self):
         '''
@@ -309,7 +326,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set mode to Frequency')
-        self._do_set_mode('FREQ')
+        self.set_mode('FREQ')
 
     def set_range_auto(self, mode=None):
         '''
@@ -341,7 +358,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set Trigger to continuous mode')
-        self._do_set_trigger_mode('ON')
+        self.set_trigger_mode('ON')
 
     def set_trigger_disc(self):
         '''
@@ -354,7 +371,7 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set Trigger to discrete mode')
-        self._do_set_trigger_mode('OFF')
+        self.set_trigger_mode('OFF')
 
     def reset_trigger(self):
         '''
@@ -499,11 +516,6 @@ class Keithley_2700(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Set trigger mode to %s' % mode)
-        if mode is None:
-            mode = self.get_mode(query=False)
-        if mode not in self._modes:
-            logging.warning(__name__ + ' : Invalid mode %s, assuming current' % mode)
-            mode = self.get_mode(query=False)
         self._set_func_par_value('INIT', 'CONT', mode)
 
     def _do_get_trigger_mode(self):
@@ -546,7 +558,13 @@ class Keithley_2700(Instrument):
             count (int) : Trigger count
         '''
         logging.debug(__name__ + ' : Read trigger count from instrument')
-        return int(self._get_func_par('TRIG', 'COUN'))
+        ans = self._get_func_par('TRIG', 'COUN')
+        try:
+            ret = int(ans)
+        except:
+            ret = 0
+
+        return ret
 
     def _do_set_trigger_delay(self, val):
         '''
@@ -626,6 +644,10 @@ class Keithley_2700(Instrument):
         logging.debug(__name__ + ' : Get trigger timer')
         return float(self._get_func_par('TRIG', 'TIM'))
 
+    def _change_units(self, unit):
+        self.set_parameter_options('readval', units=unit)
+        self.set_parameter_options('readlastval', units=unit)
+
     def _do_set_mode(self, mode):
         '''
         Set the mode to the specified value
@@ -636,10 +658,21 @@ class Keithley_2700(Instrument):
         Output:
             None
         '''
+
         logging.debug(__name__ + ' : Set mode to %s' %mode)
-        if (mode in self._modes):
-            string = ':CONF:%s' %mode
+        if mode in self._modes:
+            string = ':CONF:%s' % mode
             self._visainstrument.write(string)
+
+            if mode.startswith('VOLT'):
+                self._change_units('V')
+            elif mode.startswith('CURR'):
+                self._change_units('A')
+            elif mode.startswith('RES'):
+                self._change_units('Ohm')
+            elif mode.startswith('FREQ'):
+                self._change_units('Hz')
+
         else:
             logging.error(__name__ + ' : invalid mode %s' % mode)
 
@@ -653,8 +686,8 @@ class Keithley_2700(Instrument):
         Output:
             mode (string) : Current mode
         '''
-        logging.debug(__name__ + ' : Reading mode from instrument')
         string = ':CONF?'
+        logging.debug(__name__ + ' : Reading mode from instrument')
         return self._visainstrument.ask(string).strip('"')
 
   # core communication
@@ -672,8 +705,7 @@ class Keithley_2700(Instrument):
             None
         '''
         string = ':%s:%s %s' %(func, par, val)
-        logging.debug(__name__ + ' : Set instrument to %s' %string)
-        print string
+        logging.debug(__name__ + ' : Set instrument to %s' % string)
         self._visainstrument.write(string)
 
     def _get_func_par(self, func, par):
@@ -690,5 +722,7 @@ class Keithley_2700(Instrument):
             val (string) :
         '''
         string = ':%s:%s?' %(func, par)
-        logging.debug(__name__ + ' : ask instrument for %s' %string)
-        return self._visainstrument.ask(string)
+        ans = self._visainstrument.ask(string)
+        logging.debug(__name__ + ' : ask instrument for %s (result %s)' % \
+            (string, ans))
+        return ans
