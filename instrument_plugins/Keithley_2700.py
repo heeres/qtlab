@@ -82,9 +82,11 @@ class Keithley_2700(Instrument):
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='#', minval=4, maxval=7, type=types.IntType)
         self.add_parameter('readval', flags=Instrument.FLAG_GET, units='AU',
-            type=types.FloatType, format='%.05f')
+            type=types.FloatType,
+            tags=['measure'])
         self.add_parameter('readlastval', flags=Instrument.FLAG_GET, units='AU',
-            type=types.FloatType, format='%.05f')
+            type=types.FloatType,
+            tags=['measure'])
         self.add_parameter('integrationtime',
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             units='#', type=types.FloatType, minval=2e-4, maxval=1)
