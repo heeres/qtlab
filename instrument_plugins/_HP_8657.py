@@ -87,10 +87,15 @@ class HP_8657(Instrument):
         sleep(1)
 
         # Implement parameters
-        self.add_parameter('frequency', type=types.FloatType, flags=Instrument.FLAG_SET,
-            minval=lim['minfreq'], maxval=lim['maxfreq'], units='Hz')
-        self.add_parameter('power', type=types.FloatType, flags=Instrument.FLAG_SET,
-            minval=lim['minpow'], maxval=lim['maxpow'], units='dBm')
+        self.add_parameter('frequency', type=types.FloatType,
+            flags=Instrument.FLAG_SET,
+            minval=lim['minfreq'], maxval=lim['maxfreq'],
+            units='Hz', format='%.04e',
+            tags=['sweep'])
+        self.add_parameter('power', type=types.FloatType,
+            flags=Instrument.FLAG_SET,
+            minval=lim['minpow'], maxval=lim['maxpow'],
+            units='dBm', tags=['sweep'])
         self.add_parameter('status', type=types.StringType,
             flags=Instrument.FLAG_SET)
 
