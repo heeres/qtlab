@@ -74,7 +74,8 @@ class QTSweepVarSettings(gobject.GObject):
 
         self._variable_dropdown = AllParametersDropdown(
                                     flags=Instrument.FLAG_SET,
-                                    types=(types.IntType, types.FloatType))
+                                    types=(types.IntType, types.FloatType),
+                                    tags=['sweep'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
         self._vbox.pack_start(pack_hbox([
             gtk.Label(_('Sweep variable')),
@@ -134,11 +135,11 @@ class QTSweepVarSettings(gobject.GObject):
 
             opt = ins.get_parameter_options(varname)
             if 'minval' in opt and 'maxval' in opt:
-                print 'Setting range %s - %s' % (opt['minval'], opt['maxval'])
+                logging.debug('Setting range %s - %s', opt['minval'], opt['maxval'])
                 self._start_val.set_range(opt['minval'], opt['maxval'])
                 self._end_val.set_range(opt['minval'], opt['maxval'])
             else:
-                print 'No default range defined, setting 0 - 1'
+                logging.info('No default range defined, setting 0 - 1')
                 self._start_val.set_range(0, 1)
                 self._end_val.set_range(0, 1)
 
@@ -194,7 +195,8 @@ class QTMeasureVarSettings(gobject.GObject):
 
         self._variable_dropdown = AllParametersDropdown(
                                     flags=Instrument.FLAG_GET,
-                                    types=(types.IntType, types.FloatType))
+                                    types=(types.IntType, types.FloatType),
+                                    tags=['measure'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
         self._vbox.pack_start(pack_hbox([
             gtk.Label(_('Measurement variable')),
@@ -341,9 +343,9 @@ class QTMeasure(QTWindow):
         self._measurement = measurement.Measurement(mname, delay=delay)
         self._measurement.connect('finished', self._measurement_finished_cb)
 
-        self._add_loop_var(self._measurement, self._sweep_z)
-        self._add_loop_var(self._measurement, self._sweep_y)
         self._add_loop_var(self._measurement, self._sweep_x)
+        self._add_loop_var(self._measurement, self._sweep_y)
+        self._add_loop_var(self._measurement, self._sweep_z)
 
         self._add_measurement(self._measurement, self._measure_1)
         self._add_measurement(self._measurement, self._measure_2)
@@ -357,6 +359,7 @@ class QTMeasure(QTWindow):
             self._plot = qtgnuplot.Plot3D(data)
             self._plot.set_auto_update_block()
         else:
+            self._plot = None
             logging.warning('No plot available')
 
         self._measurement.start()
@@ -364,11 +367,13 @@ class QTMeasure(QTWindow):
     def _stop_clicked_cb(self, widget):
         logging.debug('Stopping measurement')
         if self._measurement is not None:
-            self._measurement.stop()
+            self._measurement.stop('User interrupt')
 
-    def _measurement_finished_cb(self, sender, *args):
-        logging.debug('Measurement finished')
+    def _measurement_finished_cb(self, sender, msg):
+        logging.debug('Measurement finished: %s', msg)
         self.set_sensitive(True)
+        if self._plot is not None:
+            self._plot.save_png()
 
 def showmeasure():
     get_measurewin().show()
