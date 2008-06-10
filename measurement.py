@@ -220,13 +220,17 @@ class Measurement(gobject.GObject):
                 if i != 0:
                     self._data.new_data_block()
 
-                val = coords[i]
-                if 'ins' in self._coords[i]:
-                    ins = self._coords[i]['ins']
-                    ins.set(self._coords[i]['var'], val)
-                elif 'func' in self._coords[i]:
-                    func = self._coords[i]['func']
-                    func(val)
+                try:
+                    val = coords[i]
+                    if 'ins' in self._coords[i]:
+                        ins = self._coords[i]['ins']
+                        ins.set(self._coords[i]['var'], val)
+                    elif 'func' in self._coords[i]:
+                        func = self._coords[i]['func']
+                        func(val)
+                except Exception, e:
+                    self.stop(str(e))
+                    return False
 
                 if 'delay' in self._coords[i]:
                     extra_delay += self._coords[i]['delay'] / 1000.0
@@ -278,15 +282,15 @@ class Measurement(gobject.GObject):
 
         self._thread.start()
 
-    def stop(self):
+    def stop(self, msg):
         if self._thread is not None:
-            self._thread.set_stop_request()
+            self._thread.set_stop_request(msg)
             self._thread.join()
 
-    def _finished_cb(self, sender, *args):
-        logging.debug('Measurement finished')
+    def _finished_cb(self, sender, msg):
+        logging.debug('Measurement finished: %s', msg)
         self._data.close_datafile()
-        self.emit('finished', self)
+        self.emit('finished', msg)
 
     def new_data(self, data):
         self.emit('new-data', data)
