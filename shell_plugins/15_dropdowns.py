@@ -50,6 +50,7 @@ class InstrumentDropdown(QTComboBox):
         self._ins_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._ins_list)
 
+        self._ins_list.append(['<None>'])
         self._instruments = qt.instruments
         for name, ins in self._instruments.get_instruments().iteritems():
             self._ins_list.append([ins.get_name()])
@@ -62,7 +63,7 @@ class InstrumentDropdown(QTComboBox):
         self._ins_list.append([instrument.get_name()])
 
     def _instrument_removed_cb(self, sender, instrument):
-        print 'Instrument removed: %s' % instrument
+        logging.debug('Instrument removed: %s', instrument)
 
         i = self._ins_list.get_iter_root()
         while i:
@@ -112,7 +113,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
     def _instrument_removed_cb(self, sender, instrument):
         if instrument == self._instrument:
-            print 'Instrument for dropdown removed: %s' % instrument
+            logging.debug('Instrument for dropdown removed: %s', instrument)
             self.set_instrument(None)
 
     def _parameter_added_cb(self, sender, param):
@@ -131,6 +132,7 @@ class InstrumentParameterDropdown(QTComboBox):
         self._instrument = ins
         self._param_list.clear()
         if ins is not None:
+            self._param_list.append(['<None>'])
 
             self._instrument.connect('parameter-added', self._parameter_added_cb)
 
@@ -169,7 +171,7 @@ class InstrumentFunctionDropdown(QTComboBox):
 
     def _instrument_removed_cb(self, sender, instrument):
         if instrument == self._instrument:
-            print 'Instrument for dropdown removed: %s' % instrument
+            logging.debug('Instrument for dropdown removed: %s', instrument)
             self.set_instrument(None)
 
     def _instrument_changed_cb(self, sender, instrument, property, value):
@@ -185,6 +187,8 @@ class InstrumentFunctionDropdown(QTComboBox):
         self._instrument = ins
         self._func_list.clear()
         if ins is not None:
+            self._func_list.append(['<None>', '<Nothing>'])
+
             funcs = ins.get_functions()
             for (name, options) in dict_to_ordered_tuples(funcs):
                 if 'doc' in options:
@@ -208,12 +212,13 @@ class AllParametersDropdown(QTComboBox):
     Dropdown to select a parameter from any instrument.
     '''
 
-    def __init__(self, flags=Instrument.FLAG_GETSET, types=[]):
+    def __init__(self, flags=Instrument.FLAG_GETSET, types=[], tags=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._param_list)
 
         self._flags = flags
         self._types = types
+        self._tags = tags
         self._parameter_added_hids = {}
         self.update_list()
 
@@ -241,19 +246,36 @@ class AllParametersDropdown(QTComboBox):
             self._types = types
             return self.update_list()
 
+    def set_tags(self, tags):
+        if self._tags != tags:
+            self._tags = tags
+            return self.update_list()
+
     def update_list(self):
         self._param_list.clear()
+        self._param_list.append(['<None>'])
+
         for ins, hid in self._parameter_added_hids.iteritems():
             ins.disconnect(hid)
 
-        inslist = qt.instruments.get_instruments()
-        for (insname, ins) in inslist.iteritems():
+        inslist = dict_to_ordered_tuples(qt.instruments.get_instruments())
+        for (insname, ins) in inslist:
             self._parameter_added_hids[ins] = ins.connect('parameter-added',
                 self._parameter_added_cb)
 
-            params = ins.get_parameters()
-            for varname, options in dict_to_ordered_tuples(params):
-                if options['flags'] & self._flags:
+            params = dict_to_ordered_tuples(ins.get_parameters())
+            for (varname, options) in params:
+
+                if len(self._tags) > 0:
+                    tag_ok = False
+                    for tag in self._tags:
+                        if tag in options['tags']:
+                            tag_ok = True
+                            break
+                else:
+                    tag_ok = True
+
+                if options['flags'] & self._flags and tag_ok:
                     add_name = '%s.%s' % (insname, varname)
                     self._param_list.append([add_name])
 
@@ -264,7 +286,7 @@ class AllParametersDropdown(QTComboBox):
                 return None
 
             insname, dot, parname = selstr.partition('.')
-            print 'Selected instrument %s, parameter %s' % (insname, parname)
+            logging.debug('Selected instrument %s, parameter %s', insname, parname)
 
             ins = self._instruments[insname]
             if ins is None:
