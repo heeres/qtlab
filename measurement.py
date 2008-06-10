@@ -52,9 +52,17 @@ class Measurement(gobject.GObject):
 
     def _add_coordinate_options(self, coord, **kwargs):
         if 'steps' in kwargs:
+            if kwargs['steps'] == 0:
+                logging.warning('Unable to add coordinate with 0 steps')
+                return False
+
             coord['steps'] = kwargs['steps']
             coord['stepsize'] = float(coord['end'] - coord['start']) / (kwargs['steps'] - 1.0)
         elif 'stepsize' in kwargs:
+            if kwargs['stepsize'] == 0:
+                logging.warning('Unable to add coordinate with 0 stepsize')
+                return False
+
             if start < end:
                 coord['stepsize'] = kwargs['stepsize']
             else:
