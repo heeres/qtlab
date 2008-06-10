@@ -52,10 +52,13 @@ class RS_SMR40(Instrument):
 
         self.add_parameter('frequency', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            minval=1e9, maxval=40e9, units='Hz')
+            minval=1e9, maxval=40e9,
+            units='Hz', format='%.04e',
+            tags=['sweep'])
         self.add_parameter('power', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            minval=-30, maxval=25, units='dBm')
+            minval=-30, maxval=25, units='dBm',
+            tags=['sweep'])
         self.add_parameter('status', type=types.StringType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET)
 
@@ -150,7 +153,7 @@ class RS_SMR40(Instrument):
             None
         '''
         logging.debug(__name__ + ' : setting power to %s dBm' % power)
-        self._visainstrument.ask('SOUR:POW %e' % power)
+        self._visainstrument.write('SOUR:POW %e' % power)
 
     def _do_get_status(self):
         '''
