@@ -33,6 +33,8 @@ class Plot2D(gobject.GObject):
         self._dir = None
 
         self._gnuplot = Gnuplot.Gnuplot()
+        self._default_terminal = Gnuplot.gp.GnuplotOpts.default_term
+
         self._gnuplot('set grid')
         self._gnuplot('set style data lines')
         self._gnuplot('cd "%s"' % self._basedir)
@@ -211,7 +213,7 @@ class Plot2D(gobject.GObject):
         self._gnuplot('set terminal postscript color')
         self._gnuplot('set output "%s/%s.ps"' % (self._data.get_subdir(),self._data.get_filename()))
         self._gnuplot('replot')
-        self._gnuplot('set terminal win')
+        self._gnuplot('set terminal %s' % self._default_terminal)
         self._gnuplot('set output')
         self._gnuplot('replot')
 
@@ -219,7 +221,7 @@ class Plot2D(gobject.GObject):
         self._gnuplot('set terminal png')
         self._gnuplot('set output "%s/%s.png"' % (self._data.get_subdir(),self._data.get_filename()))
         self._gnuplot('replot')
-        self._gnuplot('set terminal win')
+        self._gnuplot('set terminal %s' % self._default_terminal)
         self._gnuplot('set output')
         self._gnuplot('replot')
 
