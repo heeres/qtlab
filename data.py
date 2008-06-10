@@ -21,6 +21,7 @@ from gettext import gettext as _
 import os
 import time
 import numpy
+from misc import *
 
 import qt
 
@@ -141,9 +142,11 @@ class Data(gobject.GObject):
         header += '# Timestamp: %s\n\n' % self._timestamp
 
         text = ''
-        for (iname, ins) in self._instruments.get_instruments().iteritems():
+        inslist = dict_to_ordered_tuples(self._instruments.get_instruments())
+        for (iname, ins) in inslist:
             text += 'Instrument: %s\n' % iname
-            for (param, popts) in ins.get_parameters().iteritems():
+            parlist = dict_to_ordered_tuples(ins.get_parameters()) 
+            for (param, popts) in parlist:
                 text += '\t%s: %s\n' % (param, ins.get(param, query=False))
 
         self._settings_filename = filename
