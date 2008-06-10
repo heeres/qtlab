@@ -82,7 +82,8 @@ class IVVI(Instrument):
             minval=self.pol_num[0] * 1000.0,
             maxval=self.pol_num[0] * 1000.0 + 4000.0,
             maxstep=10, stepdelay=50,
-            units='mV', format='%.02f')
+            units='mV', format='%.02f',
+            tags=['sweep'])
 
         self._askdacs = True
 
