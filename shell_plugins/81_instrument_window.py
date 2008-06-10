@@ -30,10 +30,14 @@ class QTInstrumentFrame(gtk.Frame):
         self.set_label(ins.get_name())
 
         self._instrument = ins
-        self._parameters = {}
+        self._label_name = {}
+        self._label_val = {}
+        self._label_range = {}
+        self._label_rate = {}
         self._add_parameters()
 
         ins.connect('parameter-added', self._parameter_added_cb)
+        ins.connect('parameter-changed', self._parameter_changed_cb)
 
         self.show()
 
@@ -54,37 +58,26 @@ class QTInstrumentFrame(gtk.Frame):
         self._add_range_info(param, popts)
         self._add_rate_info(param, popts)
 
-        self._parameters[param] = vlabel
+        self._label_name[param] = plabel
+        self._label_val[param] = vlabel
 
     def _add_range_info(self, param, popts):
-        text = ''
-        if 'minval' in popts or 'maxval' in popts:
-            text = '['
-            if 'minval' in popts:
-                text += '%s' % popts['minval']
-            text += ' - '
-            if 'maxval' in popts:
-                text += '%s' % popts['maxval']
-            text += ']'
-
+        text = self._instrument.format_range(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
         rlabel.show()
         self._range_box.pack_start(rlabel, False, False)
 
-    def _add_rate_info(self, param, popts):
-        text = ''
-        if 'maxstep' in popts:
-            text += '%s' % popts['maxstep']
-            if 'stepdelay' in popts:
-                text += ' / %sms' % popts['stepdelay']
-            else:
-                test += ' / 100ms'
+        self._label_range[param] = rlabel
 
+    def _add_rate_info(self, param, popts):
+        text = self._instrument.format_rate(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
         rlabel.show()
         self._rate_box.pack_start(rlabel, False, False)
+
+        self._label_rate[param] = rlabel
 
     def _add_parameters(self):
         self._name_box = gtk.VBox()
@@ -112,8 +105,8 @@ class QTInstrumentFrame(gtk.Frame):
         self._add_parameter_by_name(name)
 
     def update_parameter(self, param, val):
-        if param in self._parameters:
-            self._parameters[param].set_text(
+        if param in self._label_val:
+            self._label_val[param].set_text(
                 self._instrument.format_parameter_value(param, val))
 
     def get_instrument(self):
@@ -130,6 +123,13 @@ class QTInstrumentFrame(gtk.Frame):
             self._rate_box.hide()
         else:
             self._rate_box.show()
+
+    def _parameter_changed_cb(self, sender, param):
+        if param not in self._label_range:
+            return False
+
+        self._label_range[param].set_text(self._instrument.format_range(param))
+        self._label_rate[param].set_text(self._instrument.format_rate(param))
 
 class QTInstruments(QTWindow):
 

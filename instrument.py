@@ -45,6 +45,9 @@ class Instrument(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
         'parameter-added': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT])),
+        'parameter-changed': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
                     ([gobject.TYPE_PYOBJECT]))
     }
 
@@ -268,6 +271,8 @@ class Instrument(gobject.GObject):
         for key, val in kwargs.iteritems():
             self._parameters[name][key] = val
 
+        self.emit('parameter-changed', name)
+
     def get_parameter_tags(self, name):
         '''
         Return tags for parameter 'name'.
@@ -359,6 +364,38 @@ class Instrument(gobject.GObject):
             unitstr = ''
 
         return '%s%s' % (valstr, unitstr)
+
+    def format_range(self, param):
+        popts = self.get_parameter_options(param)
+        text = ''
+        if 'minval' in popts or 'maxval' in popts:
+
+            if 'format' in popts:
+                format = popts['format']
+            else:
+                format = '%s'
+
+            text = '['
+            if 'minval' in popts:
+                text += format % popts['minval']
+            text += ' : '
+            if 'maxval' in popts:
+                text += format % popts['maxval']
+            text += ']'
+
+        return text
+
+    def format_rate(self, param):
+        popts = self.get_parameter_options(param)
+        text = ''
+        if 'maxstep' in popts:
+            text += '%s' % popts['maxstep']
+            if 'stepdelay' in popts:
+                text += ' / %sms' % popts['stepdelay']
+            else:
+                test += ' / 100ms'
+
+        return text
 
     def _get_value(self, name, query=True, **kwargs):
         '''
@@ -466,6 +503,8 @@ class Instrument(gobject.GObject):
                 value = float(value)
             elif p['type'] == types.StringType:
                 pass
+            elif p['type'] == types.BooleanType:
+                value = bool(value)
             else:
                 logging.warning('Unsupported type %s for parameter %s',
                     p['type'], name)
