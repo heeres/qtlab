@@ -13,3 +13,4 @@ import qtgnuplot
 plot2d = qtgnuplot.Plot2D(data)
 plot3d = qtgnuplot.Plot3D(data)
 
+from misc import *
