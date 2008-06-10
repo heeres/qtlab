@@ -38,6 +38,12 @@ class virtual_composite(Instrument):
         # FLAG_GET needs to be set
         kwargs['flags'] |= Instrument.FLAG_GET
 
+        # Set to sweep by default
+        if 'tags' not in kwargs:
+            kwargs['tags'] = []
+        if 'sweep' not in kwargs['tags']:
+            kwargs['tags'].append('sweep')
+
     def add_variable_scaled(self, scaled_name, ins, parameter, scale, ofs, **kwargs):
         '''
         Shortcut for created a scaled variable, see add_variable_combined for info.
