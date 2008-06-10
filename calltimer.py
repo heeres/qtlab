@@ -18,6 +18,7 @@
 import time
 import gobject
 import sys
+import logging
 
 gobject.threads_init()
 import threading
@@ -80,8 +81,9 @@ class CallTimerThread(threading.Thread, gobject.GObject):
             extra_delay += f(i, *self._args, **self._kwargs)
 
             if self.get_stop_request():
-                print 'Stop requested'
-                break
+                logging.info('Stop requested')
+                self.emit('finished', self._stop_message)
+                return
 
             i += 1
             if i == self._n:
@@ -93,11 +95,12 @@ class CallTimerThread(threading.Thread, gobject.GObject):
             if req_delay > 0:
                 time.sleep(req_delay)
 
-        self.emit('finished', self)
+        self.emit('finished', 'ok')
 
-    def set_stop_request(self):
+    def set_stop_request(self, msg):
         self._stop_lock.acquire()
         self._stop_requested = True
+        self._stop_message = msg
         self._stop_lock.release()
 
     def get_stop_request(self):
@@ -105,6 +108,9 @@ class CallTimerThread(threading.Thread, gobject.GObject):
         ret = self._stop_requested
         self._stop_lock.release()
         return ret
+
+    def get_stop_message(self):
+        return self._stop_message
 
     def _idle_emit(self, signal, *args):
         try:
