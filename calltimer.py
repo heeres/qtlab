@@ -16,11 +16,15 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import time
-import gobject
 import sys
 import logging
 
+import gobject
 gobject.threads_init()
+
+import gtk
+gtk.gdk.threads_init()
+
 import threading
 
 def qttime():

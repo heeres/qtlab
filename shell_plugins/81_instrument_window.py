@@ -35,11 +35,15 @@ class QTInstrumentFrame(gtk.Frame):
         self._label_range = {}
         self._label_rate = {}
         self._add_parameters()
+        self._update_dict = {}
 
         ins.connect('parameter-added', self._parameter_added_cb)
         ins.connect('parameter-changed', self._parameter_changed_cb)
 
         self.show()
+
+        # Update variables twice per second
+        gobject.timeout_add(500, self._do_update_parameters_timer)
 
     def _add_parameter_by_name(self, param):
         popts = self._instrument.get_parameter_options(param)
@@ -104,10 +108,26 @@ class QTInstrumentFrame(gtk.Frame):
     def _parameter_added_cb(self, sender, name):
         self._add_parameter_by_name(name)
 
+    def _do_update_parameters_timer(self):
+        gtk.gdk.threads_enter()
+
+        for param, val in self._update_dict.iteritems():
+            if param in self._label_val:
+                self._label_val[param].set_text(
+                    self._instrument.format_parameter_value(param, val))
+
+        self._update_dict = {}
+
+        gtk.gdk.threads_leave()
+
+        return True
+
     def update_parameter(self, param, val):
-        if param in self._label_val:
-            self._label_val[param].set_text(
-                self._instrument.format_parameter_value(param, val))
+        """
+        Set parameter to be updated on next refresh.
+        """
+
+        self._update_dict[param] = val
 
     def get_instrument(self):
         return self._instrument

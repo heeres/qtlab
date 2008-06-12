@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import time
+import gtk
 import gobject
 import os
 
@@ -229,6 +230,7 @@ class Measurement(gobject.GObject):
                     self._data.new_data_block()
 
                 try:
+                    gtk.gdk.threads_enter()
                     val = coords[i]
                     if 'ins' in self._coords[i]:
                         ins = self._coords[i]['ins']
@@ -239,11 +241,16 @@ class Measurement(gobject.GObject):
                 except Exception, e:
                     self.stop(str(e))
                     return False
+                finally:
+                    gtk.gdk.threads_leave()
 
                 if 'delay' in self._coords[i]:
                     extra_delay += self._coords[i]['delay'] / 1000.0
 
+        gtk.gdk.threads_enter()
         data = self._do_measurements()
+        gtk.gdk.threads_leave()
+
         cols = coords + data
         self._data.add_data_point(*cols)
 
@@ -293,7 +300,6 @@ class Measurement(gobject.GObject):
     def stop(self, msg):
         if self._thread is not None:
             self._thread.set_stop_request(msg)
-            self._thread.join()
 
     def _finished_cb(self, sender, msg):
         logging.debug('Measurement finished: %s', msg)
