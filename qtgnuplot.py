@@ -18,8 +18,9 @@
 
 import gobject
 import Gnuplot
-from time import time
+import time
 import os
+import logging
 
 class _QTGnuPlot(gobject.GObject):
     """
@@ -198,9 +199,9 @@ class Plot2D(_QTGnuPlot):
         return True
 
     def _new_data_point_cb(self, sender):
-        if ((time() - self._time_of_last_plot) > self._mintime) and get_live_plotting():
+        if ((time.time() - self._time_of_last_plot) > self._mintime) and get_live_plotting():
             self.update_plot()
-            self._time_of_last_plot = time()
+            self._time_of_last_plot = time.time()
 
     def set_auto_update(self):
         '''
@@ -215,13 +216,13 @@ class Plot2D(_QTGnuPlot):
             None
         '''
         if self._auto_update_hid != None:
-            print 'auto_update already turned on'
+            logging.info('auto_update already turned on')
             return
         self._auto_update_hid = self._data.connect('new-data-point', self._new_data_point_cb)
 
     def unset_auto_update(self):
         if self._auto_update_hid == None:
-            print 'auto_update already turned off'
+            logging.info('auto_update already turned off')
             return
         self._data.disconnect(self._auto_update_hid)
         self._auto_update_hid = None
@@ -303,16 +304,15 @@ class Plot3D(_QTGnuPlot):
         if block_nr <= 1:
             return False
 
-        print 'using: %s' % str(self._cols[0])
         self._gnuplot.splot(Gnuplot.File(path, using=self._cols[0], \
             every=(None, None, None, 0, None, stopblock)))
 
         return True
 
     def _new_data_block_cb(self, sender):
-        if (((time() - self._time_of_last_plot) > self._mintime) and get_live_plotting()):
+        if (((time.time() - self._time_of_last_plot) > self._mintime) and get_live_plotting()):
             self.update_plot()
-            self._time_of_last_plot = time()
+            self._time_of_last_plot = time.time()
 
     def set_auto_update_block(self):
         '''
@@ -325,13 +325,13 @@ class Plot3D(_QTGnuPlot):
             None
         '''
         if self._auto_update_hid != None:
-            print 'auto_update_block already turned on'
+            logging.info('auto_update_block already turned on')
             return
         self._auto_update_hid = self._data.connect('new-data-block', self._new_data_block_cb)
 
     def unset_auto_update_block(self):
         if self._auto_update_hid == None:
-            print 'auto_update_block already turned off'
+            logging.info('auto_update_block already turned off')
             return
         self._data.disconnect(self._auto_update_hid)
         self._auto_update_hid = None
