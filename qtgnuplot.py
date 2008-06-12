@@ -1,5 +1,6 @@
 # qtgnuplot.py, classes for plotting
 # Pieter de Groot <pieterdegroot@gmail.com>
+# Reinier Heeres <reinier@heeres.eu>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,40 +21,36 @@ import Gnuplot
 from time import time
 import os
 
-class Plot2D(gobject.GObject):
-    '''
-    Class to create line plots.
-    '''
+class _QTGnuPlot(gobject.GObject):
+    """
+    Base class for 2D/3D QT gnuplot classes.
+    """
 
-    def __init__(self, _data, cols=(1, 2), mintime=0.5, maxpoints=500):
+    def __init__(self, data, cols, mintime, maxpoints):
         gobject.GObject.__init__(self)
 
-        self._data = _data
+        self._data = data
+        self._cols = [cols]
+        self.set_mintime(mintime)
+        self.set_maxpoints(maxpoints)
+
         self._basedir = self._data.get_basedir()
         self._dir = None
 
         self._gnuplot = Gnuplot.Gnuplot()
-        self._default_terminal = Gnuplot.gp.GnuplotOpts.default_term
-
-        self._gnuplot('set grid')
-        self._gnuplot('set style data lines')
         self._gnuplot('cd "%s"' % self._basedir)
 
-        self._cols = []
-        self._cols.append(cols)
+        self._default_terminal = Gnuplot.gp.GnuplotOpts.default_term
 
         self._auto_update_hid = None
-
         self._time_of_last_plot = 0
-        self.set_mintime(mintime)
-        self.set_maxpoints(maxpoints)
 
     def reset_cols(self, cols):
         '''
         Reset the plot list and adds the first set of columns to be plotted.
 
         Input:
-            cols (tuple of 2 ints): indices of the columns to be plotted
+            cols (tuple of 2 or 3 ints): indices of the columns to be plotted
 
         Output:
             None
@@ -61,6 +58,85 @@ class Plot2D(gobject.GObject):
 
         self._cols = []
         self._cols.append(cols)
+
+    def clear(self):
+        self._gnuplot.clear()
+
+    def save_as_type(self, terminal, extension):
+        self._gnuplot('set terminal %s' % terminal)
+        self._gnuplot('set output "%s/%s.%s"' % \
+            (self._data.get_subdir(), self._data.get_filename(), extension))
+        self._gnuplot('replot')
+        self._gnuplot('set terminal %s' % self._default_terminal)
+        self._gnuplot('set output')
+        self._gnuplot('replot')
+
+    def save_ps(self):
+        '''Save postscript version of the plot'''
+        self.save_as_type('postscript color', 'ps')
+
+    def save_png(self):
+        '''Save png version of the plot'''
+        self.save_as_type('png', 'png')
+
+    def save_jpeg(self):
+        '''Save jpeg version of the plot'''
+        self.save_as_type('jpeg', 'jpg')
+
+    def save_svg(self):
+        '''Save svg version of the plot'''
+        self.save_as_type('svg', 'svg')
+
+    def _write_gp(self, contents):
+        fname = '%s/%s.gp' % (self._data.get_fulldir(), self._data.get_filename())
+        f = file(fname, 'w+')
+        f.write(contents)
+        f.close()
+
+    def set_mintime(self, mintime):
+        '''
+        'mintime' gives the minimum time between plots, to avoid potential
+        slowing down if every data point coming in is plotted immediately.
+
+        Input:
+            mintime (float): minimum time in seconds
+
+        Output:
+            None
+        '''
+
+        if mintime < 0:
+            self._mintime = 0
+        else:
+            self._mintime = mintime
+
+    def set_maxpoints(self, maxpoints):
+        '''
+        When maxpoints is set to a value > 1 the plot will only show this
+        number of (the last) data points.
+
+        Input:
+            maxpoints (integer): number of points to plot. (0 = infinite, default)
+
+        Output:
+            None
+        '''
+
+        if maxpoints < 1:
+            self._maxpoints = 0
+        else:
+            self._maxpoints = maxpoints
+
+class Plot2D(_QTGnuPlot):
+    '''
+    Class to create line plots.
+    '''
+
+    def __init__(self, data, cols=(1, 2), mintime=0.5, maxpoints=10000):
+        _QTGnuPlot.__init__(self, data, cols, mintime, maxpoints)
+
+        self._gnuplot('set grid')
+        self._gnuplot('set style data lines')
 
     def add_trace(self, cols):
         '''
@@ -122,7 +198,7 @@ class Plot2D(gobject.GObject):
         return True
 
     def _new_data_point_cb(self, sender):
-        if ((time() - self._time_of_last_plot) > self.mintime) and get_live_plotting():
+        if ((time() - self._time_of_last_plot) > self._mintime) and get_live_plotting():
             self.update_plot()
             self._time_of_last_plot = time()
 
@@ -172,62 +248,15 @@ class Plot2D(gobject.GObject):
         self._gnuplot.xlabel('%s %s [%s]' % (colx['instrument'], colx['parameter'], colx['units']))
         self._gnuplot.ylabel('%s %s [%s]' % (coly['instrument'], coly['parameter'], coly['units']))
 
-    def set_mintime(self, mintime):
-        '''
-        'mintime' gives the minimum time between plots, to avoid potential
-        slowing down if every data point coming in is plotted immediately.
+    def save_gp(self):
+        s = 'set grid\n'
+        s += 'set style data lines\n'
+        s += 'set xlabel "%s"\n' % self._xlabel
+        s += 'set ylabel "%s"\n' % self._ylabel
+        s += 'plot "%s.dat"\n' % (self._data.get_filename())
+        self._write_gp(s)
 
-        Input:
-            mintime (float): minimum time in seconds
-
-        Output:
-            None
-        '''
-
-        if mintime < 0:
-            self.mintime = 0
-        else:
-            self.mintime = mintime
-
-    def set_maxpoints(self, maxpoints=0):
-        '''
-        When maxpoints is set to a value > 1 the plot will only show this
-        number of (the last) data points.
-
-        Input:
-            maxpoints (integer): number of points to plot. (0 = infinite, default)
-
-        Output:
-            None
-        '''
-
-        if maxpoints < 1:
-            self._maxpoints = 0
-        else:
-            self._maxpoints = maxpoints
-
-    def clear(self):
-        self._gnuplot.clear()
-
-    def save_ps(self):
-        self._gnuplot('set terminal postscript color')
-        self._gnuplot('set output "%s/%s.ps"' % (self._data.get_subdir(),self._data.get_filename()))
-        self._gnuplot('replot')
-        self._gnuplot('set terminal %s' % self._default_terminal)
-        self._gnuplot('set output')
-        self._gnuplot('replot')
-
-    def save_png(self):
-        self._gnuplot('set terminal png')
-        self._gnuplot('set output "%s/%s.png"' % (self._data.get_subdir(),self._data.get_filename()))
-        self._gnuplot('replot')
-        self._gnuplot('set terminal %s' % self._default_terminal)
-        self._gnuplot('set output')
-        self._gnuplot('replot')
-
-
-
-class Plot3D(gobject.GObject):
+class Plot3D(_QTGnuPlot):
     '''
     Class to plot x, y, z data.
     '''
@@ -237,23 +266,11 @@ class Plot3D(gobject.GObject):
     # 2) lastpoint/maxpoints not needed in 3d
     # 3) update per point?
 
-    def __init__(self, _data, cols=(1, 2, 3), mintime=0.5):
-        gobject.GObject.__init__(self)
-        self._gnuplot = Gnuplot.Gnuplot()
-        #self._gnuplot('set grid')
-        self._gnuplot('set view map')
-        #self._gnuplot('set pm3d map')
-        self._gnuplot('set style data image')
+    def __init__(self, data, cols=(1, 2, 3), mintime=0.5):
+        _QTGnuPlot.__init__(self, data, cols, mintime, 0)
 
-        self._data = _data
-        self._basedir = self._data.get_basedir()
-        self._gnuplot('cd "%s"' % self._basedir)
-        self._dir = None
-        self._cols = cols
-        self._auto_update_hid = None
-        self._time_of_last_plot = 0
-        self._min_time_between_plots = mintime
-#        self._maxpoints = maxpoints
+        self._gnuplot('set view map')
+        self._gnuplot('set style data image')
 
     def update_plot(self):
         '''
@@ -271,10 +288,6 @@ class Plot3D(gobject.GObject):
         if stopblock < 0:
             stopblock = 0
 
-#        startpoint = self._data._line_nr - self._maxpoints
-#        if startpoint < 1:
-#            startpoint = 1
-
         filedir = self._data.get_fulldir()
         filename = self._data.get_filename()
         dir = self._data.get_subdir()
@@ -285,21 +298,19 @@ class Plot3D(gobject.GObject):
 
         path = str(os.path.join(dir, filename))
 
-        self.set_labels(self._cols)
+        self.set_labels(self._cols[0])
 
         if block_nr <= 1:
             return False
 
-        self._gnuplot.splot(Gnuplot.File(path, using=self._cols, \
+        print 'using: %s' % str(self._cols[0])
+        self._gnuplot.splot(Gnuplot.File(path, using=self._cols[0], \
             every=(None, None, None, 0, None, stopblock)))
 
         return True
 
-#    def set_auto_update_point(self):
-#self._data.connect('new-data-point', self._received_update_plot_cb)
-
     def _new_data_block_cb(self, sender):
-        if (((time() - self._time_of_last_plot) > self._min_time_between_plots) and get_live_plotting()):
+        if (((time() - self._time_of_last_plot) > self._mintime) and get_live_plotting()):
             self.update_plot()
             self._time_of_last_plot = time()
 
@@ -324,19 +335,6 @@ class Plot3D(gobject.GObject):
             return
         self._data.disconnect(self._auto_update_hid)
         self._auto_update_hid = None
-
-    def reset_cols(self, cols):
-        '''
-        Reset the plot list and adds the first set of columns to be plotted.
-
-        Input:
-            cols (tuple of 2 ints): indices of the columngs to be plotted
-
-        Output:
-            None
-        '''
-
-        self._cols = cols
 
     def set_labels(self, cols):
         '''
@@ -366,35 +364,15 @@ class Plot3D(gobject.GObject):
         self._gnuplot('set cblabel "%s %s [%s]"' % \
             (colz['instrument'], colz['parameter'], colz['units']))
 
-    def set_mintime(self, mintime):
-        self._min_time_between_plots = mintime
-
-    def clear(self):
-        self._gnuplot.clear()
-
-    def save_as_type(self, terminal, extension):
-        self._gnuplot('set terminal %s' % terminal)
-        self._gnuplot('set output "%s/%s.%s"' % \
-            (self._data.get_subdir(),self._data.get_filename()), extension)
-        self._gnuplot('replot')
-        self._gnuplot('set terminal %s' % self._default_terminal)
-        self._gnuplot('set output')
-        self._gnuplot('replot')
-
-    def save_ps(self):
-        self.save_as_type('postscript color', 'ps')
-
-    def save_png(self):
-        self.save_as_type('png', 'png')
-
-    def save_jpeg(self):
-        self.save_as_type('jpeg', 'jpg')
-
-    def save_svg(self):
-        self.save_as_type('svg', 'svg')
-
-#    def set_maxpoints(self, maxpoints):
-#        self._maxpoints = maxpoints
+    def save_gp(self):
+        s = 'set grid\n'
+        s += 'set style data image\n'
+        s += 'set view map\n'
+        s += 'set xlabel "%s"\n' % self._xlabel
+        s += 'set ylabel "%s"\n' % self._ylabel
+        s += 'set cblabel "%s"\n' % self._cblabel
+        s += 'plot "%s.dat"\n' % (self._data.get_filename())
+        self._write_gp(s)
 
 _live_plotting = True
 def toggle_live_plotting():
