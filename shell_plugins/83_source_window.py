@@ -22,7 +22,12 @@ import os
 import tempfile
 import time
 
-import gtksourceview2
+try:
+    import gtksourceview2
+    _have_gtksourceview = True
+except:
+    _have_gtksourceview = False
+
 import pango
 
 from gettext import gettext as _L
@@ -269,7 +274,11 @@ def showsource():
 def hidesource():
     get_sourcewin().hide()
 
-_sourcewin = QTSource()
+if _have_gtksourceview:
+    _sourcewin = QTSource()
+else:
+    _sourcewin = None
+
 def get_sourcewin():
     global _sourcewin
     return _sourcewin

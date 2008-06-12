@@ -62,8 +62,12 @@ class QTLab(gtk.Window):
         self._ins_but.connect('clicked', self._toggle_visibility_cb, get_inswin())
         self._tune_but = gtk.Button(_('Tune'))
         self._tune_but.connect('clicked', self._toggle_visibility_cb, get_tunewin())
+
         self._source_but = gtk.Button(_('Source'))
         self._source_but.connect('clicked', self._toggle_visibility_cb, get_sourcewin())
+        if get_sourcewin() is None:
+            self._source_but.set_state(gtk.STATE_INSENSITIVE)
+
         self._measure_but = gtk.Button(_('Measure'))
         self._measure_but.connect('clicked', self._toggle_visibility_cb, get_measurewin())
 
