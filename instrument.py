@@ -505,6 +505,8 @@ class Instrument(gobject.GObject):
                 pass
             elif p['type'] == types.BooleanType:
                 value = bool(value)
+            elif p['type'] == types.NoneType:
+                pass
             else:
                 logging.warning('Unsupported type %s for parameter %s',
                     p['type'], name)
