@@ -61,6 +61,8 @@ class Instrument(gobject.GObject):
                                 # e.g. an internally stored value is returned.
                                 # Only use for parameters that cannot be read
                                 # back from a device.
+    FLAG_PERSIST = 0x10         # Write parameter to config file if it is set,
+                                # try to read again for a new instance
 
     def __init__(self, name, **kwargs):
         gobject.GObject.__init__(self)
@@ -237,6 +239,13 @@ class Instrument(gobject.GObject):
 
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
+
+        if options['flags'] & self.FLAG_PERSIST:
+            import qt
+            val = qt.config.get('persist_%s_%s' % (self._name, name))
+            options['value'] = val
+        else:
+            options['value'] = None
 
         if 'probe_interval' in options:
             interval = options['probe_interval']
@@ -420,7 +429,7 @@ class Instrument(gobject.GObject):
             if 'value' in p:
                 return p['value']
             else:
-                logging.debug('Trying to access cached value, but none available')
+#                logging.debug('Trying to access cached value, but none available')
                 return None
 
         # Check this here; getting of cached values should work
@@ -561,7 +570,12 @@ class Instrument(gobject.GObject):
             ret = func(value, **kwargs)
 
         if p['flags'] & self.FLAG_GET_AFTER_SET:
-            ret = self._get_value(name, **kwargs)
+            value = self._get_value(name, **kwargs)
+
+        if p['flags'] & self.FLAG_PERSIST:
+            import qt
+            qt.config.set('persist_%s_%s' % (self._name, name), value)
+            qt.config.save()
 
         p['value'] = value
         return value
@@ -588,12 +602,12 @@ class Instrument(gobject.GObject):
         changed = {}
         if type(name) == types.DictType:
             for key, val in name.iteritems():
-                self._set_value(key, val, **kwargs)
-                changed[key] = val
+                if self._set_value(key, val, **kwargs) is not None:
+                    changed[key] = val
 
         else:
-            self._set_value(name, value, **kwargs)
-            changed[name] = value
+            if self._set_value(name, value, **kwargs) is not None:
+                changed[name] = value
 
         if len(changed) > 0:
             self.emit('changed', changed)
