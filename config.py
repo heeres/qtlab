@@ -80,7 +80,7 @@ class QTConfig(gobject.GObject):
         else:
             return None
 
-    def set(self, key, val):
+    def set(self, key, val, save=True):
         '''
         Set configuration variable.
 
@@ -93,7 +93,8 @@ class QTConfig(gobject.GObject):
         '''
 
         self._config[key] = val
-
+        if save:
+            self.save()
 
 _config = None
 _work_dir = os.getcwd()
