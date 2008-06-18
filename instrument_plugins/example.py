@@ -5,7 +5,7 @@ import types
 import sys,IPython.ultraTB
 sys.excepthook = IPython.ultraTB.FormattedTB(mode='Verbose',color_scheme='Linux', call_pdb=1)
 
-class HP1234(Instrument):
+class example(Instrument):
 
     READ_STRINGS = {
     'speed': 'S?',
@@ -82,7 +82,7 @@ class HP1234(Instrument):
         Instrument.remove(self)
 
     def reset(self, **kwargs):
-        """Reset HP1234"""
+        """Reset example instrument"""
 
         self.get_ch1_output()
         self.get_ch2_output()
