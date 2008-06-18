@@ -174,18 +174,61 @@ class Measurement(gobject.GObject):
     def emit(self, *args):
         gobject.idle_add(gobject.GObject.emit, self, *args)
 
-    def _set_start_values(self):
-        for coord in self._coords:
-            val = coord['start']
+    def _do_set_values(self, iter):
+        '''
+        Input:
+            iter (int): iteration number, -1 to set starting values
 
-            if 'ins' in coord:
-                ins = coord['ins']
-                ins.set(coord['var'], val)
-            elif 'func' in coord:
-                func = coord['func']
-                func(val)
+        Output:
+            float: extra delay required
+        '''
+
+        print '%f setting for iteration %d' % (time.time(), iter)
+
+        extra_delay = 0
+        index = self.iter_to_index(iter + 1)
+        coords = self.index_to_coords(index)
+        self._current_coords = coords
+        delta = []
+
+        for i in xrange(len(coords)):
+            delta.append(index[i] - self._last_index[i])
+
+        if iter != -1:
+            set_all = False
+        else:
+            set_all = True
+
+        self._last_index = index
+        self._new_data_block = False
+
+        # Set loop variables
+        for i in xrange(len(coords)):
+            if delta[i] != 0:
+
+                if i != 0:
+                    self._new_data_block = True
+
+                try:
+                    val = coords[i]
+                    if 'ins' in self._coords[i]:
+                        ins = self._coords[i]['ins']
+                        ins.set(self._coords[i]['var'], val)
+                    elif 'func' in self._coords[i]:
+                        func = self._coords[i]['func']
+                        func(val)
+                except Exception, e:
+                    self.stop(str(e))
+                    return False
+
+                if 'delay' in self._coords[i]:
+                    extra_delay += self._coords[i]['delay'] / 1000.0
+
+        return extra_delay
 
     def _do_measurements(self):
+        print '%f measure' % (time.time())
+
         data = []
         for m in self._measurements:
             if 'ins' in m:
@@ -211,48 +254,16 @@ class Measurement(gobject.GObject):
             float: extra requested timeout in ms
         '''
 
-        extra_delay = 0
-
-        index = self.iter_to_index(iter)
-        coords = self.index_to_coords(index)
-        delta = []
-
-        for i in xrange(len(coords)):
-            delta.append(index[i] - self._last_index[i])
-
-        self._last_index = index
-
-        # Set loop variables
-        for i in xrange(len(coords)):
-            if delta[i] != 0:
-
-                if i != 0:
-                    self._data.new_data_block()
-
-                try:
-                    gtk.gdk.threads_enter()
-                    val = coords[i]
-                    if 'ins' in self._coords[i]:
-                        ins = self._coords[i]['ins']
-                        ins.set(self._coords[i]['var'], val)
-                    elif 'func' in self._coords[i]:
-                        func = self._coords[i]['func']
-                        func(val)
-                except Exception, e:
-                    self.stop(str(e))
-                    return False
-                finally:
-                    gtk.gdk.threads_leave()
-
-                if 'delay' in self._coords[i]:
-                    extra_delay += self._coords[i]['delay'] / 1000.0
-
         gtk.gdk.threads_enter()
+        coords = self._current_coords
         data = self._do_measurements()
+        extra_delay = self._do_set_values(iter)
         gtk.gdk.threads_leave()
 
         cols = coords + data
         self._data.add_data_point(*cols)
+        if self._new_data_block:
+            self._data.new_data_block()
 
         return extra_delay
 
@@ -266,15 +277,13 @@ class Measurement(gobject.GObject):
         Output:
             None
         '''
-
-        self._set_start_values()
         
         # determine loop delay
         last_coord = self._coords[len(self._coords) - 1]
         if 'delay' in self._options:
-            delay = self._options['delay']
+            self._delay = self._options['delay']
         elif 'delay' in last_coord:
-            delay = last_coord['delay']
+            self._delay = last_coord['delay']
         else:
             print 'measurement delay undefined'
             return False
@@ -284,16 +293,16 @@ class Measurement(gobject.GObject):
         for coord in self._coords:
             n *= coord['steps']
 
-        self._last_index = []
-        for i in xrange(len(self._coords)):
-            self._last_index.append(0)
-
+        # Set starting values and sleep
+        self._last_index = [-1 for i in xrange(len(self._coords))]
+        self._do_set_values(-1)
+        time.sleep(self._delay / 1000.0)
 
         if not blocking:
-            self._thread = calltimer.CallTimerThread(self._measure, delay, n)
+            self._thread = calltimer.CallTimerThread(self._measure, self._delay, n)
             self._thread.connect('finished', self._finished_cb)
         else:
-            self._thread = calltimer.CallTimer(self._measure, delay, n)
+            self._thread = calltimer.CallTimer(self._measure, self._delay, n)
 
         self._thread.start()
 

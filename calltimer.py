@@ -95,9 +95,12 @@ class CallTimerThread(threading.Thread, gobject.GObject):
 
             # delay
             tn = qttime()
-            req_delay = tstart + extra_delay / 1000.0 + float(i) * self._delay / 1000.0 - tn
-            if req_delay > 0:
-                time.sleep(req_delay)
+            if 'time_exact' in self._kwargs:
+                req_delay = tstart + extra_delay / 1000.0 + float(i) * self._delay / 1000.0 - tn
+                if req_delay > 0:
+                    time.sleep(req_delay)
+            else:
+                time.sleep((extra_delay + self._delay) / 1000.0)
 
         self.emit('finished', 'ok')
 
