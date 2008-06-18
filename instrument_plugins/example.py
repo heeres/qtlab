@@ -35,6 +35,10 @@ class HP1234(Instrument):
                 maxstep=0.1, stepdelay=50,
                 tags=['sweep'],
                 units='mV')
+        self.add_parameter('gain', type=types.FloatType,
+                flags=Instrument.FLAG_SET | Instrument.FLAG_SOFTGET | Instrument.FLAG_PERSIST,
+                minval=1, maxval=1e9,
+                format='%.02e')
 
 #        self.set_channel_bounds('output', 1, -1, 1)
 
@@ -70,7 +74,9 @@ class HP1234(Instrument):
     def _do_set_output(self, val, channel, times2=False):
         if times2:
             val *= 2
-        print 'Setting channel %d to %f' % (channel, val)
+
+    def _do_set_gain(self, val):
+        return val
 
     def remove(self):
         Instrument.remove(self)
