@@ -34,7 +34,12 @@ class Measurement(gobject.GObject):
         'finished': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
                     ([gobject.TYPE_PYOBJECT])),
+        'progress': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT])),
     }
+
+    _PROGRESS_STEPS = 1
 
     def __init__(self, name, **kwargs):
         gobject.GObject.__init__(self)
@@ -70,7 +75,7 @@ class Measurement(gobject.GObject):
                 coord['stepsize'] = -kwargs['stepsize']
             coord['steps'] = math.ceil((coord['end'] - coord['start']) / kwargs['stepsize'])
         else:
-            print '_add_coordinate_options requires steps or stepsize argument'
+            logging.warning('_add_coordinate_options requires steps or stepsize argument')
 
         if 'delay' in kwargs:
             coord['delay'] = kwargs['delay']
@@ -183,8 +188,6 @@ class Measurement(gobject.GObject):
             float: extra delay required
         '''
 
-        print '%f setting for iteration %d' % (time.time(), iter)
-
         extra_delay = 0
         index = self.iter_to_index(iter + 1)
         coords = self.index_to_coords(index)
@@ -227,8 +230,6 @@ class Measurement(gobject.GObject):
         return extra_delay
 
     def _do_measurements(self):
-        print '%f measure' % (time.time())
-
         data = []
         for m in self._measurements:
             if 'ins' in m:
@@ -238,7 +239,7 @@ class Measurement(gobject.GObject):
                 func = m['func']
                 data.append(func())
             else:
-                print 'Measurement action undefined'
+                logging.warning('Measurement action undefined')
 
         return data
 
@@ -265,6 +266,12 @@ class Measurement(gobject.GObject):
         if self._new_data_block:
             self._data.new_data_block()
 
+        if (iter % self._PROGRESS_STEPS) == 0:
+            self.emit('progress', {
+                'current': iter,
+                'total': self._ntotal,
+                })
+
         return extra_delay
 
     def start(self, blocking=False):
@@ -285,13 +292,13 @@ class Measurement(gobject.GObject):
         elif 'delay' in last_coord:
             self._delay = last_coord['delay']
         else:
-            print 'measurement delay undefined'
+            logging.warning('measurement delay undefined')
             return False
 
         # determine loop steps
-        n = 1
+        self._ntotal = 1
         for coord in self._coords:
-            n *= coord['steps']
+            self._ntotal *= coord['steps']
 
         # Set starting values and sleep
         self._last_index = [-1 for i in xrange(len(self._coords))]
@@ -299,10 +306,10 @@ class Measurement(gobject.GObject):
         time.sleep(self._delay / 1000.0)
 
         if not blocking:
-            self._thread = calltimer.CallTimerThread(self._measure, self._delay, n)
+            self._thread = calltimer.CallTimerThread(self._measure, self._delay, self._ntotal)
             self._thread.connect('finished', self._finished_cb)
         else:
-            self._thread = calltimer.CallTimer(self._measure, self._delay, n)
+            self._thread = calltimer.CallTimer(self._measure, self._delay, self._ntotal)
 
         self._thread.start()
 

@@ -20,7 +20,7 @@ import gobject
 import time
 
 import logging
-from gettext import gettext as _
+from gettext import gettext as _L
 
 from instrument import Instrument
 from flexscale import FlexScale
@@ -78,7 +78,7 @@ class QTSweepVarSettings(gobject.GObject):
                                     tags=['sweep'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Sweep variable')),
+            gtk.Label(_L('Sweep variable')),
             self._variable_dropdown]), False, False)
 
         self._start_val = gtk.SpinButton(climb_rate=0.1, digits=2)
@@ -93,8 +93,8 @@ class QTSweepVarSettings(gobject.GObject):
         self._n_steps.set_range(0, 100000)
         self._n_steps.set_increments(1, 2)
 
-        self._steps_or_size = StepToggleButton([_('< Steps'), _('Size >')],
-            self._steps_toggle_cb, _('Set number of steps or stepsize'))
+        self._steps_or_size = StepToggleButton([_L('< Steps'), _L('Size >')],
+            self._steps_toggle_cb, _L('Set number of steps or stepsize'))
         self._steps_or_size.set_size_request(100, 0)
 
         self._step_size = gtk.SpinButton(climb_rate=0.1, digits=3)
@@ -105,24 +105,24 @@ class QTSweepVarSettings(gobject.GObject):
         self._units_label = gtk.Label()
 
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Start')),
+            gtk.Label(_L('Start')),
             self._start_val,
-            gtk.Label(_('End')),
+            gtk.Label(_L('End')),
             self._end_val,
             self._units_label]))
 
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Nr of steps')),
+            gtk.Label(_L('Nr of steps')),
             self._n_steps,
             self._steps_or_size,
-            gtk.Label(_('Step size')),
+            gtk.Label(_L('Step size')),
             self._step_size]))
 
         self._frame.add(self._vbox)
 
     def _steps_toggle_cb(self, item):
         from gettext import gettext as _
-        steps_sel = (item == _('< Steps'))
+        steps_sel = (item == _L('< Steps'))
         self._n_steps.set_sensitive(steps_sel)
         self._step_size.set_sensitive(not steps_sel)
 
@@ -199,7 +199,7 @@ class QTMeasureVarSettings(gobject.GObject):
                                     tags=['measure'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Measurement variable')),
+            gtk.Label(_L('Measurement variable')),
             self._variable_dropdown]), False, False)
 
         self._scale = gtk.Entry()
@@ -209,9 +209,9 @@ class QTMeasureVarSettings(gobject.GObject):
         self._units.set_width_chars(12)
 
         self._vbox.pack_start(pack_hbox([
-            gtk.Label(_('Scaling')),
+            gtk.Label(_L('Scaling')),
             self._scale,
-            gtk.Label(_('Units')),
+            gtk.Label(_L('Units')),
             self._units]))
 
         self._frame.add(self._vbox)
@@ -255,34 +255,34 @@ class QTMeasure(QTWindow):
 
     def _create_layout(self):
         self._option_frame = gtk.Frame()
-        self._option_frame.set_label(_('Options'))
+        self._option_frame.set_label(_L('Options'))
 
         self._option_vbox = gtk.VBox()
         self._option_frame.add(self._option_vbox)
 
         self._name_entry = gtk.Entry()
         self._option_vbox.pack_start(pack_hbox([
-            gtk.Label(_('Name')), self._name_entry]), False, False)
+            gtk.Label(_L('Name')), self._name_entry]), False, False)
 
         self._delay = gtk.SpinButton(climb_rate=0.1, digits=0)
         self._delay.set_range(0, 100000)
         self._delay.set_increments(1, 2)
         self._delay.set_value(100)
         self._option_vbox.pack_start(pack_hbox([
-            gtk.Label(_('Delay (ms)')), self._delay]), False, False)
+            gtk.Label(_L('Delay (ms)')), self._delay]), False, False)
 
         self._plot_type_combo = gtk.combo_box_new_text()
-        self._plot_type_combo.append_text(_('Image'))
-        self._plot_type_combo.append_text(_('Line'))
+        self._plot_type_combo.append_text(_L('Image'))
+        self._plot_type_combo.append_text(_L('Line'))
         self._plot_type_combo.connect('changed', self._plot_type_changed_cb)
         self._plot_type_combo.set_active(0)
         self._option_vbox.pack_start(pack_hbox([
-            gtk.Label(_('Plot type')), self._plot_type_combo]))
+            gtk.Label(_L('Plot type')), self._plot_type_combo]))
 
         self._hold_check = gtk.CheckButton()
         self._hold_check.connect('toggled', self._hold_toggled_cb)
         self._option_vbox.pack_start(pack_hbox([
-            gtk.Label(_('Hold')), self._hold_check]))
+            gtk.Label(_L('Hold')), self._hold_check]))
 
         self._sweep_z = QTSweepVarSettings('Z loop')
         self._sweep_y = QTSweepVarSettings('Y loop')
@@ -291,11 +291,13 @@ class QTMeasure(QTWindow):
         self._measure_1 = QTMeasureVarSettings('Measurement 1')
         self._measure_2 = QTMeasureVarSettings('Measurement 2')
 
-        self._start_but = gtk.Button(_('Start'))
+        self._start_but = gtk.Button(_L('Start'))
         self._start_but.connect('clicked', self._start_clicked_cb)
-        self._stop_but = gtk.Button(_('Stop'))
+        self._stop_but = gtk.Button(_L('Stop'))
         self._stop_but.connect('clicked', self._stop_clicked_cb)
         self._stop_but.set_sensitive(False)
+
+        self._status_label =  gtk.Label(_L('Idle'))
 
         self._vbox = gtk.VBox()
         self._vbox.pack_start(self._option_frame, False, False)
@@ -310,6 +312,8 @@ class QTMeasure(QTWindow):
         self._vbox.pack_start(pack_hbox([
             self._start_but,
             self._stop_but]), False, False)
+
+        self._vbox.pack_start(self._status_label)
 
         self.add(self._vbox)
 
@@ -362,6 +366,7 @@ class QTMeasure(QTWindow):
 
         self._measurement = measurement.Measurement(mname, delay=delay)
         self._measurement.connect('finished', self._measurement_finished_cb)
+        self._measurement.connect('progress', self._measurement_progress_cb)
 
         self._add_loop_var(self._measurement, self._sweep_x)
         self._add_loop_var(self._measurement, self._sweep_y)
@@ -387,6 +392,7 @@ class QTMeasure(QTWindow):
             self._plot = None
             logging.warning('No plot available')
 
+        self._measurement_start = time.time()
         self._measurement.start()
 
     def _stop_clicked_cb(self, widget):
@@ -399,6 +405,21 @@ class QTMeasure(QTWindow):
         self.set_sensitive(True)
         if self._plot is not None:
             self._plot.save_png()
+
+        runtime = time.time() - self._measurement_start
+        self._status_label.set_text(_L('Finished in %s') % seconds_to_str(runtime))
+
+    def _measurement_progress_cb(self, sender, vals):
+        running = time.time() - self._measurement_start
+
+        if vals['current'] > 0:
+            predicted = running / vals['current'] * vals['total'] - running
+        else:
+            predicted = 0
+
+        text = _L('Step %d / %d, running: %s, remaining: %s') % \
+            (vals['current'], vals['total'], seconds_to_str(running), seconds_to_str(predicted))
+        self._status_label.set_text(text)
 
     def _plot_type_changed_cb(self, sender):
         if self._plot_type_combo.get_active() == 0:
