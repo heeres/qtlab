@@ -256,9 +256,15 @@ class Measurement(gobject.GObject):
         '''
 
         gtk.gdk.threads_enter()
+
         coords = self._current_coords
         data = self._do_measurements()
-        extra_delay = self._do_set_values(iter)
+
+        if iter != self._ntotal - 1:
+            extra_delay = self._do_set_values(iter)
+        else:
+            extra_delay = 0
+
         gtk.gdk.threads_leave()
 
         cols = coords + data
