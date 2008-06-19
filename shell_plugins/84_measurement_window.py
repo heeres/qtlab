@@ -237,12 +237,19 @@ class QTMeasureVarSettings(gobject.GObject):
 
 class QTMeasure(QTWindow):
 
+    PLOT_IMAGE  = 1
+    PLOT_LINE   = 2
+
     def __init__(self):
         QTWindow.__init__(self, 'Measure')
 
         self.connect("delete-event", self._delete_event_cb)
 
         self._create_layout()
+
+        self._plot_type = self.PLOT_IMAGE
+        self._hold = False
+        self._plot = None
 
         self._measurement = None
 
@@ -263,6 +270,19 @@ class QTMeasure(QTWindow):
         self._delay.set_value(100)
         self._option_vbox.pack_start(pack_hbox([
             gtk.Label(_('Delay (ms)')), self._delay]), False, False)
+
+        self._plot_type_combo = gtk.combo_box_new_text()
+        self._plot_type_combo.append_text(_('Image'))
+        self._plot_type_combo.append_text(_('Line'))
+        self._plot_type_combo.connect('changed', self._plot_type_changed_cb)
+        self._plot_type_combo.set_active(0)
+        self._option_vbox.pack_start(pack_hbox([
+            gtk.Label(_('Plot type')), self._plot_type_combo]))
+
+        self._hold_check = gtk.CheckButton()
+        self._hold_check.connect('toggled', self._hold_toggled_cb)
+        self._option_vbox.pack_start(pack_hbox([
+            gtk.Label(_('Hold')), self._hold_check]))
 
         self._sweep_z = QTSweepVarSettings('Z loop')
         self._sweep_y = QTSweepVarSettings('Y loop')
@@ -353,11 +373,16 @@ class QTMeasure(QTWindow):
         data = self._measurement.get_data()
         ncoord = self._measurement.get_coordinate_count()
         if ncoord == 1:
-            self._plot = qtgnuplot.Plot2D(data)
-            self._plot.set_auto_update()
+            if not self._hold:
+                self._plot = qtgnuplot.Plot2D(data)
+                self._plot.set_auto_update()
         elif ncoord == 2:
-            self._plot = qtgnuplot.Plot3D(data)
-            self._plot.set_auto_update_block()
+            if self._plot_type == self.PLOT_IMAGE:
+                self._plot = qtgnuplot.Plot3D(data)
+                self._plot.set_auto_update_block()
+            else:
+                self._plot = qtgnuplot.Plot2D(data, cols=(1, 3))
+                self._plot.set_auto_update()
         else:
             self._plot = None
             logging.warning('No plot available')
@@ -374,6 +399,15 @@ class QTMeasure(QTWindow):
         self.set_sensitive(True)
         if self._plot is not None:
             self._plot.save_png()
+
+    def _plot_type_changed_cb(self, sender):
+        if self._plot_type_combo.get_active() == 0:
+            self._plot_type = self.PLOT_IMAGE
+        else:
+            self._plot_type = self.PLOT_LINE
+
+    def _hold_toggled_cb(self, sender):
+        self._hold = sender.get_active()
 
 def showmeasure():
     get_measurewin().show()
