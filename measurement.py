@@ -23,10 +23,7 @@ import os
 import logging
 import calltimer
 
-from data import Data
-import qtgnuplot
-
-from config import get_config
+import qt
 
 class Measurement(gobject.GObject):
 
@@ -44,14 +41,14 @@ class Measurement(gobject.GObject):
     def __init__(self, name, **kwargs):
         gobject.GObject.__init__(self)
 
+        self._name = name
         self._thread = None
         self._options = kwargs
 
         self._coords = []
         self._measurements = []
 
-        self._data = Data()
-        self._data.create_datafile(name)
+        self._data = qt.data[name]
 
     def get_data(self):
         return self._data
@@ -87,10 +84,6 @@ class Measurement(gobject.GObject):
         else:
             to_sweep = '%s.%s' % (coord['ins'].get_name(), coord['var'])
 
-        comment = 'Sweep %s from %s to %s in %d steps (stepsize = %f)' % \
-            (to_sweep, coord['start'], coord['end'], coord['steps'], coord['stepsize'])
-        self._data.add_comment_to_header(comment)
-
     def add_coordinate(self, ins, var, start, end, **kwargs):
         '''
         Add a loop coordinate to the internal list. The first coordinate is
@@ -115,7 +108,10 @@ class Measurement(gobject.GObject):
 
         self._add_coordinate_options(coord, **kwargs)
 
-        self._data.add_column_to_header(ins.get_name(), var)
+        kwargs['instrument'] = ins.get_name()
+        kwargs['parameter'] = var
+        kwargs['size'] = kwargs['steps']
+        self._data.add_coordinate('%s.%s' % (ins, var), **kwargs)
 
     def add_coordinate_func(self, func, start, end, **kwargs):
         '''
@@ -137,10 +133,10 @@ class Measurement(gobject.GObject):
 
         coord = {'start': float(start), 'end': float(end), 'func': func}
         self._add_coordinate_options(coord, **kwargs)
+        kwargs['size'] = kwargs['steps']
+        self._data.add_coordinate(func, **kwargs)
 
-        self._data.add_coordinate(**coord)
-
-    def get_coordinate_count(self):
+    def get_ncoordinates(self):
         return len(self._coords)
 
     def add_measurement(self, ins, var, **kwargs):
@@ -160,10 +156,9 @@ class Measurement(gobject.GObject):
             meas[key] = val
         self._measurements.append(meas)
 
-        self._data.add_column_to_header(ins.get_name(), var)
-
-        comment = 'Measure %s.%s' % (ins.get_name(), var)
-        self._data.add_comment_to_header(comment)
+        kwargs['instrument'] = ins
+        kwargs['parameter'] = var
+        self._data.add_value('%s.%s' % (ins, var), **kwargs)
 
     def add_measurement_func(self, func, **kwargs):
         meas = {'func': func}
@@ -171,9 +166,10 @@ class Measurement(gobject.GObject):
             meas[key] = val
         self._measurements.append(meas)
 
-        self._data.add_value(**meas)
+        kwargs['function'] = func
+        self._data.add_value(func, **kwargs)
 
-    def get_measurement_count(self):
+    def get_nmeasurements(self):
         return len(self._measurements)
 
     def emit(self, *args):
@@ -268,9 +264,8 @@ class Measurement(gobject.GObject):
         gtk.gdk.threads_leave()
 
         cols = coords + data
-        self._data.add_data_point(*cols)
-        if self._new_data_block:
-            self._data.new_data_block()
+        nb = {'newblock': self._new_data_block}
+        self._data.add_data_point(*cols, **nb)
 
         if (iter % self._PROGRESS_STEPS) == 0:
             self.emit('progress', {
@@ -290,7 +285,12 @@ class Measurement(gobject.GObject):
         Output:
             None
         '''
-        
+
+        if len(self._coords) == 0:
+            logging.info('Not starting measurement without loop')
+            self.emit('finished', 'ok')
+            return False
+
         # determine loop delay
         last_coord = self._coords[len(self._coords) - 1]
         if 'delay' in self._options:
@@ -305,6 +305,9 @@ class Measurement(gobject.GObject):
         self._ntotal = 1
         for coord in self._coords:
             self._ntotal *= coord['steps']
+
+        # Create file
+        self._data.create_file(self._name)
 
         # Set starting values and sleep
         self._last_index = [-1 for i in xrange(len(self._coords))]
@@ -325,7 +328,7 @@ class Measurement(gobject.GObject):
 
     def _finished_cb(self, sender, msg):
         logging.debug('Measurement finished: %s', msg)
-        self._data.close_datafile()
+        self._data.close_file()
         self.emit('finished', msg)
 
     def new_data(self, data):

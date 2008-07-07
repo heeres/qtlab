@@ -144,7 +144,7 @@ class QTLab(gtk.Window):
         exec(code, globals())
 
     def _toggle_liveplot_cb(self, widget):
-        qtgnuplot.toggle_live_plotting()
+        qt.config.set('auto-update', not qt.config.get('auto-update'))
 
     def _toggle_stop_cb(self, widget):
         gui.set_abort()

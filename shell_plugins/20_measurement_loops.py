@@ -54,7 +54,7 @@ def measure2d(
 
     m.start()
 
-def qtrun(filepath, data=data):
+def qtrun(filepath, name=''):
     if not os.path.isfile(filepath):
         raise ValueError("file '%s' does not exist" % filepath)
 
@@ -64,6 +64,7 @@ def qtrun(filepath, data=data):
     if ext != '.py':
         raise ValueError("file '%s' is not of type .py" % filepath)
 
+    data = qt.data[name]
     data.create_datafile(name)
     tstr_filename = data.get_filename() + '.py'
     fulldir = data.get_fulldir()
@@ -84,6 +85,6 @@ def qtrun(filepath, data=data):
     finally:
         data.close_datafile()
 
-def qtrun_thread(filepath, data=data):
-    calltimer.ThreadCall(qtrun, filepath, data)
+def qtrun_thread(filepath, name=''):
+    calltimer.ThreadCall(qtrun, filepath, name)
 
