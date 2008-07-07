@@ -10,6 +10,13 @@ class QTConfig(gobject.GObject):
     Class to manage settings for the QTLab environment.
     '''
 
+
+    __gsignals__ = {
+        'changed': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT])),
+    }
+
     CONFIG_FILE = 'qtlab.cfg'
 
     def __init__(self):
@@ -95,6 +102,8 @@ class QTConfig(gobject.GObject):
         self._config[key] = val
         if save:
             self.save()
+
+        self.emit('changed', {key: val})
 
 _config = None
 _work_dir = os.getcwd()

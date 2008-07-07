@@ -1,6 +1,6 @@
-# data.py, Data class
-# Pieter de Groot <pieterdegroot@gmail.com>, 2008
+# data.py, class for handling measurement data
 # Reinier Heeres <reinier@heeres.eu>
+# Pieter de Groot <pieterdegroot@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,19 +17,38 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gobject
-from gettext import gettext as _
 import os
 import time
 import numpy
+import types
+import re
+import logging
+
 from misc import *
+from gettext import gettext as _L
 
 import qt
-
 import config
+
+def create_data_dir(datadir, datesubdir=True, timesubdir=True):
+    path = datadir
+    if datesubdir:
+        path = os.path.join(path, time.strftime('%Y%m%d'))
+    if timesubdir:
+        path = os.path.join(path, time.strftime('%H%M%S'))
+
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    return path
+
+def new_filename(name):
+    tstr = time.strftime('%H%M%S')
+    return '%s_%s.dat' % (tstr, name)
 
 class Data(gobject.GObject):
     '''
-    This class should take care of all your data saving needs.
+    Data class
     '''
 
     __gsignals__ = {
@@ -40,285 +59,412 @@ class Data(gobject.GObject):
                             gobject.TYPE_NONE,
                             ())
     }
-                           # [gobject.TYPE_PYOBJECT]
 
-    def __init__(self, basedir=None, filepath=None):
-        """
-        Create Data object
+    _METADATA_INFO = {
+        'instrument': {
+            're': re.compile('^#.*Ins?trument: ?(.*)$', re.I),
+            'type': types.StringType
+        },
+        'parameter': {
+            're': re.compile('^#.*Parameter: ?(.*)$', re.I),
+            'type': types.StringType
+        },
+        'units': {
+            're': re.compile('^#.*Units?: ?(.*)$', re.I),
+            'type': types.StringType
+        },
+        'steps': {
+            're': re.compile('^#.*Steps?: ?(.*)$', re.I),
+            'type': types.IntType
+        },
+        'stepsize': {
+            're': re.compile('^#.*Stepsizes?: ?(.*)$', re.I),
+            'type': types.FloatType
+        }
+    }
+
+    _META_STEPRE = re.compile('^#.*[ \t](\d+) steps', re.I)
+    _META_COLRE = re.compile('^#.*Column ?(\d+)', re.I)
+
+    def __init__(self, filepath='', name='', data=None, infile=True, inmem=True, **kwargs):
+        '''
+        Create data object
 
         Input:
-            basedir (string): base directory for new files
-            filename (string): file to associate with
-
-        Output:
-            None
-        """
+            filepath (string)
+            name (string)
+            data (numpy.array)
+            infile (bool)
+            inmem (bool)
+        '''
 
         gobject.GObject.__init__(self)
 
-        if basedir is None:
-            basedir = config.get_config()['datadir']
+        self._inmem = inmem
+        self._options = kwargs
 
-        if not os.path.isdir(basedir):
-            raise ValueError("directory '%s' doest not exist" % basedir)
-        self._basedir = basedir
+        # Dimension info
+        self._dimensions = []
 
-        self._name = ''
-        self._filename = ''
-        self._subdir = ''
-        self._fulldir = ''
-        self._timestamp = ''
-        self._settings_filename = ''
-        if filepath is not None:
-            self.set_filepath(filepath)
+        # Number of coordinate dimensions
+        self._ncoordinates = 0
 
-        self._file = None
-        self._data = None
+        # Number of value dimensions
+        self._nvalues = 0
 
-        self._instruments = qt.instruments
+        # Number of data points
+        self._npoints = 0
 
-    def create_datafile(self, name, datesubdir=True, timesubdir=False):
-        '''
-        Create a new data file. It will be create in /<basedir>/<subdirs>/.
-        The 'datesubdir' and 'timesubdir' options determine whether those
-        subdirectories will be created.
-        The name of the file will be <time>_<name>.dat
-
-        Input:
-            name (string): name of the data set
-            datesubdir (boolean): whether or not to create a date sub dir
-            timesubdir (boolean): whether or not to create a time sub dir
-
-        Output:
-            None
-        '''
-
-        if datesubdir:
-            dstr = time.strftime('%Y%m%d')
-            self._subdir = dstr
-        else:
-            self._subdir = ''
-
-        tstr = time.strftime('%H%M%S')
-        if timesubdir:
-            self._subdir = os.path.join(self._subdir, '%s' % tstr)
-
-        path = os.path.join(self._basedir, self._subdir)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        self._fulldir = path
-
-        self._filename = '%s_%s.dat' % (tstr, name)
-
+        self._name = name
         self._timestamp = time.asctime()
-        self.create_settings_file('%s_%s.set' % (tstr, name))
+        self._timemark = time.strftime('%H%M%S')
+        self._datemark = time.strftime('%Y%m%d')
 
-        header_text  = '# Filename: %s\n' % self._filename
-        header_text += '# Timestamp: %s\n\n' % self._timestamp
-
-        self._file = file('%s/%s' % (self._fulldir, self._filename), 'w+')
-        self._file.write(header_text)
-        self._file.flush()
-
-        self._col_nr = 0
-        self._col_info = []
-
-        self._line_nr = 0
-        self._block_nr = 0
-
-    def create_settings_file(self, filename):
-        '''
-        Create the 'settings file' which is simply a dump of all the
-        instrument settings to a file.
-
-        Input:
-            name (string): name of settings file.
-
-        Output:
-            None
-        '''
-
-        header  = '# Filename: %s\n' % filename
-        header += '# Timestamp: %s\n\n' % self._timestamp
-
-        text = ''
-        inslist = dict_to_ordered_tuples(self._instruments.get_instruments())
-        for (iname, ins) in inslist:
-            text += 'Instrument: %s\n' % iname
-            parlist = dict_to_ordered_tuples(ins.get_parameters()) 
-            for (param, popts) in parlist:
-                text += '\t%s: %s\n' % (param, ins.get(param, query=False))
-
-        self._settings_filename = filename
-        settings_file = file('%s/%s' % (self._fulldir, self._settings_filename), 'w+')
-        settings_file.write(header)
-        settings_file.write(text)
-        settings_file.close()
-
-    def add_column_to_header(self, instrument, parameter, units=None):
-        '''
-        Create the header of the data file. It is called for each collumn
-        of data that will be in the data file.
-
-        Input:
-            instrument (string): name of instrument
-            parameter (string): name of parameter
-
-        Output:
-            None
-        '''
-
-        if self._instruments.get_instruments().has_key(instrument):
-            ins = self._instruments.get(instrument)
-
-            if not ins.get_parameters().has_key(parameter):
-                print __name__ + ': Adding column, but instrument "%s" does not have parameter "%s"' % (instrument, parameter)
-            elif units is None:
-                if ins.get_parameter_options(parameter).has_key('units'):
-                    units = ins.get_parameter_options(parameter)['units']
-
+        if data is not None:
+            self._data = data
+            self._infile = False
         else:
-            print __name__ + ': Adding column, but instrument "%s" does not exist' % instrument
+            self._data = numpy.array([])
+            self._infile = infile
 
-        if units is None:
-            print __name__ + ': Added column, but unit is not defined for parameter "%s" of instrument "%s"' % (parameter, instrument)
-            units = _('Undefined')
+        if filepath != '':
+            self.set_filepath(filepath, inmem)
+            self._infile = True
+        else:
+            self._dir = ''
+            self._filename = ''
+            self._infile = infile
 
-        self._col_nr += 1
-        self._col_info.append({
-            'instrument': instrument,
-            'parameter': parameter,
-            'units': units})
+    def __getitem__(self, index):
+        return self._data[index]
 
-        text  = '# Column %i:\n' % self._col_nr
-        text += '# \t Intrument: %s\n' % instrument
-        text += '# \t Parameter: %s\n' % parameter
-        text += '# \t Unit: %s\n\n' % units
+    def __setitem__(self, index, val):
+        self._data[index] = val
 
-        self._file.write(text)
-
-    def add_comment_to_header(self, comment):
+    def add_coordinate(self, name, **kwargs):
         '''
-        Add comment in the header of the data file.
+        Add a coordinate dimension. Use add_value() to add a value dimension.
+        '''
+        kwargs['name'] = name
+        kwargs['type'] = 'coordinate'
+        self._ncoordinates += 1
+        self._dimensions.append(kwargs)
+
+    def add_value(self, name, **kwargs):
+        '''
+        Add a value dimension. Use add_dimension() to add a coordinate dimension.
+        '''
+        kwargs['name'] = name
+        kwargs['type'] = 'value'
+        self._nvalues += 1
+        self._dimensions.append(kwargs)
+
+    def add_data_point(self, *args, **kwargs):
+        '''
+        Add a new data point to the data set (in memory and/or on disk).
 
         Input:
-            comment (string): text that you would like in the header
+            *args:
+                n column values
+            **kwargs:
+                newblock (boolean): marks a new 'block' starts after this point
 
         Output:
             None
         '''
 
-        self._file.write('# ' + comment + '\n\n')
+        if len(args) < len(self._dimensions):
+            logging.warning('add_data_point(): missing columns (%d < %d)' % \
+                (len(args), len(self._dimensions)))
+            return
+        elif len(args) > len(self._dimensions):
+            logging.warning('add_data_point(): too many columns (%d > %d)' % \
+                (len(args), len(self._dimensions)))
+            return
 
-    def add_data_point(self, *values):
-        '''
-        Add a new line to the data file with the values seperated by tabs.
-        It will also emit a signal for possible data plots.
+        if self._inmem:
+            self._data = numpy.append(self._data, args)
 
-        Input:
-            *values (numbers): a list of comma separated values
+        if self._infile:
+            self._write_data_line(args)
 
-        Output:
-            None
-        '''
+        self._npoints += 1
 
-        line = ''
-        for i in values:
-            line += str(i) + '\t'
-        self._file.write(line + '\n')
-        self._file.flush()
-        self._line_nr += 1
-        self.emit('new-data-point')
+        if 'newblock' in kwargs and kwargs['newblock']:
+            self.new_block()
+        else:
+            self.emit('new-data-point')
 
-    def new_data_block(self):
-        '''
-        Put an empty line in the data file (useful for gnuplot 3d plotting)
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-
-        self._file.write('\n')
-        self._block_nr += 1
-        self._line_nr = 0
+    def new_block(self):
+        if self._infile:
+            self._file.write('\n')
         self.emit('new-data-block')
 
-    def close_datafile(self):
+    def get_data(self):
         '''
-        Close the data file.
-
-        Input:
-            None
-
-        Output:
-            None
+        Return data as a numpy.array.
         '''
 
-        self._file.close()
+        if not self._inmem and self._infile:
+            self._load_file()
+
+        if self._inmem:
+            return self._data
+        else:
+            return None
+
+    def get_dimensions(self):
+        '''Return info for all dimensions.'''
+        return self._dimensions
+
+    def get_dimension_size(self, dim):
+        '''Return size of dimensions dim'''
+        if 'size' in self._dimensions[dim]:
+            return self._dimensions[dim]['size']
+        else:
+            return 0
+
+    def get_ndimensions(self):
+        '''Return number of dimensions.'''
+        return len(self._dimensions)
+
+    def get_coordinates(self):
+        '''Return info for all coordinate dimensions.'''
+        return self._dimensions[:self._ncoordinates]
+
+    def get_ncoordinates(self):
+        '''Return number of coordinate dimensions.'''
+        return self._ncoordinates
+
+    def get_values(self):
+        '''Return info for all value dimensions.'''
+        return self._dimensions[0:self._nvalues]
+
+    def get_nvalues(self):
+        '''Return number of value dimensions.'''
+        return self._nvalues
+
+    def get_npoints(self):
+        '''Return number of data points'''
+        return self._npoints
+
+    def format_label(self, dim):
+        '''Return a formatted label for dimensions dim'''
+
+        info = self._dimensions[dim]
+
+        if 'instrument' in info:
+            label = '%s %s' % (info['instrument'], info['parameter'])
+            if 'units' in info:
+                label += ' [%s]' % info['units']
+        else:
+            label = 'dim%d' % dim
+
+        return label
+
+    def get_filename(self):
+        return self._filename
+
+    def get_dir(self):
+        return self._dir
+
+    def get_filepath(self):
+        return os.path.join(self._dir, self._filename)
 
     def get_name(self):
         return self._name
 
-    def get_filename(self):
-        '''Get filename (not including path)'''
-        return self._filename
+    def set_name(self, name):
+        self._name = name
 
-    def get_filepath(self):
-        '''Get filename (including path)'''
-        return '%s/%s' % (self._fulldir, self._filename)
+    def get_time_name(self):
+        return '%s_%s' % (self._timemark, self._name)
 
-    def set_filepath(self, path):
-        dir, fn = os.path.split(path)
-        if dir.startswith(self._basedir):
-            self._subdir = dir[len(self._basedir):]
-        else:
-            self._basedir = dir
-            self._subdir = ''
-        self._fulldir = dir
-        self._filename = fn
+    def get_settings_filepath(self):
+        fn, ext = os.path.splitext(self.get_filepath())
+        return fn + '.set'
 
-    def get_fulldir(self):
-        '''Get directory containing the file'''
-        return self._fulldir
+    def set_filepath(self, fp, inmem=True):
+        self._dir, self._filename = os.path.split(fp)
+        if inmem:
+            if self._load_file():
+                self._inmem = True
+            else:
+                self._inmem = False
 
-    def get_subdir(self):
-        '''Get directory containing the file with respect to the basedir'''
-        return self._subdir
+    def _parse_meta_data(self, line):
+        m = self._META_STEPRE.match(line)
+        if m is not None:
+            self._dimensions.append(int(m.group(1)))
 
-    def get_basedir(self):
-        '''Get base directory '''
-        return self._basedir
+        m = self._META_COLRE.match(line)
+        if m is not None:
+            index = int(m.group(1))
+            if index > len(self._dimensions):
+                self._dimensions.append({})
 
-    def get_line_nr(self):
-        return self._line_nr
+        colnum = len(self._dimensions) - 1
 
-    def get_block_nr(self):
-        return self._block_nr
+        for tagname, metainfo in self._METADATA_INFO.iteritems():
+            m = metainfo['re'].match(line)
+            if m is not None:
+                if metainfo['type'] == types.FloatType:
+                    self._dimensions[colnum][tagname] = float(m.group(1))
+                elif metainfo['type'] == types.IntType:
+                    self._dimensions[colnum][tagname] = int(m.group(1))
+                else:
+                    self._dimensions[colnum][tagname] = m.group(1)
 
-    def get_col_info(self):
-        return self._col_info
+    def _detect_dimensions_size(self):
+        for colnum in xrange(self.get_ncoordinates()):
+            if 'size' in self._dimensions[colnum]:
+                dimsize = self._dimensions[colnum]['size']
+            elif 'steps' in self._dimensions[colnum]:
+                dimsize = self._dimensions[colnum]['steps']
+            else:
+                vals = []
+                for i in xrange(len(self._data)):
+                    if self._data[i][colnum] not in vals:
+                        vals.append(self._data[i][colnum])
+                dimsize = len(vals)
 
-    def get_array(self):
+            logging.info('Column %d has size %d', colnum, len(vals))
+
+    def _load_file(self):
         """
-        Read associated data file and return data as a numpy array
+        Load data from file and store internally
         """
 
-        f = file(os.path.join(self._fulldir, self._filename), 'r')
+        try:
+            f = file(self.get_filepath(), 'r')
+        except:
+            return False
+
+        self._dimensions = []
+        self._values = []
         data = []
+        nfields = 0
 
         for line in f:
+            line = line.rstrip(' \n\t\r')
+
             # Strip comment
             commentpos = line.find('#')
             if commentpos != -1:
+                self._parse_meta_data(line)
                 line = line[:commentpos]
 
-            line = line.rstrip(' \n\t')
-
             fields = line.split()
+            if len(fields) > nfields:
+                nfields = len(fields)
+
+            fields = [float(f) for f in fields]
             if len(fields) > 0:
                 data.append(fields)
 
-        return numpy.array(data)
+        # Add info for (assumed coordinate) columns that had no metadata
+        while self.get_ndimensions() < nfields - 1:
+            self.add_coordinate('col%d' % (self.get_ndimensions() + 1))
+
+        # Add info for (assumed value) column that had no metadata
+        if self.get_ndimensions() < nfields:
+            self.add_value('col%d' % (self.get_ndimensions() + 1))
+
+        self._data = numpy.array(data)
+        self._npoints = len(self._data)
+        self._inmem = True
+
+        self._detect_dimensions_size()
+
+        return True
+
+    def _write_settings_file(self):
+        fn = self.get_settings_filepath()
+        f = open(fn)
+        f.write('Filename: %s\n', self._filename)
+        f.write('Timestamp: %s\n\n', self._timestamp)
+
+        inslist = dict_to_ordered_tuples(qt.instruments)
+        for (iname, ins) in inslist:
+            write('Instrument: %s\n' % iname)
+            parlist = dict_to_ordered_tuples(ins.get_parameters())
+            for (param, popts) in parlist:
+                f.write('\t%s: %s\n' % (param, ins.get(param, query=False)))
+
+        f.close()
+
+    def _write_header(self):
+        self._file.write('# Filename: %s\n' % self._filename)
+        self._file.write('# Timestamp: %s\n\n' % self._timestamp)
+
+        i = 1
+        for dim in self._dimensions:
+            self._file.write('# Column %d:\n' % i)
+            for key, val in dict_to_ordered_tuples(dim):
+                self._file.write('#\t%s: %s\n' % (key, val))
+            i += 1
+
+        self._file.write('\n')
+
+    def _write_data_line(self, args):
+        line = str(args[0])
+        for i in args[1:]:
+            line += '\t%f' % i
+        line += '\n'
+        self._file.write(line)
+        self._file.flush()
+
+    def _write_data(self):
+        if not self._inmem:
+            logging.warning('Unable to _write_data() without having it memory')
+            return False
+
+        for vals in self._data:
+            self._write_data_line(vals)
+
+    def create_file(self, name=None, filepath=None):
+        '''
+        Create a new data file and leave it open.
+        '''
+
+        if name is None and filepath is None:
+            name = self._name
+
+        if filepath is None:
+            self._dir = create_data_dir(qt.config['datadir'])
+            self._filename = new_filename(name)
+        else:
+            self._dir, self._filename = os.path.split(filepath)
+
+        try:
+            self._file = open(self.get_filepath(), 'w+')
+        except:
+            logging.error('Unable to open file')
+            return False
+
+        self._write_header()
+
+        return True
+
+    def close_file(self):
+        '''
+        Close open data file.
+        '''
+
+        if self._file is not None:
+            self._file.close()
+            self._file = None
+
+    def write_file(self, name=None, filepath=None):
+        if not self.create_file():
+            return
+
+        self._write_data()
+        self.close_file()
+
+        self._write_settings_file()
+
+def slice(data, coords, vals):
+    """
+    Return new data object with a slice of the given data set
+    """

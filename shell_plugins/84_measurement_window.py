@@ -27,7 +27,6 @@ from flexscale import FlexScale
 from calltimer import CallTimerThread
 
 import measurement
-import qtgnuplot
 
 class StepToggleButton(gtk.ToggleButton):
 
@@ -162,7 +161,7 @@ class QTSweepVarSettings(gobject.GObject):
         return self.get_start(), self.get_end()
 
     def get_steps(self):
-        return self._n_steps.get_value()
+        return int(self._n_steps.get_value())
 
     def set_sensitive(self, sensitive):
         self._variable_dropdown.set_sensitive(sensitive)
@@ -329,18 +328,23 @@ class QTMeasure(QTWindow):
             ins, var = sweep.get_instrument_var()
             start, end = sweep.get_sweep_range()
             steps = sweep.get_steps()
-            units = sweep.get_units()
-            measurement.add_coordinate(ins, var, start, end,
-                steps=steps, units=units)
         except Exception, e:
-            pass
+            return
+
+        if steps == 0:
+            logging.warning('Not adding sweep variable with 0 steps')
+            return
+        units = sweep.get_units()
+        measurement.add_coordinate(ins, var, start, end,
+            steps=steps, units=units)
 
     def _add_measurement(self, measurement, meas):
         try:
             ins, var = meas.get_instrument_var()
-            measurement.add_measurement(ins, var)
         except Exception, e:
-            pass
+            return
+
+        measurement.add_measurement(ins, var)
 
     def set_sensitive(self, sensitive):
         self._sweep_x.set_sensitive(sensitive)
@@ -376,21 +380,25 @@ class QTMeasure(QTWindow):
         self._add_measurement(self._measurement, self._measure_2)
 
         data = self._measurement.get_data()
-        ncoord = self._measurement.get_coordinate_count()
+        ncoord = self._measurement.get_ncoordinates()
+        nmeas = self._measurement.get_nmeasurements()
         if ncoord == 1:
             if not self._hold:
-                self._plot = qtgnuplot.Plot2D(data)
-                self._plot.set_auto_update()
+                self._plot = Plot2D()
+                self._plot.add_data(data)
+                if nmeas > 1:
+                    self._plot.add_data(data, valdim=2, right=True)
         elif ncoord == 2:
             if self._plot_type == self.PLOT_IMAGE:
-                self._plot = qtgnuplot.Plot3D(data)
-                self._plot.set_auto_update_block()
+                self._plot = Plot3D(data)
             else:
-                self._plot = qtgnuplot.Plot2D(data, cols=(1, 3))
-                self._plot.set_auto_update()
+                self._plot = Plot2D(data, coorddim=0, valdim=2)
         else:
             self._plot = None
             logging.warning('No plot available')
+
+        if self._plot:
+            self._plot.set_labels()
 
         self._measurement_start = time.time()
         self._measurement.start()

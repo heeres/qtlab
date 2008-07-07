@@ -46,6 +46,10 @@ class Instruments(gobject.GObject):
     def __getitem__(self, key):
         return self.get(key)
 
+    def __repr__(self):
+        s = "Instruments list %s" % str(self.get_instrument_names())
+        return s
+
     def add(self, ins):
         '''
         Add instrument to the internal instruments list and listen
@@ -83,6 +87,11 @@ class Instruments(gobject.GObject):
             return self._instruments[name]
         else:
             return None
+
+    def get_instrument_names(self):
+        keys = self._instruments.keys()
+        keys.sort()
+        return keys
 
     def get_instruments(self):
         '''
