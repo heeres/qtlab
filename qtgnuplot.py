@@ -145,7 +145,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
             if s != '':
                 s += ', '
-            s += "Gnuplot.File(%r, using=%r, axes=%r)" % (filepath, using, axes)
+            s += "Gnuplot.File(%r, using=%r, axes=%r)" % (str(filepath), using, axes)
 
             i += 1
 
