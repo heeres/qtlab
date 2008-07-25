@@ -642,6 +642,15 @@ class Instrument(gobject.GObject):
         else:
             return None
 
+    def get_function_parameters(self, name):
+        '''
+        Return info about parameters for function.
+        '''
+        if self._functions.has_key(name):
+            if self._functions[name].has_key('parameters'):
+                return self._functions[name]['parameters']
+        return None
+
     def get_function_names(self):
         '''
         Return the list of exposed Instrument function names.
