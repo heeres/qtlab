@@ -179,12 +179,13 @@ class Instrument(gobject.GObject):
 
         # If defining channels call add_parameter for each channel
         if 'channels' in options:
-            if len(options['channels']) != 2:
-                print 'Error: channels has to have a valid range'
-                return None
+            if len(options['channels']) == 2 and type(options['channels'][0]) is types.IntType:
+                minch, maxch = options['channels']
+                channels = xrange(minch, maxch + 1)
+            else:
+                channels = options['channels']
 
-            minch, maxch = options['channels']
-            for i in xrange(minch, maxch + 1):
+            for i in channels:
                 chopt = copy.copy(options)
                 del chopt['channels']
                 chopt['channel'] = i
@@ -193,7 +194,7 @@ class Instrument(gobject.GObject):
                 if 'channel_prefix' in options:
                     var_name = options['channel_prefix'] % i + name
                 else:
-                    var_name = '%s%d' % (name, i)
+                    var_name = '%s%s' % (name, i)
 
                 self.add_parameter(var_name, **chopt)
 
