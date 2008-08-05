@@ -62,12 +62,12 @@ class InstrumentDropdown(QTComboBox):
     def _instrument_added_cb(self, sender, instrument):
         self._ins_list.append([instrument.get_name()])
 
-    def _instrument_removed_cb(self, sender, instrument):
-        logging.debug('Instrument removed: %s', instrument)
+    def _instrument_removed_cb(self, sender, insname):
+        logging.debug('Instrument removed: %s', insname)
 
         i = self._ins_list.get_iter_root()
         while i:
-            if self._ins_list.get_value(i, 0) == instrument.get_name():
+            if self._ins_list.get_value(i, 0) == insname:
                 self._ins_list.remove(i)
                 break
             i = self._ins_list.iter_next(i)
@@ -93,7 +93,10 @@ class InstrumentParameterDropdown(QTComboBox):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._param_list)
 
-        self._instrument = instrument
+        self._instrument = None
+        self._insname = ''
+        self.set_instrument(instrument)
+
         self._flags = flags
         self._types = types
 
@@ -111,8 +114,8 @@ class InstrumentParameterDropdown(QTComboBox):
             self._types = types
             return self.update_list()
 
-    def _instrument_removed_cb(self, sender, instrument):
-        if instrument == self._instrument:
+    def _instrument_removed_cb(self, sender, insname):
+        if insname == self._instrument:
             logging.debug('Instrument for dropdown removed: %s', instrument)
             self.set_instrument(None)
 
@@ -128,6 +131,11 @@ class InstrumentParameterDropdown(QTComboBox):
 
         if self._instrument == ins:
             return True
+
+        if ins is not None:
+            self._insname = ins.get_name()
+        else:
+            self._insname = ''
 
         self._instrument = ins
         self._param_list.clear()
@@ -164,14 +172,16 @@ class InstrumentFunctionDropdown(QTComboBox):
         self._func_list = gtk.ListStore(gobject.TYPE_STRING, gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._func_list)
 
-        self._instrument = instrument
+        self._instrument = None
+        self._insname = ''
+        self.set_instrument(instrument)
 
         self._instruments = qt.instruments
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
 
-    def _instrument_removed_cb(self, sender, instrument):
-        if instrument == self._instrument:
-            logging.debug('Instrument for dropdown removed: %s', instrument)
+    def _instrument_removed_cb(self, sender, insname):
+        if insname == self._insname:
+            logging.debug('Instrument for dropdown removed: %s', insname)
             self.set_instrument(None)
 
     def _instrument_changed_cb(self, sender, instrument, property, value):
@@ -183,6 +193,11 @@ class InstrumentFunctionDropdown(QTComboBox):
 
         if self._instrument == ins:
             return True
+
+        if ins is not None:
+            self._insname = ins.get_name()
+        else:
+            self._insname = ''
 
         self._instrument = ins
         self._func_list.clear()
@@ -256,7 +271,8 @@ class AllParametersDropdown(QTComboBox):
         self._param_list.append(['<None>'])
 
         for ins, hid in self._parameter_added_hids.iteritems():
-            ins.disconnect(hid)
+            if ins.handler_is_connected(hid):
+                ins.disconnect(hid)
 
         inslist = dict_to_ordered_tuples(qt.instruments.get_instruments())
         for (insname, ins) in inslist:

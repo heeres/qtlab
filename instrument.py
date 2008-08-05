@@ -48,7 +48,10 @@ class Instrument(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
         'parameter-changed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
-                    ([gobject.TYPE_PYOBJECT]))
+                    ([gobject.TYPE_PYOBJECT])),
+        'reload': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
+                    ([]))
     }
 
     # FLAGS are used to to set extra properties on a parameter.
@@ -94,6 +97,14 @@ class Instrument(gobject.GObject):
         '''
 
         return self._name
+
+    def get_type(self):
+        """Return type of instrument as a string."""
+        modname = str(self.__module__)
+        return modname.split('.')[1]
+
+    def get_options(self):
+        return self._options
 
     def get_tags(self):
         '''
@@ -361,12 +372,14 @@ class Instrument(gobject.GObject):
     def format_parameter_value(self, param, val):
         opt = self.get_parameter_options(param)
         if 'format' in opt:
+            if type(val) is types.ListType:
+                val = tuple(val)
             try:
                 valstr = opt['format'] % val
-            except:
-                valstr = '%s' % val
+            except Exception, e:
+                valstr = '%s' % str(val)
         else:
-            valstr = '%s' % val
+            valstr = '%s' % str(val)
 
         if 'units' in opt:
             unitstr = ' %s' % opt['units']
@@ -717,3 +730,16 @@ class Instrument(gobject.GObject):
         '''
         self._default_write_var = name
 
+    def reload(self):
+        '''
+        Signal the Instruments collection object to reload this instrument.
+
+        Note that this function does not return anything! The preferred
+        function to use is Instruments.reload(ins); see that for more details.
+
+        Input:
+            None
+        Output:
+            None
+        '''
+        self.emit('reload')

@@ -19,6 +19,9 @@ import code
 import gobject
 import types
 import os
+import visa
+import logging
+import sys
 
 class Instruments(gobject.GObject):
 
@@ -41,6 +44,7 @@ class Instruments(gobject.GObject):
         gobject.GObject.__init__(self)
 
         self._instruments = {}
+        self._instruments_info = {}
         self._tags = ['All']
 
     def __getitem__(self, key):
@@ -50,7 +54,7 @@ class Instruments(gobject.GObject):
         s = "Instruments list %s" % str(self.get_instrument_names())
         return s
 
-    def add(self, ins):
+    def add(self, ins, create_args={}):
         '''
         Add instrument to the internal instruments list and listen
         to signals emitted by the instrument.
@@ -58,9 +62,12 @@ class Instruments(gobject.GObject):
         Input:  Instrument object
         Output: None
         '''
-        ins.connect('changed', self._instrument_changed_cb)
-        ins.connect('removed', self._instrument_removed_cb)
+        info = {'create_args': create_args}
+        info['changed_hid'] = ins.connect('changed', self._instrument_changed_cb)
+        info['removed_hid'] = ins.connect('removed', self._instrument_removed_cb)
+        info['reload_hid'] = ins.connect('reload', self._instrument_reload_cb)
         self._instruments[ins.get_name()] = ins
+        self._instruments_info[ins.get_name()] = info
 
         newtags = []
         for tag in ins.get_tags():
@@ -135,10 +142,15 @@ class Instruments(gobject.GObject):
         '''
         argstr = ''
         for (kwname, kwval) in kwargs.iteritems():
+            if kwname in ('tags'):
+                continue
             argstr += ',%s=%r' % (kwname, kwval)
 
-        importstr = 'import instrument_plugins.%s\n' % type
-        importstr += '_ins = instrument_plugins.%s.%s(name%s)' % (type, type, argstr)
+        importstr = """if True:
+                import instrument_plugins.%(type)s
+                _ins = instrument_plugins.%(type)s.%(type)s(%(name)r%(args)s)""" \
+            % {'type': type, 'name': name, 'args': argstr}
+
 #        print 'Executing: %s' % importstr
         try:
             _ins = None
@@ -147,17 +159,55 @@ class Instruments(gobject.GObject):
             exec importstr
 
             if _ins is None:
-                print 'Unable to create instrument'
+                logging.error('Unable to create instrument')
                 return None
 
-            self.add(_ins)
+            self.add(_ins, create_args=kwargs)
 
         except Exception, e:
-            print 'error: %s' % e
+            logging.error('Error: %s', str(e))
             return None
 
         self.emit('instrument-added', _ins)
         return _ins
+
+    def reload_module(self, instype):
+        modname = 'instrument_plugins.%s' % instype
+        for mod in sys.modules:
+            if mod == modname:
+                logging.info('Reloading module %s', mod)
+                reload(sys.modules[mod])
+                break
+
+    def reload(self, ins):
+        '''
+        Try to reload the module associated with instrument 'ins' and return
+        the new instance. Note that references to the old instance will not
+        be replaced, so care has to be taken that you refer to the newly
+        created object.
+
+        In general about reloading: your milage may vary!
+
+        Input:
+            ins (Instrument or string): the instrument to reload
+
+        Output:
+            Reloaded instrument
+        '''
+
+        if type(ins) is types.StringType:
+            ins = self.get(ins)
+        if ins is None:
+            return None
+
+        insname = ins.get_name()
+        instype = ins.get_type()
+        kwargs = self._instruments_info[insname]['create_args']
+
+        self.reload_module(instype)
+        ins.remove()
+
+        return self.create(insname, instype, **kwargs)
 
     def _instrument_removed_cb(self, sender, name):
         '''
@@ -169,7 +219,22 @@ class Instruments(gobject.GObject):
         '''
         if self._instruments.has_key(name):
             del self._instruments[name]
+            del self._instruments_info[name]
+
         self.emit('instrument-removed', name)
+
+    def _instrument_reload_cb(self, sender):
+        '''
+        Reload instrument and emit instrument-changed signal.
+
+        Input:
+            sender (instrument): instrument to be reloaded
+
+        Output:
+            None
+        '''
+        newins = self.reload(sender)
+        self.emit('instrument-changed', newins, {})
 
     def _instrument_changed_cb(self, sender, changes):
         '''

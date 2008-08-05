@@ -201,11 +201,10 @@ class QTInstruments(QTWindow):
         self._ins_widgets[name] = QTInstrumentFrame(ins)
         self._vbox.pack_start(self._ins_widgets[name], False, False)
 
-    def _remove_instrument(self, ins):
-        name = ins.get_name()
-        if name in self._ins_widgets:
-            self._vbox.remove(self._ins_widgets[name])
-            del self._ins_widgets[name]
+    def _remove_instrument(self, insname):
+        if insname in self._ins_widgets:
+            self._vbox.remove(self._ins_widgets[insname])
+            del self._ins_widgets[insname]
 
     def _update_instrument(self, ins, changes):
         name = ins.get_name()
@@ -225,8 +224,8 @@ class QTInstruments(QTWindow):
     def _instrument_added_cb(self, sender, instrument):
         self._add_instrument(instrument)
 
-    def _instrument_removed_cb(self, sender, instrument):
-        self._remove_instrument(instrument)
+    def _instrument_removed_cb(self, sender, insname):
+        self._remove_instrument(insname)
 
     def _instrument_changed_cb(self, sender, instrument, changes):
         self._update_instrument(instrument, changes)
