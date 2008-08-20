@@ -247,6 +247,8 @@ class Instrument(gobject.GObject):
                 func = lambda val, **lopts: self.set(name, val, **lopts)
 
             func.__doc__ = 'Set variable %s' % name
+            if 'doc' in options:
+                func.__doc__ += '\n%s' % options['doc']
             setattr(self, 'set_%s' % name, func)
 
 #        setattr(self, name,
