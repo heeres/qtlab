@@ -47,7 +47,7 @@ class FlexScale(gtk.VBox):
             factor = 2 * (value - 0.5) ** 2
             map_val = mid + sign * d * factor
         elif self._scaling == self.SCALE_SQRT:
-            factor = math.sqrt(math.abs((value - 0.5))) / math.sqrt(2)
+            factor = math.sqrt(abs((value - 0.5))) / math.sqrt(2)
             map_val = mid + sign * d * factor
 
         print 'map_val: %r, sign: %r, factor: %r' % (map_val, sign, factor)
