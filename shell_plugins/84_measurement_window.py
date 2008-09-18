@@ -24,7 +24,6 @@ import logging
 from gettext import gettext as _L
 
 from instrument import Instrument
-from flexscale import FlexScale
 from calltimer import CallTimerThread
 
 import measurement
