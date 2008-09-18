@@ -126,6 +126,23 @@ class Instrument(gobject.GObject):
 
         self._options['tags'].append(tag)
 
+    def has_tag(self, tags):
+        '''
+        Return whether instrument has any tag in 'tags'
+        '''
+
+        if type(tags) is types.ListType:
+            for tag in tags:
+                if tag in self._options['tags']:
+                    return True
+            return False
+
+        else:
+            if tags in self._options['tags']:
+                return True
+
+        return False
+
     def initialize(self):
         '''
         Currently unsupported; might be used in the future to perform
@@ -373,15 +390,33 @@ class Instrument(gobject.GObject):
 
     def format_parameter_value(self, param, val):
         opt = self.get_parameter_options(param)
+
         if 'format' in opt:
-            if type(val) is types.ListType:
-                val = tuple(val)
-            try:
-                valstr = opt['format'] % val
-            except Exception, e:
-                valstr = '%s' % str(val)
+            format = opt['format']
         else:
-            valstr = '%s' % str(val)
+            format = '%s'
+
+        if type(val) in (types.ListType, types.TupleType):
+            val = tuple(val)
+            if type(format) not in (types.ListType, types.TupleType):
+                format = ['%s, ' % format for i in val]
+
+        elif type(val) is types.DictType:
+            fmt = ""
+            first = True
+            for k in val.keys():
+                if first:
+                    fmt += '%s: %s' % (k, format)
+                    first = False
+                else:
+                    fmt += ', %s: %s' % (k, format)
+            format = fmt
+            val = tuple(val.values())
+
+        try:
+            valstr = format % (val)
+        except Exception, e:
+            valstr = str(val)
 
         if 'units' in opt:
             unitstr = ' %s' % opt['units']
@@ -465,6 +500,21 @@ class Instrument(gobject.GObject):
             return None
 
         value = func(**kwargs)
+        if 'type' in p:
+            try:
+                if p['type'] == types.IntType:
+                    value = int(value)
+                elif p['type'] == types.FloatType:
+                    value = float(value)
+                elif p['type'] == types.StringType:
+                    pass
+                elif p['type'] == types.BooleanType:
+                    value = bool(value)
+                elif p['type'] == types.NoneType:
+                    pass
+            except:
+                logging.warning('Unable to cast value "%s" to %s', value, p['type'])
+
         p['value'] = value
         return value
 
