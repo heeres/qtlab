@@ -22,16 +22,10 @@ from gettext import gettext as _
 
 from flexscale import FlexScale
 
-class QTTune(gtk.Window):
+class QTTune(QTWindow):
 
     def __init__(self):
-        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.move(210, 210)
-
-        self.set_size_request(500, 150)
-        self.set_border_width(1)
-        self.set_title(_('Tune'))
-
+        QTWindow.__init__(self, 'Tune')
         self.connect("delete-event", self._delete_event_cb)
 
         self._ins_combo = InstrumentDropdown()
