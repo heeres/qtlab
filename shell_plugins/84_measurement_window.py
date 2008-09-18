@@ -18,6 +18,7 @@
 import gtk
 import gobject
 import time
+import qt
 
 import logging
 from gettext import gettext as _L
@@ -444,10 +445,13 @@ def showmeasure():
 def hidemeasure():
     get_measurewin().hide()
 
-_measurewin = QTMeasure()
+try:
+    qt.measurewin
+except:
+    qt.measurewin = QTMeasure()
+
 def get_measurewin():
-    global _measurewin
-    return _measurewin
+    return qt.measurewin
 
 if __name__ == "__main__":
     gtk.main()

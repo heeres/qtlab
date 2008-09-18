@@ -17,6 +17,7 @@
 
 import gtk
 import gobject
+import qt
 
 import os
 import tempfile
@@ -275,13 +276,13 @@ def hidesource():
     get_sourcewin().hide()
 
 if _have_gtksourceview:
-    _sourcewin = QTSource()
-else:
-    _sourcewin = None
+    try:
+        qt.sourcewin
+    except:
+        qt.sourcewin = QTSource()
 
 def get_sourcewin():
-    global _sourcewin
-    return _sourcewin
+    return qt.sourcewin
 
 if __name__ == "__main__":
     gtk.main()

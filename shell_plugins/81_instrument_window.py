@@ -100,6 +100,7 @@ class QTInstrumentFrame(gtk.Frame):
 
         hbox = pack_hbox([self._name_box, self._val_box, self._range_box,
             self._rate_box])
+        hbox.set_border_width(1)
         hbox.show()
         self.add(hbox)
 

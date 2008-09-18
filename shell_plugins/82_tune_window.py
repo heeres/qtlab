@@ -17,6 +17,7 @@
 
 import gtk
 import gobject
+import qt
 
 from gettext import gettext as _
 
@@ -114,10 +115,13 @@ def showtune():
 def hidetune():
     get_tunewin().hide_all()
 
-_tunewin = QTTune()
+try:
+    qt.tunewin
+except:
+    qt.tunewin = QTTune()
+
 def get_tunewin():
-    global _tunewin
-    return _tunewin
+    return qt.tunewin
 
 if __name__ == "__main__":
     gtk.main()
