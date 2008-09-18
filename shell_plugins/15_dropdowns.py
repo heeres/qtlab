@@ -46,21 +46,24 @@ class InstrumentDropdown(QTComboBox):
     Dropdown to select an instrument.
     '''
 
-    def __init__(self):
+    def __init__(self, types=[]):
         self._ins_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._ins_list)
 
+        self._types = types
         self._ins_list.append(['<None>'])
         self._instruments = qt.instruments
         for name, ins in self._instruments.get_instruments().iteritems():
-            self._ins_list.append([ins.get_name()])
+            if len(types) == 0 or ins.has_tag(types):
+                self._ins_list.append([ins.get_name()])
 
         self._instruments.connect('instrument-added', self._instrument_added_cb)
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
 
     def _instrument_added_cb(self, sender, instrument):
-        self._ins_list.append([instrument.get_name()])
+        if len(self._types) == 0 or instrument.has_tag(self._types):
+            self._ins_list.append([instrument.get_name()])
 
     def _instrument_removed_cb(self, sender, insname):
         logging.debug('Instrument removed: %s', insname)
