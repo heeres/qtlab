@@ -82,7 +82,12 @@ class CallTimerThread(threading.Thread, gobject.GObject):
         i = 0
         while i < self._n:
             f = self._cb
-            extra_delay += f(i, *self._args, **self._kwargs)
+
+            try:
+                extra_delay += f(i, *self._args, **self._kwargs)
+            except Exception, e:
+                self.emit('finished')
+                raise e
 
             if self.get_stop_request():
                 logging.info('Stop requested')
