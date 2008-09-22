@@ -106,7 +106,6 @@ class Attocube_ANC150(Instrument):
             while not (line.startswith('OK') or line.startswith('ERROR')):
                 lastline = line
                 line = self._visa.read()
-                print 'Read: %s' % line
         finally:
             if line.startswith('ERROR'):
                 self._last_error = line
@@ -202,3 +201,9 @@ class Attocube_ANC150(Instrument):
         reply = self._ask('stepu %d %s' % (channel, steps))
         return (reply is not None)
 
+    def step(self, channel, steps):
+        if steps > 0:
+            return self.stepu(channel, steps)
+        elif steps < 0:
+            return self.stepd(channel, -steps)
+        return True
