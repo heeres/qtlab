@@ -21,7 +21,6 @@ import qt
 
 from gettext import gettext as _L
 
-from flexscale import FlexScale
 from qttable import QTTable
 
 class QTWatch(QTWindow):
