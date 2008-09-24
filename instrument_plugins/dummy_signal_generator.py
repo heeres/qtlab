@@ -28,7 +28,10 @@ class dummy_signal_generator(Instrument):
 
         self.add_parameter('wave', type=types.FloatType,
                 flags=Instrument.FLAG_GET,
-                units='AU')
+                units='AU', doc="""
+                Return the current value of the generated wave.
+                Arbitrary units.
+                """)
 
         self.set_type('sin')
         self.set_amplitude(1)
