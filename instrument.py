@@ -391,30 +391,34 @@ class Instrument(gobject.GObject):
     def format_parameter_value(self, param, val):
         opt = self.get_parameter_options(param)
 
-        if 'format' in opt:
-            format = opt['format']
-        else:
-            format = '%s'
-
-        if type(val) in (types.ListType, types.TupleType):
-            val = tuple(val)
-            if type(format) not in (types.ListType, types.TupleType):
-                format = ['%s, ' % format for i in val]
-
-        elif type(val) is types.DictType:
-            fmt = ""
-            first = True
-            for k in val.keys():
-                if first:
-                    fmt += '%s: %s' % (k, format)
-                    first = False
-                else:
-                    fmt += ', %s: %s' % (k, format)
-            format = fmt
-            val = tuple(val.values())
-
         try:
+            if 'format_function' in opt:
+                valstr = opt['format_function'](val)
+            elif 'format_map' in opt:
+                valstr = opt['format_map'][val]
+            else:
+                if 'format' in opt:
+                    format = opt['format']
+                else:
+                    format = '%s'
+
+                if type(val) in (types.ListType, types.TupleType):
+                    val = tuple(val)
+
+                elif type(val) is types.DictType:
+                    fmt = ""
+                    first = True
+                    for k in val.keys():
+                        if first:
+                            fmt += '%s: %s' % (k, format)
+                            first = False
+                        else:
+                            fmt += ', %s: %s' % (k, format)
+                    format = fmt
+                    val = tuple(val.values())
+
             valstr = format % (val)
+
         except Exception, e:
             valstr = str(val)
 
