@@ -29,13 +29,17 @@ class QTInstrumentFrame(gtk.Frame):
 
         self.set_label(ins.get_name())
 
+        self._tips = gtk.Tooltips()
+        self._tips.enable()
+
         self._instrument = ins
         self._label_name = {}
         self._label_val = {}
         self._label_range = {}
         self._label_rate = {}
-        self._add_parameters()
         self._update_dict = {}
+
+        self._add_parameters()
 
         ins.connect('parameter-added', self._parameter_added_cb)
         ins.connect('parameter-changed', self._parameter_changed_cb)
@@ -48,7 +52,12 @@ class QTInstrumentFrame(gtk.Frame):
     def _add_parameter_by_name(self, param):
         popts = self._instrument.get_parameter_options(param)
 
-        plabel = gtk.Label(param)
+        if 'doc' in popts:
+            plabel = gtk.Label(param + ' [?]')
+            self._tips.set_tip(plabel, popts['doc'])
+        else:
+            plabel = gtk.Label(param)
+
         plabel.set_justify(gtk.JUSTIFY_RIGHT)
         plabel.show()
         self._name_box.pack_start(plabel, False, False)
