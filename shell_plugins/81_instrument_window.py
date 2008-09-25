@@ -22,9 +22,120 @@ from gettext import gettext as _L
 
 import qt
 
+class QTAddInstrumentFrame(gtk.Frame):
+
+    def __init__(self, **kwargs):
+        gtk.Frame.__init__(self, **kwargs)
+
+        self._instruments = qt.instruments
+
+        self.set_label(_L('Add instrument'))
+
+        name_label = gtk.Label(_L('Name'))
+        self._name_entry = gtk.Entry()
+        self._name_entry.connect('changed', self._name_changed_cb)
+
+        type_label = gtk.Label(_L('Type'))
+        self._type_dropdown = InstrumentTypeDropdown()
+        self._type_dropdown.connect('changed', self._dropdown_changed_cb)
+        self._add_button = gtk.Button(_L('Add'))
+        self._add_button.connect('clicked', self._add_clicked_cb)
+        self._add_button.set_sensitive(False)
+
+        self._argument_table = gtk.Table(2, 2)
+        self._argument_table.attach(name_label, 0, 1, 0, 1)
+        self._argument_table.attach(self._name_entry, 1, 2, 0, 1)
+        self._argument_table.attach(type_label, 0, 1, 1, 2)
+        self._argument_table.attach(self._type_dropdown, 1, 2, 1, 2)
+        self._argument_info = {}
+
+        self.add(pack_vbox([
+                self._argument_table,
+                self._add_button
+            ], False, False))
+
+        self.show_all()
+
+    def _dropdown_changed_cb(self, widget):
+        type_name = self._type_dropdown.get_typename()
+        if type_name is None:
+            args = None
+        else:
+            args = self._instruments.get_type_arguments(type_name)
+        self._set_type_arguments(args)
+
+        self._update_add_button_sensitivity()
+
+    def _remove_arguments(self):
+        for name, info in self._argument_info.iteritems():
+            self._argument_table.remove(info['label'])
+            self._argument_table.remove(info['entry'])
+
+        self._argument_info = {}
+
+    def _set_type_arguments(self, args):
+        self._remove_arguments()
+        if args is None:
+            return
+
+        i = -1
+        rows = 0
+        arg_names = args[0]
+        defaults = args[3]
+        for name in arg_names:
+            i += 1
+            if name in ('self', 'name'):
+                continue
+            rows += 1
+
+            label = gtk.Label(name)
+            entry = gtk.Entry()
+            if defaults is not None and i >= len(arg_names) - len(defaults):
+                entry.set_text(str(defaults[i - len(arg_names) + len(defaults)]))
+
+            self._argument_info[name] = {'label': label, 'entry': entry}
+            self._argument_table.resize(rows + 2, 2)
+            self._argument_table.attach(label, 0, 1, rows + 2, rows + 3)
+            self._argument_table.attach(entry, 1, 2, rows + 2, rows + 3)
+
+        self.show_all()
+
+    def _add_clicked_cb(self, widget):
+        name = self._name_entry.get_text()
+        typename = self._type_dropdown.get_typename()
+        args = {}
+        for param, info in self._argument_info.iteritems():
+            value = info['entry'].get_text()
+            try:
+                value = eval(value)
+            except:
+                pass
+
+            if value == '':
+                value = None
+            args[param] = value
+
+        logging.debug("Creating %s as %s, **args: %r", name, typename, args)
+        ins = qt.instruments.create(name, typename, **args)
+        if ins is not None:
+            self._name_entry.set_text('')
+            self._type_dropdown.select_none_type()
+
+    def _name_changed_cb(self, widget):
+        self._update_add_button_sensitivity()
+
+    def _update_add_button_sensitivity(self):
+        typename = self._type_dropdown.get_typename()
+        namelen = len(self._name_entry.get_text())
+
+        if typename is not None and typename != '' and namelen > 0:
+            self._add_button.set_sensitive(True)
+        else:
+            self._add_button.set_sensitive(False)
+
 class QTInstrumentFrame(gtk.Frame):
 
-    def __init__(self, ins, **kwargs):
+    def __init__(self, ins, show_range, show_rate, **kwargs):
         gtk.Frame.__init__(self, **kwargs)
 
         self.set_label(ins.get_name())
@@ -45,6 +156,8 @@ class QTInstrumentFrame(gtk.Frame):
         ins.connect('parameter-changed', self._parameter_changed_cb)
 
         self.show()
+        self.show_range_column(show_range)
+        self.show_rate_column(show_rate)
 
         # Update variables twice per second
         gobject.timeout_add(500, self._do_update_parameters_timer)
@@ -142,14 +255,14 @@ class QTInstrumentFrame(gtk.Frame):
     def get_instrument(self):
         return self._instrument
 
-    def toggle_range_column(self):
-        if self._range_box.props.visible:
+    def show_range_column(self, show):
+        if not show:
             self._range_box.hide()
         else:
             self._range_box.show()
 
-    def toggle_rate_column(self):
-        if self._rate_box.props.visible:
+    def show_rate_column(self, show):
+        if not show:
             self._rate_box.hide()
         else:
             self._rate_box.show()
@@ -184,6 +297,9 @@ class QTInstruments(QTWindow):
             gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
 
+        self._add_instrument_frame = QTAddInstrumentFrame()
+        self._vbox.pack_start(self._add_instrument_frame)
+
         self._range_toggle = gtk.ToggleButton(_L('Range'))
         self._range_toggle.set_active(True)
         self._range_toggle.connect('toggled', self._range_toggled_cb)
@@ -208,7 +324,9 @@ class QTInstruments(QTWindow):
 
     def _add_instrument(self, ins):
         name = ins.get_name()
-        self._ins_widgets[name] = QTInstrumentFrame(ins)
+        self._ins_widgets[name] = QTInstrumentFrame(ins,
+            self._range_toggle.get_active(),
+            self._rate_toggle.get_active())
         self._vbox.pack_start(self._ins_widgets[name], False, False)
 
     def _remove_instrument(self, insname):
@@ -245,31 +363,33 @@ class QTInstruments(QTWindow):
         for name, widget in self._ins_widgets.iteritems():
             ins = widget.get_instrument()
             if tag == 'All' or tag in ins.get_tags():
-                widget.show_all()
+                widget.show()
             else:
-                widget.hide_all()
+                widget.hide()
 
     def _range_toggled_cb(self, sender):
+        state = self._range_toggle.get_active()
         for name, widget in self._ins_widgets.iteritems():
-            widget.toggle_range_column()
+            widget.show_range_column(state)
 
     def _rate_toggled_cb(self, sender):
+        state = self._rate_toggle.get_active()
         for name, widget in self._ins_widgets.iteritems():
-            widget.toggle_rate_column()
+            widget.show_rate_column(state)
+
+try:
+    qt.inswin
+except:
+    qt.inswin = QTInstruments()
 
 def showinstruments():
-    global _inswin
-    _inswin.show()
+    get_inswin().show()
 
 def hideinstruments():
-    global _inswin
-    _inswin.hide()
-
-_inswin = QTInstruments()
+    get_inswin().hide()
 
 def get_inswin():
-    global _inswin
-    return _inswin
+    return qt.inswin
 
 if __name__ == "__main__":
     gtk.main()
