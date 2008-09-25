@@ -297,9 +297,6 @@ class QTInstruments(QTWindow):
             gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
 
-        self._add_instrument_frame = QTAddInstrumentFrame()
-        self._vbox.pack_start(self._add_instrument_frame)
-
         self._range_toggle = gtk.ToggleButton(_L('Range'))
         self._range_toggle.set_active(True)
         self._range_toggle.connect('toggled', self._range_toggled_cb)
@@ -311,8 +308,6 @@ class QTInstruments(QTWindow):
             self._range_toggle,
             self._rate_toggle], True, True))
 
-        self._vbox.show_all()
-
         self._ins_widgets = {}
         self._add_instruments()
 
@@ -320,7 +315,16 @@ class QTInstruments(QTWindow):
         self._scrolled_win.show()
         self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self._scrolled_win.add_with_viewport(self._vbox)
-        self.add(self._scrolled_win)
+
+        self._add_instrument_frame = QTAddInstrumentFrame()
+
+        self._notebook = gtk.Notebook()
+        self._notebook.append_page(self._scrolled_win,
+            gtk.Label(_L('Info')))
+        self._notebook.append_page(self._add_instrument_frame,
+            gtk.Label(_L('Create')))
+        self._notebook.show_all()
+        self.add(self._notebook)
 
     def _add_instrument(self, ins):
         name = ins.get_name()
