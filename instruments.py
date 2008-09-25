@@ -119,6 +119,7 @@ class Instruments(gobject.GObject):
             if ext == '.py' and name != "__init__" and name[0] != '_':
                 ret.append(name)
 
+        ret.sort()
         return ret
 
     def get_type_arguments(self, typename):
