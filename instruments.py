@@ -121,6 +121,35 @@ class Instruments(gobject.GObject):
 
         return ret
 
+    def get_type_arguments(self, typename):
+        '''
+        Return info about the arguments of the constructor of 'typename'.
+
+        Input:
+            typename (string)
+        Output:
+            Tuple of (args, varargs, varkw, defaults)
+            args: argument names
+            varargs: name of '*' argument
+            varkw: name of '**' argument
+            defaults: default values
+        '''
+
+        importstr = """if True:
+                import instrument_plugins.%(type)s
+                import inspect
+                _info = inspect.getargspec(instrument_plugins.%(type)s.%(type)s.__init__)""" \
+            % {'type': typename}
+
+        try:
+            _info = None
+            code.compile_command(importstr)
+            exec importstr
+            return _info
+
+        except Exception, e:
+            return None
+
     def get_tags(self):
         '''
         Return list of tags present in instruments.
