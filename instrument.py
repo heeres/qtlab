@@ -420,7 +420,7 @@ class Instrument(gobject.GObject):
                 elif val is None:
                     val = ''
 
-            valstr = format % (val)
+                valstr = format % (val)
 
         except Exception, e:
             valstr = str(val)
