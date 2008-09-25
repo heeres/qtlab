@@ -417,6 +417,9 @@ class Instrument(gobject.GObject):
                     format = fmt
                     val = tuple(val.values())
 
+                elif val is None:
+                    val = ''
+
             valstr = format % (val)
 
         except Exception, e:
