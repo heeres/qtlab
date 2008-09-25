@@ -87,6 +87,34 @@ class InstrumentDropdown(QTComboBox):
         except:
             return None
 
+class InstrumentTypeDropdown(QTComboBox):
+    '''
+    Dropdown to select an instrument type.
+    '''
+
+    def __init__(self):
+        self._type_list = gtk.ListStore(gobject.TYPE_STRING)
+        QTComboBox.__init__(self, model=self._type_list)
+
+        self._type_list.append(['<None>'])
+        for name in qt.instruments.get_types():
+            self._type_list.append([name])
+
+    def get_typename(self):
+        try:
+            item = self.get_active_iter()
+            type_name = self._type_list.get(item, 0)
+            if type_name[0] == '<None>':
+                return None
+            else:
+                return type_name[0]
+
+        except:
+            return None
+
+    def select_none_type(self):
+        self.set_active(0)
+
 class InstrumentParameterDropdown(QTComboBox):
     '''
     Dropdown to select a parameter from a given instrument.
