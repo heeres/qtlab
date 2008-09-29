@@ -85,6 +85,9 @@ class Instruments(gobject.GObject):
         Output: Instrument object
         '''
         
+        if isinstance(name, instrument.Instrument):
+            return name
+
         if type(name) == types.TupleType:
             if len(name) != 1:
                 return None
