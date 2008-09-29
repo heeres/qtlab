@@ -20,8 +20,8 @@ class example(Instrument):
                 tags=['measure'])
         self.add_parameter('speed', type=types.IntType,
                 flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-                minval=0, maxval=10,
-                units='Hz')
+                minval=0, maxval=2,
+                format_map={0: 'slow', 1: 'medium', 2: 'fast'})
         self.add_parameter('input', type=types.FloatType,
                 flags=Instrument.FLAG_GET,
                 channels=(1, 4),
