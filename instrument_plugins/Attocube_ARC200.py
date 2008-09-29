@@ -56,7 +56,16 @@ class Attocube_ARC200(Instrument):
 
         self.add_parameter('mode',
             flags=Instrument.FLAG_SET,
-            type=types.StringType)
+            type=types.IntType,
+            format_map={
+                0: 'CONT',
+                1: 'SINGLE',
+            },
+            doc="""
+            Get/set mode:
+                0: Continuous
+                1: Single measurement
+            """)
         self.add_parameter('refvoltage',
             flags=Instrument.FLAG_GETSET,
             type=types.IntType,
@@ -68,7 +77,7 @@ class Attocube_ARC200(Instrument):
             minval=0, maxval=self.UNIT_G,
             format_function=lambda uid: self.UNITS[uid])
 
-        self.add_parameter('values',
+        self.add_parameter('position',
             flags=Instrument.FLAG_GET,
 	    format='%.03f, %.03f, %.03f')
 
@@ -94,18 +103,13 @@ class Attocube_ARC200(Instrument):
         self.write_line('resetp')
 
     def get_all(self):
-        self.get_values()
+        self.get_position()
 
     def _do_set_mode(self, mode):
         '''
-        Set the measurement mode to continuous ('C') or interval ('I')
+        Set the measurement mode to continuous (0) or interval (1)
         '''
 
-        if type(mode) == types.StringType:
-            if mode.upper() == 'C':
-                mode = 0
-            elif mode.upper() == 'I':
-                mode = 1
         if int(mode) not in (0, 1):
             return False
 
@@ -117,7 +121,7 @@ class Attocube_ARC200(Instrument):
     def _do_set_voltage(self, ref):
         self.write_line('SRE %d' % ref)
 
-    def _do_get_values(self):
+    def _do_get_position(self):
         reply = self.ask('C')
         str_list = reply.split(',')
         float_list = [float(str_item) for str_item in str_list]

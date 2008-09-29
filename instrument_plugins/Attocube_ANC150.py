@@ -21,6 +21,7 @@ import types
 import logging
 import re
 import time
+import copy
 
 class Attocube_ANC150(Instrument):
 
@@ -67,6 +68,13 @@ class Attocube_ANC150(Instrument):
             channels=(1, 3),
             type=types.IntType)
 
+        self._speed = [0, 0, 0]
+        self.add_parameter('speed',
+            flags=Instrument.FLAG_SET|Instrument.FLAG_SOFTGET,
+            doc="""
+            Set speed for continuous motion mode.
+            """)
+
         self.add_function('stepd', parameters=[{
                 'name': 'channel',
                 'type': types.IntType,
@@ -74,7 +82,10 @@ class Attocube_ANC150(Instrument):
                 'name': 'steps',
                 'type': types.IntType
             }])
-        
+
+        self.add_function('start')
+        self.add_function('stop')
+
         if reset:
             self.reset()
         else:
@@ -146,7 +157,6 @@ class Attocube_ANC150(Instrument):
         return 'SN %s' % sn
 
     def _do_get_mode(self, channel):
-        print 'Getting mode'
         reply = self._ask('getm %d' % channel)
         return self._parse(reply, self._RE_MODE)
 
@@ -207,3 +217,38 @@ class Attocube_ANC150(Instrument):
         elif steps < 0:
             return self.stepd(channel, -steps)
         return True
+
+    def _do_set_speed(self, val):
+        for i in range(len(self._speed)):
+            if self._speed[i] != val[i]:
+                self.set('frequency%d' % (i + 1), int(abs(val[i])))
+        self._speed = copy.copy(val)
+
+    def start(self):
+        '''Start continuous motion'''
+
+        print 'Starting motion: %s' % str(self._speed)
+        for i in range(len(self._speed)):
+            mode = self.get('mode%d' % (i + 1), query=False)
+
+            if self._speed[i] > 0 and mode != 'stp':
+                print 'channel %d up cont' % (i + 1)
+                self.set('mode%d' % (i + 1), 's')
+                self.stepu(i + 1, 'c')
+            elif self._speed[i] < 0 and mode != 'stp':
+                print 'channel %d up cont' % (i + 1)
+                self.set('mode%d' % (i + 1), 's')
+                self.stepd(i + 1, 'c')
+            elif mode != 'gnd':
+                print 'channel %d gnd' % (i + 1)
+                self.set('mode%d' % (i + 1), 'g')
+
+    def stop(self):
+        '''Stop continuous motion'''
+
+        for i in range(len(self._speed)):
+            mode = self.get('mode%d' % (i + 1), query='False')
+            if mode != 'gnd':
+                print 'channel %d gnd' % (i + 1)
+                self.set('mode%d' % (i + 1), 'g')
+
