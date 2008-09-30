@@ -1,4 +1,5 @@
 import time
+import misc
 
 def _all_true(vec):
     for v in vec:
@@ -6,7 +7,7 @@ def _all_true(vec):
             return False
     return True
 
-def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay=0.05):
+def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay=0.05, channel_ofs=0):
     """
     move_abs, generic function to control read-out/positioner combo
 
@@ -19,6 +20,7 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
         maxstep: maximum steps
         minstep: minimum steps for fine position
         delay: time delay after each step
+        channel_ofs: if channels do not start counting at zero, change this
     """
 
     channels = len(newpos)
@@ -38,14 +40,14 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
         # Move
         for i in range(channels):
             if not hold[i]:
-                moveins.step(i, steps[i])
+                moveins.step(i + channel_ofs, steps[i])
         time.sleep(0.05)
 
         pos2 = posins.get_position()
         delta2 = [newpos[i] - pos2[i] for i in range(channels)]
-        dist2 = [abs(deltar[i]) for i in range(channels)]
-        print 'move_abs(): pos = %r, delta2 = %r' % \
-            (repr(pos2), repr(delta2))
+        dist2 = [abs(delta2[i]) for i in range(channels)]
+#        print 'move_abs(): pos = %r, delta2 = %r' % \
+#            (repr(pos2), repr(delta2))
 
         if increase_steps:
             for i in range(channels):
@@ -53,8 +55,8 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
                     if misc.sign(delta2[i]) != misc.sign(delta[i]):
                         hold[i] = True
                     elif abs(steps[i]) != maxstep:
-                        print 'move_abs(): increasing stepsize for ch%d' % i
                         steps[i] = misc.sign(delta2[i]) * min(abs(steps[i]) * 2, maxstep)
+#                        print 'move_abs(): increasing stepsize for ch%d to %f' % (i, steps[i]) 
 
             if _all_true(hold):
                 increase_steps = False
@@ -69,6 +71,7 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
                             hold[i] = True
                         else:
                             steps[i] = int(misc.sign(delta2[i]) * max(round(abs(steps[i]) / 2), minstep))
+#                            print 'move_abs(): decreasing stepsize for ch%d to %f' % (i, steps[i])
 
             if _all_true(hold):
                 print 'Moved to position!'
@@ -78,8 +81,6 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
             delta = delta2
 
         j += 1
-
-    print 'move_abs(): Finished'
 
 def scan_simple(ins):
     pass
