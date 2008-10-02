@@ -285,6 +285,12 @@ class Instrument(gobject.GObject):
 
         self.emit('parameter-added', name)
 
+    def has_parameter(self, name):
+        '''
+        Return whether instrument has a parameter called 'name'
+        '''
+        return (name in self._parameters)
+
     def get_parameter_options(self, name):
         '''
         Return list of options for paramter.
