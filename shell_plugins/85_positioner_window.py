@@ -208,13 +208,15 @@ class PositionBookmarks(gtk.Frame):
         gtk.Frame.__init__(self)
 
         self.set_label(_L('Bookmarks'))
-        self.set_instrument(ins)
 
         self._add_button = gtk.Button(_L('Add'))
         self._add_button.connect('clicked', self._add_clicked_cb)
 
-        self._go_button = gtk.Button(_L('Go'))
-        self._go_button.connect('clicked', self._go_clicked_cb)
+        self._goxy_button = gtk.Button(_L('Goto XY'))
+        self._goxy_button.connect('clicked', self._go_clicked_cb, 2)
+
+        self._goxyz_button = gtk.Button(_L('Goto XYZ'))
+        self._goxyz_button.connect('clicked', self._go_clicked_cb, 3)
 
         self._remove_button = gtk.Button(_L('Remove'))
         self._remove_button.connect('clicked', self._remove_clicked_cb)
@@ -227,14 +229,17 @@ class PositionBookmarks(gtk.Frame):
 
         self._label_entry = gtk.Entry()
 
+        self.set_instrument(ins)
+
         vbox = pack_vbox([
                 pack_hbox([
                     gtk.Label(_L('Label')),
                     self._label_entry], True, False),
                 pack_hbox([
                     self._add_button,
-                    self._go_button,
-                    self._remove_button], False, False),
+                    self._goxy_button,
+                    self._goxyz_button,
+                    self._remove_button], True, True),
                 self._tree_view
                 ], False, False)
         vbox.set_border_width(4)
@@ -243,6 +248,21 @@ class PositionBookmarks(gtk.Frame):
 
     def set_instrument(self, ins):
         self._ins = ins
+
+        bval = False
+        if ins is not None:
+            bval = True
+        self._add_button.set_sensitive(bval)
+
+        bval = False
+        if ins is not None and ins.get_channels() > 1:
+            bval = True
+        self._goxy_button.set_sensitive(bval)
+
+        bval = False
+        if ins is not None and ins.get_channels() > 2:
+            bval = True
+        self._goxyz_button.set_sensitive(bval)
 
     def _add_clicked_cb(self, widget):
         pos = self._ins.get_position()
@@ -256,7 +276,7 @@ class PositionBookmarks(gtk.Frame):
             iter = model.get_iter(row)
             model.remove(iter)
 
-    def _go_clicked_cb(self, widget):
+    def _go_clicked_cb(self, widget, nchannels):
         (model, rows) = self._tree_view.get_selection().get_selected_rows()
         if len(rows) != 1:
             logging.warning('Select 1 row only!')
@@ -266,6 +286,7 @@ class PositionBookmarks(gtk.Frame):
         posstr = model.get_value(iter, 1)
 
         pos = eval(posstr)
+        pos = pos[:nchannels]
         self.emit('go-request', pos)
 
 class QTPositioner(QTWindow):
@@ -293,13 +314,16 @@ class QTPositioner(QTWindow):
         self._ins_combo.connect('changed', self._instrument_changed_cb)
         self._instrument = None
 
+        poslabel = gtk.Label()
+        poslabel.set_markup('<big>%s</big>' % _L('Position'))
         self._position_label = gtk.Label()
+        self._update_position()
 
         vbox = pack_vbox([
             self._ins_combo,
             pack_hbox([
-                gtk.Label(_L('Position')),
-                self._position_label], False, False),
+                poslabel,
+                self._position_label], True, True),
             self._controls,
             self._bookmarks], False, False)
 
@@ -323,9 +347,10 @@ class QTPositioner(QTWindow):
         self._instrument = ins
         self._controls.set_instrument(ins)
         self._bookmarks.set_instrument(ins)
+        self._update_position()
 
     def _go_request(self, sender, position):
-        self._instrument.move_abs((position[0], position[1]))
+        self._instrument.move_abs(position)
 
     def _direction_clicked_cb(self, sender, direction):
         self._direction_down = direction
@@ -373,16 +398,19 @@ class QTPositioner(QTWindow):
         return ret
 
     def _update_position(self):
-        pos = self._instrument.get_position()
-        posstr = self._instrument.format_parameter_value('position', pos)
-        self._position_label.set_text(posstr)
+        if self._instrument is not None and self._instrument.has_parameter('position'):
+            pos = self._instrument.get_position()
+            posstr = self._instrument.format_parameter_value('position', pos)
+        else:
+            posstr = 'None'
+        self._position_label.set_markup('<big>%s</big>' % posstr)
 
     def _position_timer(self):
         self._counter += 1
         ret = self._update_speed()
         if not ret:
             self._timer_hid = None
-        if (self._counter % 5) == 0:
+        if (self._counter % 5) == 0 or not ret:
             self._update_position()
         return ret
 
