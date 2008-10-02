@@ -18,6 +18,7 @@
 import gtk
 import gobject
 import threading
+import time
 
 from gettext import gettext as _
 
@@ -51,6 +52,26 @@ def get_guisignals():
 
 def update_gui():
     get_guisignals().update_gui()
+
+def update_gui_sleep(delay):
+    '''
+    Function to sleep for a time 'delay' (float) in seconds.
+
+    However, it also calls update_gui() every 0.1 seconds and deducts the time
+    that takes from the delay, so that in total this function will take the
+    requested amount of time.
+    '''
+
+    while delay > 0:
+        t = time.time()
+        update_gui()
+        dt = time.time() - t
+        if delay > 0.1:
+            time.sleep(max(0, 0.1 - dt))
+            delay -= 0.1
+        else:
+            time.sleep(max(0, delay - dt))
+            delay = 0
 
 def register_global(name, val):
     get_guisignals().register_global(name, val)
