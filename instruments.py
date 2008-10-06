@@ -19,7 +19,6 @@ import code
 import gobject
 import types
 import os
-import visa
 import logging
 import sys
 import instrument
@@ -162,7 +161,7 @@ class Instruments(gobject.GObject):
 
         return self._tags
 
-    def create(self, name, type, **kwargs):
+    def create(self, name, instype, **kwargs):
         '''
         Create an instrument called 'name' of type 'type'.
 
@@ -183,7 +182,7 @@ class Instruments(gobject.GObject):
         importstr = """if True:
                 import instrument_plugins.%(type)s
                 _ins = instrument_plugins.%(type)s.%(type)s(%(name)r%(args)s)""" \
-            % {'type': type, 'name': name, 'args': argstr}
+            % {'type': instype, 'name': name, 'args': argstr}
 
 #        print 'Executing: %s' % importstr
         try:

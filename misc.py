@@ -1,13 +1,15 @@
 import math
 import StringIO
 
-def dict_to_ordered_tuples(d):
-    keys = d.keys()
+def dict_to_ordered_tuples(dic):
+    '''Convert a dictionary to a list of tuples, sorted by key.'''
+    keys = dic.keys()
     keys.sort()
-    ret = [(key, d[key]) for key in keys]
+    ret = [(key, dic[key]) for key in keys]
     return ret
 
 def seconds_to_str(secs):
+    '''Convert a number of seconds to hh:mm:ss string.'''
     hours = math.floor(secs / 3600)
     secs -= hours * 3600
     mins = math.floor(secs / 60)
@@ -15,6 +17,7 @@ def seconds_to_str(secs):
     return '%02d:%02d:%02d' % (hours, mins, secs)
 
 def pil_to_pixbuf(pilimage):
+    '''Convert a PIL image to a pixbuf.'''
     import gtk
 
     file = StringIO.StringIO()
@@ -41,17 +44,18 @@ def visa_read_all(visains):
 
     visa.warnings.filterwarnings("ignore", "VI_SUCCESS_MAX_CNT")
     try:
-        buffer = ""
-        len = vpp43.get_attribute(self.vi, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
-        while len > 0:
-            chunk = vpp43.read(self.vi, len)
-            buffer += chunk
-            len = vpp43.get_attribute(self.vi, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
+        buf = ""
+        blen = vpp43.get_attribute(visains, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
+        while blen > 0:
+            chunk = vpp43.read(visains, blen)
+            buf += chunk
+            blen = vpp43.get_attribute(visains, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
     finally:
         visa._removefilter("ignore", "VI_SUCCESS_MAX_CNT")
     return buffer
 
 def sign(val):
+    '''Return the sign of a value.'''
     if val < 0:
         return -1
     else:
