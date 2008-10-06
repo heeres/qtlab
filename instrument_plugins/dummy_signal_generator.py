@@ -13,8 +13,13 @@ class dummy_signal_generator(Instrument):
     def __init__(self, name, address=None):
         Instrument.__init__(self, name, tags=['measure', 'generate'])
 
-        self.add_parameter('type', type=types.StringType,
-                flags=Instrument.FLAG_GETSET)
+        self.add_parameter('type', type=types.IntType,
+                flags=Instrument.FLAG_GETSET,
+                format_map={
+                    1: 'SIN',
+                    2: 'SQUARE',
+                    3: 'SAW'
+                })
 
         self.add_parameter('amplitude', type=types.FloatType,
                 flags=Instrument.FLAG_SET | Instrument.FLAG_SOFTGET,
@@ -33,28 +38,17 @@ class dummy_signal_generator(Instrument):
                 Arbitrary units.
                 """)
 
-        self.set_type('sin')
+        self.set_type(1)
         self.set_amplitude(1)
         self.set_frequency(0.2)
 
         self._start_time = time.time()
 
     def _do_set_type(self, val):
-        val = val.upper()
-
-        if val == 'SIN':
-            self._type = self.TYPE_SIN
-        elif val == 'SQR':
-            self._type = self.TYPE_SQUARE
-        elif val == 'SAW':
-            self._type = self.TYPE_SAW
-        else:
-            return
-
-        self._type_str = val
+        self._type = val
 
     def _do_get_type(self):
-        return self._type_str
+        return self._type
 
     def _do_set_amplitude(self, val):
         self._amplitude = val
