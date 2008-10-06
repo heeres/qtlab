@@ -22,6 +22,7 @@ import qt
 from gettext import gettext as _L
 
 from qttable import QTTable
+from packages import dropdowns
 
 class QTWatch(QTWindow):
 
@@ -34,10 +35,10 @@ class QTWatch(QTWindow):
         self._frame = gtk.Frame()
         self._frame.set_label(_L('Add variable'))
 
-        self._ins_combo = InstrumentDropdown()
+        self._ins_combo = dropdowns.InstrumentDropdown()
         self._ins_combo.connect('changed', self._instrument_changed_cb)
 
-        self._param_combo = InstrumentParameterDropdown()
+        self._param_combo = dropdowns.InstrumentParameterDropdown()
         self._param_combo.connect('changed', self._parameter_changed_cb)
 
         self._interval = gtk.SpinButton(climb_rate=1, digits=0)

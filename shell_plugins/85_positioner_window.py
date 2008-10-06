@@ -23,6 +23,7 @@ import qt
 from gettext import gettext as _L
 
 from qttable import QTTable
+from packages.dropdowns import InstrumentDropdown
 
 class PositionControls(gtk.Frame):
 

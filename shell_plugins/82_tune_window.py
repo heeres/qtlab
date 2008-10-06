@@ -21,7 +21,8 @@ import qt
 
 from gettext import gettext as _
 
-from flexscale import FlexScale
+from packages.flexscale import FlexScale
+from packages import dropdowns
 
 class QTTune(QTWindow):
 
@@ -29,10 +30,10 @@ class QTTune(QTWindow):
         QTWindow.__init__(self, 'Tune')
         self.connect("delete-event", self._delete_event_cb)
 
-        self._ins_combo = InstrumentDropdown()
+        self._ins_combo = dropdowns.InstrumentDropdown()
         self._ins_combo.connect('changed', self._instrument_changed_cb)
 
-        self._param_combo = InstrumentParameterDropdown()
+        self._param_combo = dropdowns.InstrumentParameterDropdown()
         self._param_combo.connect('changed', self._parameter_changed_cb)
 
         self._get_but = gtk.Button('Get')
@@ -42,7 +43,7 @@ class QTTune(QTWindow):
         self._set_but.connect('clicked', self._set_param_clicked_cb)
         param_getset = pack_hbox([self._get_but, self._param_edit, self._set_but])
 
-        self._function_combo = InstrumentFunctionDropdown()
+        self._function_combo = dropdowns.InstrumentFunctionDropdown()
         self._function_combo.connect('changed', self._function_changed_cb)
 
         self._call_but = gtk.Button('Call')

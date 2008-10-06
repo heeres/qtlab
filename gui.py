@@ -119,3 +119,15 @@ def build_menu(tree, accelgroup=None, root=True):
 
     return menu
 
+
+def pack_hbox(items, expand=True, fill=True):
+    hbox = gtk.HBox()
+    for i in items:
+        hbox.pack_start(i, expand, fill)
+    return hbox
+
+def pack_vbox(items, expand=True, fill=True):
+    vbox = gtk.VBox()
+    for i in items:
+        vbox.pack_start(i, expand, fill)
+    return vbox

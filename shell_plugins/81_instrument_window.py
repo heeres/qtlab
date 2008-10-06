@@ -21,6 +21,7 @@ import gobject
 from gettext import gettext as _L
 
 import qt
+from packages import dropdowns
 
 class QTAddInstrumentFrame(gtk.Frame):
 
@@ -36,7 +37,7 @@ class QTAddInstrumentFrame(gtk.Frame):
         self._name_entry.connect('changed', self._name_changed_cb)
 
         type_label = gtk.Label(_L('Type'))
-        self._type_dropdown = InstrumentTypeDropdown()
+        self._type_dropdown = dropdowns.InstrumentTypeDropdown()
         self._type_dropdown.connect('changed', self._dropdown_changed_cb)
         self._add_button = gtk.Button(_L('Add'))
         self._add_button.connect('clicked', self._add_clicked_cb)
@@ -287,7 +288,7 @@ class QTInstruments(QTWindow):
         qt.instruments.connect('instrument-removed', self._instrument_removed_cb)
         qt.instruments.connect('instrument-changed', self._instrument_changed_cb)
 
-        self._tags_dropdown = TagsDropdown()
+        self._tags_dropdown = dropdowns.TagsDropdown()
         self._tags_dropdown.connect('changed', self._tag_changed_cb)
         self._tags_dropdown.show()
 

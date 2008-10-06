@@ -1,4 +1,4 @@
-# 15_dropdowns.py, dropdown support for Instruments
+# dropdowns.py, dropdown support for Instruments
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,22 +16,13 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
+import gobject
+import logging
+import types
 
+from instrument import Instrument
+import misc
 import qt
-
-def pack_hbox(items, expand=True, fill=True):
-    hbox = gtk.HBox()
-    for i in items:
-        hbox.pack_start(i, expand, fill)
-#        hbox.pack_start(i)
-    return hbox
-
-def pack_vbox(items, expand=True, fill=True):
-    vbox = gtk.VBox()
-    for i in items:
-        vbox.pack_start(i, expand, fill)
-#        vbox.pack_start(i)
-    return vbox
 
 class QTComboBox(gtk.ComboBox):
 
@@ -175,7 +166,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
             self._instrument.connect('parameter-added', self._parameter_added_cb)
 
-            for (name, options) in dict_to_ordered_tuples(ins.get_parameters()):
+            for (name, options) in misc.dict_to_ordered_tuples(ins.get_parameters()):
                 if len(self._types) > 0 and options['type'] not in self._types:
                     continue
 
@@ -236,7 +227,7 @@ class InstrumentFunctionDropdown(QTComboBox):
             self._func_list.append(['<None>', '<Nothing>'])
 
             funcs = ins.get_functions()
-            for (name, options) in dict_to_ordered_tuples(funcs):
+            for (name, options) in misc.dict_to_ordered_tuples(funcs):
                 if 'doc' in options:
                     doc = options['doc']
                 else:
@@ -305,12 +296,12 @@ class AllParametersDropdown(QTComboBox):
             if ins.handler_is_connected(hid):
                 ins.disconnect(hid)
 
-        inslist = dict_to_ordered_tuples(qt.instruments.get_instruments())
+        inslist = misc.dict_to_ordered_tuples(qt.instruments.get_instruments())
         for (insname, ins) in inslist:
             self._parameter_added_hids[ins] = ins.connect('parameter-added',
                 self._parameter_added_cb)
 
-            params = dict_to_ordered_tuples(ins.get_parameters())
+            params = misc.dict_to_ordered_tuples(ins.get_parameters())
             for (varname, options) in params:
 
                 if len(self._tags) > 0:
