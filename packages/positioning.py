@@ -41,7 +41,7 @@ def move_abs(posins, moveins, newpos, startstep=4, maxstep=128, minstep=1, delay
         for i in range(channels):
             if not hold[i]:
                 moveins.step(i + channel_ofs, steps[i])
-        time.sleep(0.05)
+        time.sleep(delay)
 
         pos2 = posins.get_position()
         delta2 = [newpos[i] - pos2[i] for i in range(channels)]
