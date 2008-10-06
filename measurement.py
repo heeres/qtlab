@@ -18,7 +18,6 @@
 import time
 import gtk
 import gobject
-import os
 
 import logging
 from packages import calltimer

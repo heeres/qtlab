@@ -109,11 +109,13 @@ _config = None
 _work_dir = os.getcwd()
 
 def get_config():
+    '''Get configuration object.'''
     global _config
     if _config is None:
         _config = QTConfig()
     return _config
 
 def get_workdir():
+    '''Get work directory we started in.'''
     global _work_dir
     return _work_dir

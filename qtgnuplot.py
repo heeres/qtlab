@@ -276,6 +276,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 def plotxy(x, y, **kwargs):
     pass
 
-def plotxtz(x, y, z, **kwargs):
+def plotxyz(x, y, z, **kwargs):
     pass
 

@@ -17,10 +17,9 @@
 
 import gtk
 import gobject
-import threading
 import time
 
-from gettext import gettext as _
+from gettext import gettext as _L
 
 class GuiSignals(gobject.GObject):
 
@@ -81,7 +80,7 @@ def check_abort():
     global _abort
     if _abort:
         _abort = False
-        raise ValueError('Human abort')
+        raise ValueError(_L('Human abort'))
 
 def set_abort():
     global _abort
@@ -119,14 +118,15 @@ def build_menu(tree, accelgroup=None, root=True):
 
     return menu
 
-
 def pack_hbox(items, expand=True, fill=True):
+    '''Pack widgets in a HBox and return that.'''
     hbox = gtk.HBox()
     for i in items:
         hbox.pack_start(i, expand, fill)
     return hbox
 
 def pack_vbox(items, expand=True, fill=True):
+    '''Pack widgets in a VBox and return that.'''
     vbox = gtk.VBox()
     for i in items:
         vbox.pack_start(i, expand, fill)

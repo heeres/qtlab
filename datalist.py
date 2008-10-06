@@ -15,8 +15,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import gobject
-
 import data
 import namedlist
 
@@ -41,5 +39,5 @@ class DataList(namedlist.NamedList):
 
     def create(self, name, **kwargs):
         '''Function to create a new data object, do not call directly.'''
-        return data.Data(name=name)
+        return data.Data(name=name, **kwargs)
 
