@@ -22,6 +22,7 @@ import os
 import visa
 import logging
 import sys
+import instrument
 
 class Instruments(gobject.GObject):
 
@@ -84,7 +85,7 @@ class Instruments(gobject.GObject):
         Input:  name of instrument (string)
         Output: Instrument object
         '''
-        
+
         if isinstance(name, instrument.Instrument):
             return name
 
