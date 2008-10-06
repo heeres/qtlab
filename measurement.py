@@ -21,7 +21,7 @@ import gobject
 import os
 
 import logging
-import calltimer
+from packages import calltimer
 
 import qt
 

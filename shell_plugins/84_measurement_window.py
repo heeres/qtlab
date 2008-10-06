@@ -24,7 +24,7 @@ import logging
 from gettext import gettext as _L
 
 from instrument import Instrument
-from calltimer import CallTimerThread
+from packages.calltimer import CallTimerThread
 from packages.dropdowns import AllParametersDropdown
 
 import measurement

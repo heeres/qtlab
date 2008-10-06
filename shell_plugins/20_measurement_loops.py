@@ -3,7 +3,7 @@
 import os
 import shutil
 import copy
-import calltimer
+from packages import calltimer
 
 def _get_steps(start, end, steps, stepsize):
     if steps == 0 and stepsize == 0:
