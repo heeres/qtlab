@@ -20,10 +20,10 @@ def pil_to_pixbuf(pilimage):
     '''Convert a PIL image to a pixbuf.'''
     import gtk
 
-    file = StringIO.StringIO()
-    pilimage.save(file, 'ppm')
-    contents = file.getvalue()
-    file.close()
+    data = StringIO.StringIO()
+    pilimage.save(data, 'ppm')
+    contents = data.getvalue()
+    data.close()
 
     loader = gtk.gdk.PixbufLoader('pnm')
     loader.write(contents, len (contents))
