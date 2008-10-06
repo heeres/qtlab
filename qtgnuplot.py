@@ -16,10 +16,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import gobject
 import Gnuplot
-from time import time
 import os
+
+import logging
 
 import qt
 import namedlist
@@ -37,11 +37,17 @@ class _QTGnuPlot():
     Base class for 2D/3D QT gnuplot classes.
     """
 
-    _plot_list = _GnuPlotList()
+    _gnuplot_list = _GnuPlotList()
 
     def __init__(self, name=''):
-        self._gnuplot = self._plot_list[name]
+        self._gnuplot = self._gnuplot_list[name]
         self._default_terminal = Gnuplot.gp.GnuplotOpts.default_term
+
+        self._xlabel = None
+        self._x2label = None
+        self._ylabel = None
+        self._y2label = None
+        self._zlabel = None
 
     def clear(self):
         self._gnuplot.clear()
@@ -81,19 +87,44 @@ class _QTGnuPlot():
         f.close()
 
     def set_xlabel(self, val, right=False):
+        '''Set label for left or right x axis.'''
+
         if right:
             self._gnuplot('x2label %s' % val)
+            self._x2label = val
         else:
             self._gnuplot('xlabel %s' % val)
+            self._xlabel = val
 
     def set_ylabel(self, val, top=False):
+        '''Set label for bottom or top y axis.'''
+
         if top:
             self._gnuplot('y2label %s' % val)
+            self._y2label = val
         else:
             self._gnuplot('ylabel %s' % val)
+            self._ylabel = val
 
     def set_zlabel(self, val):
+        '''Set label for z axis.'''
+
         self._gnuplot('cblabel %s' % val)
+        self._zlabel = val
+
+    def get_label_commands(self):
+        cmd = ''
+        if self._xlabel is not None:
+            cmd += 'set xlabel "%s"\n' % self._xlabel
+        if self._x2label is not None:
+            cmd += 'set x2label "%s"\n' % self._x2label
+        if self._ylabel is not None:
+            cmd += 'set ylabel "%s"\n' % self._ylabel
+        if self._y2label is not None:
+            cmd += 'set y2label "%s"\n' % self._y2label
+        if self._zlabel is not None:
+            cmd += 'set cblabel "%s"\n' % self._zlabel
+        return cmd
 
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
@@ -154,10 +185,11 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         return True
 
     def save_gp(self):
+        '''Save file that can be opened with gnuplot.'''
+
         s = 'set grid\n'
         s += 'set style data lines\n'
-        s += 'set xlabel "%s"\n' % self._xlabel
-        s += 'set ylabel "%s"\n' % self._ylabel
+        s += self.get_label_commands()
         s += 'plot "%s"\n' % (self._data.get_filename())
         self._write_gp(s)
 
@@ -187,6 +219,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         self.set_style(style)
 
     def set_style(self, style):
+        '''Set plotting style.'''
+
         if style is None:
             style = qt.config.get('gnuplot_style', self.STYLE_3D)
 
@@ -205,8 +239,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             None
         '''
 
-        s = ''
-        i = 0
         for datadict in self._data:
             data = datadict['data']
             coorddims = datadict['coorddims']
@@ -216,9 +248,11 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                 logging.error('Unable to plot without defined coordinate columns')
                 continue
 
-            filepath = data.get_filepath()
+            filepath = str(data.get_filepath())
             using = coorddims[0] + 1, coorddims[1] + 1, valdim + 1
-            stopblock = data.get_dimension_size(coorddims[1])
+            stopblock = data.get_dimension_size(coorddims[1]) - 1
+            if stopblock == -1:
+                return True
 
             self._gnuplot.splot(Gnuplot.File(filepath, using=using, \
                             every=(None, None, None, 0, None, stopblock),
@@ -227,11 +261,11 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         return True
 
     def save_gp(self):
+        '''Save file that can be opened with gnuplot.'''
+
         for cmd in self._COMMANDS[self._style]['style']:
             self._gnuplot(cmd)
-        s += 'set xlabel "%s"\n' % self._xlabel
-        s += 'set ylabel "%s"\n' % self._ylabel
-        s += 'set cblabel "%s"\n' % self._cblabel
+        s += self.get_label_commands()
         s += 'plot "%s"\n' % (self._data.get_filename())
         self._write_gp(s)
 

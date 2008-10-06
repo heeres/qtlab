@@ -81,6 +81,9 @@ class Plot(gobject.GObject):
     def _new_data_block_cb(self, sender):
         self.update(force=False)
 
+    def set_maxpoints(self, val):
+        self._maxpoints = val
+
 class Plot2D(Plot):
 
     def __init__(self, data=None, **kwargs):
