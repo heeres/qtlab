@@ -27,6 +27,8 @@ class DataList(namedlist.NamedList):
         self._time_name = time_name
 
     def new_item_name(self, item, name):
+        '''Function to generate a new item name.'''
+
         if name == '':
             self._auto_counter += 1
             name = self._base_name + str(self._auto_counter)
@@ -38,5 +40,6 @@ class DataList(namedlist.NamedList):
             return item.get_name()
 
     def create(self, name, **kwargs):
+        '''Function to create a new data object, do not call directly.'''
         return data.Data(name=name)
 

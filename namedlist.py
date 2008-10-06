@@ -47,6 +47,8 @@ class NamedList(gobject.GObject):
         return self.get(name)
 
     def new_item_name(self, item, name):
+        '''Generate a new item name.'''
+
         if name != '':
             return name
 
@@ -55,6 +57,8 @@ class NamedList(gobject.GObject):
         return name
 
     def get(self, name=''):
+        '''Get an item from the list; create a new one if it doesn't exist.'''
+
         if name in self._list:
             return self._list[name]
 
@@ -64,10 +68,12 @@ class NamedList(gobject.GObject):
         return item
 
     def add(self, name, item):
+        '''Add an item to the list.'''
         self._list[name] = item
         self.emit('item-added', name)
 
     def remove(self, name):
+        '''Remove an item from the list.'''
         if name in self._list:
             self._list.__del__(name)
         self.emit('item-removed', name)
@@ -77,6 +83,7 @@ class NamedList(gobject.GObject):
         return None
 
     def get_items(self):
+        '''Return a list of available items.'''
         keys = self._list.keys()
         keys.sort()
         return keys
