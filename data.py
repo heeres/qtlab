@@ -85,6 +85,7 @@ class Data(gobject.GObject):
 
     _META_STEPRE = re.compile('^#.*[ \t](\d+) steps', re.I)
     _META_COLRE = re.compile('^#.*Column ?(\d+)', re.I)
+    _META_COMMENTRE = re.compile('^#(.*)', re.I)
 
     def __init__(self, filepath='', name='', data=None, infile=True, inmem=True, **kwargs):
         '''
@@ -116,6 +117,7 @@ class Data(gobject.GObject):
         self._npoints = 0
 
         self._name = name
+        self._comment = []
         self._timestamp = time.asctime()
         self._timemark = time.strftime('%H%M%S')
         self._datemark = time.strftime('%Y%m%d')
@@ -147,6 +149,8 @@ class Data(gobject.GObject):
         '''
         kwargs['name'] = name
         kwargs['type'] = 'coordinate'
+        if 'size' not in kwargs:
+            kwargs['size'] = 0
         self._ncoordinates += 1
         self._dimensions.append(kwargs)
 
@@ -158,6 +162,12 @@ class Data(gobject.GObject):
         kwargs['type'] = 'value'
         self._nvalues += 1
         self._dimensions.append(kwargs)
+
+    def add_comment(self, comment):
+        self._comment.append(comment)
+
+    def get_comment(self):
+        return self._comment
 
     def add_data_point(self, *args, **kwargs):
         '''
@@ -198,6 +208,9 @@ class Data(gobject.GObject):
     def new_block(self):
         if self._infile:
             self._file.write('\n')
+
+        self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
+
         self.emit('new-data-block')
 
     def get_data(self):
@@ -253,7 +266,7 @@ class Data(gobject.GObject):
 
         info = self._dimensions[dim]
 
-        if 'instrument' in info:
+        if 'instrument' in info and 'parameter' in info:
             label = '%s %s' % (info['instrument'], info['parameter'])
             if 'units' in info:
                 label += ' [%s]' % info['units']
@@ -296,12 +309,14 @@ class Data(gobject.GObject):
         m = self._META_STEPRE.match(line)
         if m is not None:
             self._dimensions.append(int(m.group(1)))
+            return True
 
         m = self._META_COLRE.match(line)
         if m is not None:
             index = int(m.group(1))
             if index > len(self._dimensions):
                 self._dimensions.append({})
+            return True
 
         colnum = len(self._dimensions) - 1
 
@@ -314,6 +329,11 @@ class Data(gobject.GObject):
                     self._dimensions[colnum][tagname] = int(m.group(1))
                 else:
                     self._dimensions[colnum][tagname] = m.group(1)
+                return True
+
+        m = self._META_COMMENTRE.match(line)
+        if m is not None:
+            self._comment.append(m.group(1))
 
     def _detect_dimensions_size(self):
         for colnum in xrange(self.get_ncoordinates()):
@@ -342,6 +362,7 @@ class Data(gobject.GObject):
 
         self._dimensions = []
         self._values = []
+        self._comment = []
         data = []
         nfields = 0
 
@@ -396,6 +417,8 @@ class Data(gobject.GObject):
     def _write_header(self):
         self._file.write('# Filename: %s\n' % self._filename)
         self._file.write('# Timestamp: %s\n\n' % self._timestamp)
+        for line in self._comment:
+            self._file.write('# %s\n' % line)
 
         i = 1
         for dim in self._dimensions:
@@ -425,6 +448,9 @@ class Data(gobject.GObject):
     def create_file(self, name=None, filepath=None):
         '''
         Create a new data file and leave it open.
+
+        This function should be called after adding the comment and the
+        coordinate and value metadata, because it writes the file header.
         '''
 
         if name is None and filepath is None:
@@ -456,6 +482,10 @@ class Data(gobject.GObject):
             self._file = None
 
     def write_file(self, name=None, filepath=None):
+        '''
+        Create and write a new data file.
+        '''
+
         if not self.create_file():
             return
 
