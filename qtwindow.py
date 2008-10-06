@@ -50,6 +50,7 @@ class QTWindow(gtk.Window):
             self._config.set('%s_pos' % self._title, pos)
 
     def get_title(self):
+        '''Return window title.'''
         return self._title
 
     def _add_to_main(self):
