@@ -21,7 +21,7 @@ import qt
 
 from gettext import gettext as _L
 
-from qttable import QTTable
+from packages.qttable import QTTable
 from packages import dropdowns
 
 class QTWatch(QTWindow):

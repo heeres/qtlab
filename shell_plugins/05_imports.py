@@ -1,6 +1,6 @@
 import types
 from instrument import Instrument
-from qtwindow import QTWindow
+from packages.qtwindow import QTWindow
 
 from packages.calltimer import qttime
 
