@@ -8,11 +8,11 @@ class FlexScale(gtk.VBox):
     SCALE_SQRT = 2
     SCALE_LOG = 3
 
-    def __init__(self, min, max, scaling=None):
+    def __init__(self, minval, maxval, scaling=None):
         gtk.VBox.__init__(self)
 
-        self._min = min
-        self._max = max
+        self._min = minval
+        self._max = maxval
 
         if scaling == None:
             self._scaling = self.SCALE_LINEAR
@@ -24,14 +24,14 @@ class FlexScale(gtk.VBox):
         self._vscale.set_size_request(50, 100)
         self._vscale.set_range(0, 1)
 
-        self.pack_start(gtk.Label('%r' % min), False, False)
+        self.pack_start(gtk.Label('%r' % minval), False, False)
         self.pack_start(self._vscale, False, False)
-        self.pack_start(gtk.Label('%r' % max), False, False)
+        self.pack_start(gtk.Label('%r' % maxval), False, False)
         self.show_all()
 
         self._vscale.connect('change-value', self._change_value_cb)
 
-    def _change_value_cb(self, range, scroll, value):
+    def _change_value_cb(self, sender, scroll, value):
         d = self._max - self._min
         mid = (self._max + self._min) / 2
         if value < 0.5:
