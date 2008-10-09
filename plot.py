@@ -22,6 +22,9 @@ import time
 
 import qt
 
+from misc import get_arg_type
+from data import Data
+
 class Plot(gobject.GObject):
     '''
     Base class / interface for plot implementations.
@@ -31,7 +34,7 @@ class Plot(gobject.GObject):
     plot was last updated longer than mintime (sec) ago.
     '''
 
-    def __init__(self, maxpoints=10000, mintime=1, autoupdate=None):
+    def __init__(self, maxpoints=10000, mintime=1, autoupdate=None, *args, **kwargs):
         gobject.GObject.__init__(self)
 
         self._config = qt.config
@@ -56,19 +59,10 @@ class Plot(gobject.GObject):
     def add_legend(self, val):
         pass
 
-    def set_xlabel(self, val, right=False):
-        pass
-
-    def set_ylabel(self, val, top=False):
-        pass
-
-    def set_zlabel(self, val):
-        pass
-
     def update(self, force=True, **kwargs):
         dt = time.time() - self._last_update
 
-        if self._autoupdate is not None and not self._autoupdate:
+        if not force and self._autoupdate is not None and not self._autoupdate:
             return
 
         if force or (self._config['auto-update'] and dt > self._mintime):
@@ -85,9 +79,17 @@ class Plot(gobject.GObject):
         self._maxpoints = val
 
 class Plot2D(Plot):
+    '''
+    Abstract base class for a 2D plot.
+    Real implementations should at least implement:
+        - set_xlabel(self, label)
+        - set_ylabel(self, label)
+    '''
 
-    def __init__(self, data=None, **kwargs):
-        Plot.__init__(self, **kwargs)
+    def __init__(self, *args, **kwargs):
+        Plot.__init__(self, *args, **kwargs)
+
+        data = get_arg_type(args, kwargs, Data, 'data')
         if data is not None:
             self.add_data(data)
 
@@ -146,9 +148,18 @@ class Plot2D(Plot):
         pass
 
 class Plot3D(Plot):
+    '''
+    Abstract base class for a 3D plot.
+    Real implementations should at least implement:
+        - set_xlabel(self, label)
+        - set_ylabel(self, label)
+        - set_zlabel(self, label)
+    '''
 
-    def __init__(self, data=None, **kwargs):
-        Plot.__init__(self, data, **kwargs)
+    def __init__(self, *args, **kwargs):
+        Plot.__init__(self, *args, **kwargs)
+
+        data = get_arg_type(args, kwargs, Data, 'data')
         if data is not None:
             self.add_data(data)
 
@@ -178,6 +189,11 @@ class Plot3D(Plot):
         Plot.add_data(self, data, coorddims=coorddims, valdim=valdim)
 
     def set_labels(self, x='', y='', z=''):
+        '''
+        Set labels in the plot. Use x, y and z if specified, else let the data
+        object create the proper format for each dimensions
+        '''
+
         for datadict in self._data:
             data = datadict['data']
             if x == '':

@@ -24,6 +24,7 @@ import logging
 import qt
 import namedlist
 import plot
+from misc import get_kwarg
 
 class _GnuPlotList(namedlist.NamedList):
     def __init__(self):
@@ -82,7 +83,7 @@ class _QTGnuPlot():
 
     def _write_gp(self, s):
         fn, ext = os.path.splitext(self.get_first_filepath())
-        f = open('%s.gp' % fn)
+        f = open('%s.gp' % str(fn), 'w')
         f.write(s)
         f.close()
 
@@ -90,26 +91,26 @@ class _QTGnuPlot():
         '''Set label for left or right x axis.'''
 
         if right:
-            self._gnuplot('x2label %s' % val)
+            self._gnuplot('set x2label "%s"' % val)
             self._x2label = val
         else:
-            self._gnuplot('xlabel %s' % val)
+            self._gnuplot('set xlabel "%s"' % val)
             self._xlabel = val
 
     def set_ylabel(self, val, top=False):
         '''Set label for bottom or top y axis.'''
 
         if top:
-            self._gnuplot('y2label %s' % val)
+            self._gnuplot('set y2label "%s"' % val)
             self._y2label = val
         else:
-            self._gnuplot('ylabel %s' % val)
+            self._gnuplot('set ylabel "%s"' % val)
             self._ylabel = val
 
     def set_zlabel(self, val):
         '''Set label for z axis.'''
 
-        self._gnuplot('cblabel %s' % val)
+        self._gnuplot('set cblabel "%s"' % val)
         self._zlabel = val
 
     def get_label_commands(self):
@@ -131,12 +132,16 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     Class to create line plots.
     '''
 
-    def __init__(self, data=None, name='', **kwargs):
-        plot.Plot2D.__init__(self, data, **kwargs)
+    def __init__(self, *args, **kwargs):
+        plot.Plot2D.__init__(self, *args, **kwargs)
+        name = get_kwarg(kwargs, 'name', '')
         _QTGnuPlot.__init__(self, name)
 
         self._gnuplot('set grid')
         self._gnuplot('set style data lines')
+
+        self.set_labels()
+        self.update()
 
     def _do_update(self):
         '''
@@ -180,7 +185,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
             i += 1
 
-        exec('self._gnuplot.plot(%s)' % s)
+        if len(s) > 0:
+            exec('self._gnuplot.plot(%s)' % s)
 
         return True
 
@@ -212,11 +218,16 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         }
     }
 
-    def __init__(self, data=None, name='', style=None, **kwargs):
-        plot.Plot3D.__init__(self, data, **kwargs)
+    def __init__(self, *args, **kwargs):
+        plot.Plot3D.__init__(self, *args, **kwargs)
+        name = get_kwarg(kwargs, 'name', '')
         _QTGnuPlot.__init__(self, name)
 
+        style = get_kwarg(kwargs, 'style', None)
         self.set_style(style)
+
+        self.set_labels()
+        self.update()
 
     def set_style(self, style):
         '''Set plotting style.'''
@@ -263,10 +274,10 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
     def save_gp(self):
         '''Save file that can be opened with gnuplot.'''
 
-        for cmd in self._COMMANDS[self._style]['style']:
-            self._gnuplot(cmd)
+        s = '\n'.join(self._COMMANDS[self._style]['style'])
         s += self.get_label_commands()
-        s += 'plot "%s"\n' % (self._data.get_filename())
+        if len(self._data) > 0:
+            s += '\nsplot "%s"\n' % (self._data[0]['data'].get_filename())
         self._write_gp(s)
 
     def _new_data_point_cb(self, sender):

@@ -61,3 +61,28 @@ def sign(val):
     else:
         return 1
 
+def get_kwarg(kwarg, name, default):
+    if name in kwarg:
+        return kwarg[name]
+    else:
+        return default
+
+def get_arg_type(args, kwargs, checktype, name=None):
+    '''
+    Get first argument of type 'typename'.
+    If a specific name is specified, the kwargs dictionary is checked first.
+    '''
+
+    if name is not None and name in kwargs:
+        return kwargs['name']
+
+    for arg in args:
+        if isinstance(arg, checktype):
+            return arg
+
+    for v in kwargs.values():
+        if isinstance(arg, v):
+            return v
+
+    return None
+
