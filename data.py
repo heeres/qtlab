@@ -62,25 +62,34 @@ class Data(gobject.GObject):
 
     _METADATA_INFO = {
         'instrument': {
-            're': re.compile('^#.*Ins?trument: ?(.*)$', re.I),
+            're': re.compile('^#[ \t]*Ins?trument: ?(.*)$', re.I),
             'type': types.StringType
         },
         'parameter': {
-            're': re.compile('^#.*Parameter: ?(.*)$', re.I),
+            're': re.compile('^#[ \t]*Parameter: ?(.*)$', re.I),
             'type': types.StringType
         },
         'units': {
-            're': re.compile('^#.*Units?: ?(.*)$', re.I),
+            're': re.compile('^#[ \t]*Units?: ?(.*)$', re.I),
             'type': types.StringType
         },
         'steps': {
-            're': re.compile('^#.*Steps?: ?(.*)$', re.I),
+            're': re.compile('^#[ \t]*Steps?: ?(.*)$', re.I),
             'type': types.IntType
         },
         'stepsize': {
-            're': re.compile('^#.*Stepsizes?: ?(.*)$', re.I),
+            're': re.compile('^#[ \t]*Stepsizes?: ?(.*)$', re.I),
             'type': types.FloatType
-        }
+        },
+        'name': {
+            're': re.compile('^#[ \t]*Name: ?(.*)$', re.I),
+            'type': types.StringType
+        },
+        'type': {
+            're': re.compile('^#[ \t]*Type?: ?(.*)$', re.I),
+            'type': types.StringType,
+            'function': lambda self, type: self._type_added(type)
+        },
     }
 
     _META_STEPRE = re.compile('^#.*[ \t](\d+) steps', re.I)
@@ -193,7 +202,10 @@ class Data(gobject.GObject):
             return
 
         if self._inmem:
-            self._data = numpy.append(self._data, args)
+            if len(self._data) == 0:
+                self._data = numpy.atleast_2d(args)
+            else:
+                self._data = numpy.append(self._data, [args], axis=0)
 
         if self._infile:
             self._write_data_line(args)
@@ -266,11 +278,17 @@ class Data(gobject.GObject):
 
         info = self._dimensions[dim]
 
+        label = ''
+        if 'name' in info:
+            label += info['name']
+
         if 'instrument' in info and 'parameter' in info:
-            label = '%s %s' % (info['instrument'], info['parameter'])
+            label += ' (%s %s' % (info['instrument'], info['parameter'])
             if 'units' in info:
                 label += ' [%s]' % info['units']
-        else:
+            label += ')'
+
+        elif 'name' not in info:
             label = 'dim%d' % dim
 
         return label
@@ -305,6 +323,12 @@ class Data(gobject.GObject):
             else:
                 self._inmem = False
 
+    def _type_added(self, name):
+        if name == 'coordinate':
+            self._ncoordinates += 1
+        elif name == 'values':
+            self._nvalues += 1
+
     def _parse_meta_data(self, line):
         m = self._META_STEPRE.match(line)
         if m is not None:
@@ -329,6 +353,10 @@ class Data(gobject.GObject):
                     self._dimensions[colnum][tagname] = int(m.group(1))
                 else:
                     self._dimensions[colnum][tagname] = m.group(1)
+
+                if 'function' in metainfo:
+                    metainfo['function'](self, m.group(1))
+
                 return True
 
         m = self._META_COMMENTRE.match(line)
@@ -336,11 +364,12 @@ class Data(gobject.GObject):
             self._comment.append(m.group(1))
 
     def _detect_dimensions_size(self):
-        for colnum in xrange(self.get_ncoordinates()):
-            if 'size' in self._dimensions[colnum]:
-                dimsize = self._dimensions[colnum]['size']
-            elif 'steps' in self._dimensions[colnum]:
-                dimsize = self._dimensions[colnum]['steps']
+        for colnum in range(self.get_ncoordinates()):
+            opt = self._dimensions[colnum]
+            if 'size' in opt and opt['size'] > 0:
+                dimsize = opt['size']
+            elif 'steps' in opt:
+                dimsize = opt['steps']
             else:
                 vals = []
                 for i in xrange(len(self._data)):
@@ -348,16 +377,18 @@ class Data(gobject.GObject):
                         vals.append(self._data[i][colnum])
                 dimsize = len(vals)
 
-            logging.info('Column %d has size %d', colnum, len(vals))
+            logging.info('Column %d has size %d', colnum, dimsize)
+            opt['size'] = dimsize
 
     def _load_file(self):
         """
-        Load data from file and store internally
+        Load data from file and store internally.
         """
 
         try:
             f = file(self.get_filepath(), 'r')
         except:
+            logging.warning('Unable to open file %s' % self.get_filepath())
             return False
 
         self._dimensions = []
@@ -390,6 +421,11 @@ class Data(gobject.GObject):
         # Add info for (assumed value) column that had no metadata
         if self.get_ndimensions() < nfields:
             self.add_value('col%d' % (self.get_ndimensions() + 1))
+
+        # If types are not specified assume all except one are coordinates
+        if self.get_ncoordinates() == 0 and nfields > 1:
+            self._ncoordinates = nfields - 1
+            self._nvalues = 1
 
         self._data = numpy.array(data)
         self._npoints = len(self._data)
