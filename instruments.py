@@ -154,6 +154,16 @@ class Instruments(gobject.GObject):
         except Exception, e:
             return None
 
+    def get_instrument_by_type(self, typename):
+        '''
+        Return existing Instrument instance of type 'typename'.
+        '''
+
+        for name, ins in self._instruments.items():
+            if ins.get_type() == typename:
+                return ins
+        return None
+
     def get_tags(self):
         '''
         Return list of tags present in instruments.
