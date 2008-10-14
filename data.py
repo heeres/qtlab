@@ -192,6 +192,10 @@ class Data(gobject.GObject):
             None
         '''
 
+        if len(self._dimensions) == 0:
+            logging.warning('add_data_point(): no dimensions specified, adding according to data')
+            self._add_missing_dimensions(len(args))
+
         if len(args) < len(self._dimensions):
             logging.warning('add_data_point(): missing columns (%d < %d)' % \
                 (len(args), len(self._dimensions)))
@@ -244,6 +248,10 @@ class Data(gobject.GObject):
 
     def get_dimension_size(self, dim):
         '''Return size of dimensions dim'''
+
+        if dim >= len(self._dimensions):
+            return 0
+
         if 'size' in self._dimensions[dim]:
             return self._dimensions[dim]['size']
         else:
@@ -275,6 +283,9 @@ class Data(gobject.GObject):
 
     def format_label(self, dim):
         '''Return a formatted label for dimensions dim'''
+
+        if dim >= len(self._dimensions):
+            return ''
 
         info = self._dimensions[dim]
 
@@ -380,6 +391,26 @@ class Data(gobject.GObject):
             logging.info('Column %d has size %d', colnum, dimsize)
             opt['size'] = dimsize
 
+    def _add_missing_dimensions(self, nfields):
+        '''
+        Add extra dimensions so that the total equals nfields.
+        Only the last field will be tagged as a value, the rest will be
+        coordinates.
+        '''
+
+        # Add info for (assumed coordinate) columns that had no metadata
+        while self.get_ndimensions() < nfields - 1:
+            self.add_coordinate('col%d' % (self.get_ndimensions() + 1))
+
+        # Add info for (assumed value) column that had no metadata
+        if self.get_ndimensions() < nfields:
+            self.add_value('col%d' % (self.get_ndimensions() + 1))
+
+        # If types are not specified assume all except one are coordinates
+        if self.get_ncoordinates() == 0 and nfields > 1:
+            self._ncoordinates = nfields - 1
+            self._nvalues = 1
+
     def _load_file(self):
         """
         Load data from file and store internally.
@@ -414,18 +445,7 @@ class Data(gobject.GObject):
             if len(fields) > 0:
                 data.append(fields)
 
-        # Add info for (assumed coordinate) columns that had no metadata
-        while self.get_ndimensions() < nfields - 1:
-            self.add_coordinate('col%d' % (self.get_ndimensions() + 1))
-
-        # Add info for (assumed value) column that had no metadata
-        if self.get_ndimensions() < nfields:
-            self.add_value('col%d' % (self.get_ndimensions() + 1))
-
-        # If types are not specified assume all except one are coordinates
-        if self.get_ncoordinates() == 0 and nfields > 1:
-            self._ncoordinates = nfields - 1
-            self._nvalues = 1
+        self._add_missing_dimensions(nfields)
 
         self._data = numpy.array(data)
         self._npoints = len(self._data)
