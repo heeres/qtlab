@@ -65,7 +65,8 @@ class Plot(gobject.GObject):
         if not force and self._autoupdate is not None and not self._autoupdate:
             return
 
-        if force or (self._config['auto-update'] and dt > self._mintime):
+        cfgau = self._config.get('auto-update', True)
+        if force or (cfgau and dt > self._mintime):
             self._last_update = time.time()
             self._do_update(**kwargs)
 
@@ -117,6 +118,8 @@ class Plot2D(Plot):
             if data.get_nvalues() > 1:
                 logging.info('Data object has multiple values, using the first one')
             valdim = data.get_ncoordinates()
+            if valdim < 1:
+                valdim = 1
 
         kwargs['coorddims'] = coorddims
         kwargs['valdim'] = valdim
@@ -185,6 +188,8 @@ class Plot3D(Plot):
             if data.get_nvalues() > 1:
                 logging.info('Data object has multiple values, using the first one')
             valdim = data.get_ncoordinates()
+            if valdim < 2:
+                valdim = 2
 
         Plot.add_data(self, data, coorddims=coorddims, valdim=valdim)
 
