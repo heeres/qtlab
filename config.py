@@ -10,7 +10,6 @@ class QTConfig(gobject.GObject):
     Class to manage settings for the QTLab environment.
     '''
 
-
     __gsignals__ = {
         'changed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
@@ -68,7 +67,9 @@ class QTConfig(gobject.GObject):
 
     def get(self, key, default=None):
         '''
-        Get configuration variable.
+        Get configuration variable. If it is not defined, return the default
+        value. In this case, the variable will be set to this default to
+        ensure consistency.
 
         Input:
             key (string): variable name
@@ -81,6 +82,7 @@ class QTConfig(gobject.GObject):
         if key in self._config:
             return self._config[key]
         elif default is not None:
+            self._config[key] = default
             return default
         elif key in self._defaults:
             return self._defaults[key]
