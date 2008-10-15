@@ -32,6 +32,7 @@ class dummy_signal_generator(Instrument):
                 units='Hz')
 
         self.add_parameter('wave', type=types.FloatType,
+                tags=['measure'],
                 flags=Instrument.FLAG_GET,
                 units='AU', doc="""
                 Return the current value of the generated wave.
