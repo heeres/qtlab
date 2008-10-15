@@ -16,8 +16,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
-import gui
 import qt
+import gui
 
 from gettext import gettext as _L
 
@@ -27,14 +27,15 @@ class QTLab(gtk.Window):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
         self.move(0, 0)
 
-        self.set_size_request(200, 200)
+        self.set_size_request(200, -1)
         self.set_border_width(1)
         self.set_title('QT Lab')
 
         self.connect("delete-event", self._delete_event_cb)
-        gui.get_guisignals().connect("update-gui", self._update_gui_cb)
-        gui.get_guisignals().connect("register-global",
-            self._register_global_cb)
+
+        self._flow = qt.flow
+        self._flow.connect('measurement-start', self._measurement_start_cb)
+        self._flow.connect('measurement-end', self._measurement_end_cb)
 
         self.vbox = gtk.VBox()
 
@@ -45,12 +46,6 @@ class QTLab(gtk.Window):
                 {'name': _L('Exit'), 'icon': '', 'action': self._exit_cb}
                 ]
             },
-            {'name': _L('View'), 'icon': '', 'submenu':
-                [
-                {'name': _L('Shell'), 'icon': '', 'action': self._view_shell_cb},
-                {'name': _L('Plot'), 'icon': '', 'action': self._view_plot_cb}
-                ]
-            },
             {'name': _L('Help'), 'icon': '', 'submenu':
                 [
                 {'name': _L('About'), 'icon': ''}
@@ -59,12 +54,15 @@ class QTLab(gtk.Window):
         ]
         self.menu = gui.build_menu(menu)
 
-        self._liveplot_but = gtk.Button(_L('Live Plotting'))
+        self._liveplot_but = gtk.ToggleButton(_L('Live Plotting'))
+        self._liveplot_but.set_active(qt.config.get('auto-update', True))
         self._liveplot_but.connect('clicked', self._toggle_liveplot_cb)
         self._stop_but = gtk.Button(_L('Stop'))
+        self._stop_but.set_sensitive(False)
         self._stop_but.connect('clicked', self._toggle_stop_cb)
 
         self._window_button_vbox = gtk.VBox()
+        self._window_buttons = []
 
         v1 = pack_vbox([
             self._liveplot_but,
@@ -78,9 +76,20 @@ class QTLab(gtk.Window):
         self.show_all()
 
     def add_window(self, win):
+        '''Add a button for window 'win' to the main window.'''
+
         title = win.get_title()
-        button = gtk.Button(title)
-        button.connect('clicked', self._toggle_visibility_cb, win)
+        button = gtk.ToggleButton(title)
+        self._window_buttons.append(button)
+
+        visible = qt.config.get('%s_show' % title, False)
+        button.set_active(visible)
+
+        # Connecting to clicked also triggers response on calling set_active()
+        button.connect('released', self._toggle_visibility_cb, win)
+        win.connect('show', self._visibility_changed_cb, button)
+        win.connect('hide', self._visibility_changed_cb, button)
+
         button.show()
         self._window_button_vbox.pack_start(button)
 
@@ -107,41 +116,29 @@ class QTLab(gtk.Window):
         pass
 #        gtk.main_quit()
 
-    def _toggle_visibility_cb(self, widget, window):
+    def _measurement_start_cb(self, widget):
+        self._stop_but.set_sensitive(True)
+
+    def _measurement_end_cb(self, widget):
+        self._stop_but.set_sensitive(False)
+
+    def _toggle_visibility_cb(self, button, window):
         if (window.flags() & gtk.VISIBLE):
             window.hide()
         else:
             window.show_all()
 
-    def _view_shell_cb(self, widget):
-        if self.shell is None:
-            self.shell = ShellWindow()
-        elif not (self.shell.flags() & gtk.VISIBLE):
-            self.shell.show()
+    def _visibility_changed_cb(self, window, button):
+        if window.flags() & gtk.VISIBLE:
+            button.set_active(True)
         else:
-            print '%r' % self.shell.flags()
-
-    def _view_plot_cb(self, widget):
-        if self.plot is None or not (self.plot.flags() & gtk.VISIBLE):
-            self.plot = PlotWindow()
-        else:
-            print '%r' % self.plot.flags()
-
-    def _update_gui_cb(self, widget):
-        gtk.gdk.threads_enter()
-        while gtk.events_pending():
-            gtk.main_iteration_do(False)
-        gtk.gdk.threads_leave()
-
-    def _register_global_cb(self, sender, name, val):
-        code = 'global %s\n%s = %s' % (name, name, val)
-        exec(code, globals())
+            button.set_active(False)
 
     def _toggle_liveplot_cb(self, widget):
         qt.config.set('auto-update', not qt.config.get('auto-update'))
 
     def _toggle_stop_cb(self, widget):
-        gui.set_abort()
+        qt.flow.set_abort()
 
 try:
     qt.mainwin

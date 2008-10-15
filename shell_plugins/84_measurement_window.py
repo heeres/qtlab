@@ -27,6 +27,8 @@ from instrument import Instrument
 from packages.calltimer import CallTimerThread
 from packages.dropdowns import AllParametersDropdown
 
+import misc
+
 import measurement
 
 class StepToggleButton(gtk.ToggleButton):
@@ -416,7 +418,8 @@ class QTMeasure(QTWindow):
             self._plot.save_png()
 
         runtime = time.time() - self._measurement_start
-        self._status_label.set_text(_L('Finished in %s') % seconds_to_str(runtime))
+        self._status_label.set_text(_L('Finished in %s') % \
+            misc.seconds_to_str(runtime))
 
     def _measurement_progress_cb(self, sender, vals):
         running = time.time() - self._measurement_start
@@ -427,7 +430,8 @@ class QTMeasure(QTWindow):
             predicted = 0
 
         text = _L('Step %d / %d, running: %s, remaining: %s') % \
-            (vals['current'], vals['total'], seconds_to_str(running), seconds_to_str(predicted))
+            (vals['current'], vals['total'], misc.seconds_to_str(running), \
+            misc.seconds_to_str(predicted))
         self._status_label.set_text(text)
 
     def _plot_type_changed_cb(self, sender):
