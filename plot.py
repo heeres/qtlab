@@ -46,6 +46,14 @@ class Plot(gobject.GObject):
 
         self._last_update = 0
 
+        data = get_arg_type(args, kwargs, Data, 'data')
+        if data is None:
+            if 'datafile' in kwargs:
+                data = Data(kwargs['datafile'])
+
+        if data is not None:
+            self.add_data(data)
+
     def add_data(self, data, **kwargs):
         kwargs['data'] = data
         self._data.append(kwargs)
@@ -89,10 +97,6 @@ class Plot2D(Plot):
 
     def __init__(self, *args, **kwargs):
         Plot.__init__(self, *args, **kwargs)
-
-        data = get_arg_type(args, kwargs, Data, 'data')
-        if data is not None:
-            self.add_data(data)
 
     def add_data(self, data, coorddim=None, valdim=None, **kwargs):
         '''
@@ -161,10 +165,6 @@ class Plot3D(Plot):
 
     def __init__(self, *args, **kwargs):
         Plot.__init__(self, *args, **kwargs)
-
-        data = get_arg_type(args, kwargs, Data, 'data')
-        if data is not None:
-            self.add_data(data)
 
     def add_data(self, data, coorddims=None, valdim=None):
         '''
