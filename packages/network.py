@@ -18,9 +18,6 @@
 # Boston, MA 02111-1307, USA.
 
 import os
-import urllib
-import fcntl
-import tempfile
 
 import gobject
 import SimpleHTTPServer
