@@ -80,9 +80,5 @@ def get_arg_type(args, kwargs, checktype, name=None):
         if isinstance(arg, checktype):
             return arg
 
-    for v in kwargs.values():
-        if isinstance(arg, v):
-            return v
-
     return None
 
