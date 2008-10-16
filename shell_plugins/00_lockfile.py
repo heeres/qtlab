@@ -16,11 +16,14 @@ def qtlab_exit():
 sys.exitfunc = qtlab_exit
 
 if os.path.exists('qtlab.lock'):
-    print 'Argv: %s' % str(sys.argv)
     if '-f' not in sys.argv:
-        print "QTlab already running, start with '-f' to force start"
-        _remove_lock = False
-        sys.exit()
+        print "QTlab already running, start with '-f' to force start."
+        print "Press s<enter> to start anyway or just <enter> to quit."
+
+        line = sys.stdin.readline().strip()
+        if line != 's':
+            _remove_lock = False
+            sys.exit()
 
 f = file('qtlab.lock', 'w+')
 f.close()
