@@ -29,9 +29,13 @@ qt.flow.measurement_start()
 # a new data object is made, and the file will be called 
 # <timestamp>_testmeasurement
 data = qt.data.get('testmeasurement')
-#data.add_coordinate('dmm1.value', instrument=dmm1, parameter='value')
-#data.add_coordinate('dmm1.input3')
-#data.add_value('dmm1.speed')
+
+# Adding coordinate and values info is optional, but recommended.
+# If you don't supply it, the data class will guess your data format.
+data.add_coordinate('dmm1.value', instrument=dmm1, parameter='value')
+data.add_coordinate('dmm1.input3')
+data.add_value('dmm1.speed')
+
 data.add_comment('some comment here')
 data.add_comment('some more comment here')
 data.create_file()
