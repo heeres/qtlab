@@ -27,6 +27,9 @@ class QTConfig(gobject.GObject):
         self.load_defaults()
         self.load()
 
+    def _get_filename(self):
+        return os.path.join(get_workdir(), self.CONFIG_FILE)
+
     def load_defaults(self):
         self._defaults['test'] = True
         self._defaults['datadir'] = './data'
@@ -40,7 +43,7 @@ class QTConfig(gobject.GObject):
         '''
 
         try:
-            f = file(self.CONFIG_FILE, 'r')
+            f = file(self._get_filename(), 'r')
             self._config = simplejson.load(f)
             f.close()
         except Exception, e:
@@ -53,7 +56,7 @@ class QTConfig(gobject.GObject):
         '''
 
         try:
-            f = file(self.CONFIG_FILE, 'w+')
+            f = file(self._get_filename(), 'w+')
             simplejson.dump(self._config, f, indent=4, sort_keys=True)
             f.close()
         except Exception, e:
