@@ -145,10 +145,9 @@ class FlowControl(gobject.GObject):
         '''Request an abort.'''
         self._abort = True
 
-def exception_handler(etype, value, tb):
+def exception_handler(self, etype, value, tb):
     get_flowcontrol().measurement_end()
     raise etype, value, tb
-
 
 class Scheduler():
     '''
@@ -328,14 +327,14 @@ class Scheduler():
         if self._idle_mode:
             self._start_idle()
         if self._timeout_mode:
-            self._start_timeout()
+            self._start_timeout_and_connect()
 
     def stop(self):
         '''
         Stop the scheduled task. If running both in 'timeout' and 'idle' mode, then both will be stopped.
         '''
         if self._timer_hid is not None:
-            self._stop_timeout()
+            self._stop_timeout_and_disconnect()
         if self._idle_hid is not None:
             self._stop_idle()
 
@@ -350,10 +349,6 @@ try:
     _flowcontrol
 except NameError:
     _flowcontrol = FlowControl()
-
-    # Attach our exception handler to stop measurements
-    oldhook = sys.excepthook
-    sys.excepthook = exception_handler
 
 def get_flowcontrol():
     global _flowcontrol
