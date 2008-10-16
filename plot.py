@@ -22,7 +22,7 @@ import time
 
 import qt
 
-from misc import get_arg_type
+from misc import get_arg_type, get_kwarg
 from data import Data
 
 class Plot(gobject.GObject):
@@ -34,8 +34,12 @@ class Plot(gobject.GObject):
     plot was last updated longer than mintime (sec) ago.
     '''
 
-    def __init__(self, maxpoints=10000, mintime=1, autoupdate=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         gobject.GObject.__init__(self)
+
+        maxpoints = get_kwarg(kwargs, 'maxpoints', 10000)
+        mintime = get_kwarg(kwargs, 'mintime', 1)
+        autoupdate = get_kwarg(kwargs, 'autoupdate', None)
 
         self._config = qt.config
         self._data = []
