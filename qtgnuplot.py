@@ -22,13 +22,12 @@ import os
 import logging
 
 import qt
-import namedlist
+from namedlist import NamedList
 import plot
-from misc import get_kwarg
 
-class _GnuPlotList(namedlist.NamedList):
+class _GnuPlotList(NamedList):
     def __init__(self):
-        namedlist.NamedList.__init__(self, 'plot')
+        NamedList.__init__(self, 'plot', type=NamedList.TYPE_ACTIVE)
 
     def create(self, name):
         return Gnuplot.Gnuplot()
@@ -40,9 +39,13 @@ class _QTGnuPlot():
 
     _gnuplot_list = _GnuPlotList()
 
-    def __init__(self, name=''):
+    def __init__(self, name):
         self._gnuplot = self._gnuplot_list[name]
         self._default_terminal = Gnuplot.gp.GnuplotOpts.default_term
+        if self._default_terminal == 'x11':
+            self._default_terminal = 'wxt'
+        self._gnuplot('set terminal %s title "%s"' % \
+            (self._default_terminal, name))
 
         self._xlabel = None
         self._x2label = None
@@ -127,6 +130,14 @@ class _QTGnuPlot():
             cmd += 'set cblabel "%s"\n' % self._zlabel
         return cmd
 
+    @staticmethod
+    def get_named_list():
+        return _QTGnuPlot._gnuplot_list
+
+    @staticmethod
+    def get(name):
+        return _QTGnuPlot._gnuplot_list.get(name)
+
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
     Class to create line plots.
@@ -134,7 +145,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         plot.Plot2D.__init__(self, *args, **kwargs)
-        name = get_kwarg(kwargs, 'name', '')
+        name = self._name
         _QTGnuPlot.__init__(self, name)
 
         self._gnuplot('set grid')
@@ -167,6 +178,14 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
             filepath = data.get_filepath()
             using = coorddims[0] + 1, valdim + 1
+            npoints_last_block = data.get_npoints_last_block()
+
+            if npoints_last_block < 2:
+                return True
+
+            startpoint = max(0, npoints_last_block - self._maxpoints)
+            startblock = max(0, data.get_nblocks() - self._maxtraces + 1)
+            every = None, None, startpoint, startblock
 
             if 'top' in datadict:
                 self._gnuplot('set x2tics')
@@ -181,7 +200,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
             if s != '':
                 s += ', '
-            s += "Gnuplot.File(%r, using=%r, axes=%r)" % (str(filepath), using, axes)
+            s += "Gnuplot.File(%r, using=%r, every=%r, axes=%r)" % \
+                (str(filepath), using, every, axes)
 
             i += 1
 
@@ -220,10 +240,10 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         plot.Plot3D.__init__(self, *args, **kwargs)
-        name = get_kwarg(kwargs, 'name', '')
+        name = self._name
         _QTGnuPlot.__init__(self, name)
 
-        style = get_kwarg(kwargs, 'style', None)
+        style = kwargs.get('style', None)
         self.set_style(style)
 
         self.set_labels()
@@ -262,7 +282,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             filepath = str(data.get_filepath())
             using = coorddims[0] + 1, coorddims[1] + 1, valdim + 1
             stopblock = data.get_dimension_size(coorddims[1]) - 1
-            if stopblock == -1:
+            if stopblock < 1:
                 return True
 
             self._gnuplot.splot(Gnuplot.File(filepath, using=using, \

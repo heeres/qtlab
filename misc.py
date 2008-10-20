@@ -61,12 +61,6 @@ def sign(val):
     else:
         return 1
 
-def get_kwarg(kwarg, name, default):
-    if name in kwarg:
-        return kwarg[name]
-    else:
-        return default
-
 def get_arg_type(args, kwargs, checktype, name=None):
     '''
     Get first argument of type 'typename'.

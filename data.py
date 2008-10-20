@@ -24,32 +24,76 @@ import types
 import re
 import logging
 
-from misc import *
+from misc import dict_to_ordered_tuples, get_arg_type
 from gettext import gettext as _L
 
+import namedlist
 import qt
 import config
 
-def create_data_dir(datadir, datesubdir=True, timesubdir=True):
+def create_data_dir(datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
+    '''
+    Create and return a new data directory.
+
+    Input:
+        datadir (string): base directory
+        name (string): optional name of measurement
+        ts (time.localtime()): timestamp which will be used if timesubdir=True
+        datesubdir (bool): whether to create a subdirectory for the date
+        timesubdir (bool): whether to create a subdirectory for the time
+
+    Output:
+        The directory to place the new file in
+    '''
+
     path = datadir
+    if ts is None:
+        ts = time.localtime()
     if datesubdir:
-        path = os.path.join(path, time.strftime('%Y%m%d'))
+        path = os.path.join(path, time.strftime('%Y%m%d', ts))
     if timesubdir:
-        path = os.path.join(path, time.strftime('%H%M%S'))
+        tsd = time.strftime('%H%M%S', ts)
+        if name is not None:
+            tsd += '_' + name
+        path = os.path.join(path, tsd)
 
     if not os.path.isdir(path):
         os.makedirs(path)
 
     return path
 
-def new_filename(name):
-    tstr = time.strftime('%H%M%S')
+def new_filename(name, ts=None):
+    '''Return a new filename, based on name and timestamp.'''
+
+    if ts is None:
+        ts = time.localtime()
+    tstr = time.strftime('%H%M%S', ts)
     return '%s_%s.dat' % (tstr, name)
+
+class _DataList(namedlist.NamedList):
+    def __init__(self, time_name=False):
+        namedlist.NamedList.__init__(self, base_name='data')
+
+        self._time_name = time_name
+
+    def new_item_name(self, item, name):
+        '''Function to generate a new item name.'''
+
+        if name == '':
+            self._auto_counter += 1
+            name = self._base_name + str(self._auto_counter)
+
+        if self._time_name:
+            return item.get_time_name()
+        else:
+            return name
 
 class Data(gobject.GObject):
     '''
     Data class
     '''
+
+    _data_list = _DataList()
 
     __gsignals__ = {
         'new-data-point': (gobject.SIGNAL_RUN_FIRST,
@@ -96,19 +140,26 @@ class Data(gobject.GObject):
     _META_COLRE = re.compile('^#.*Column ?(\d+)', re.I)
     _META_COMMENTRE = re.compile('^#(.*)', re.I)
 
-    def __init__(self, filepath='', name='', data=None, infile=True, inmem=True, **kwargs):
+    def __init__(self, *args, **kwargs):
         '''
         Create data object
 
-        Input:
-            filepath (string)
-            name (string)
-            data (numpy.array)
-            infile (bool)
-            inmem (bool)
+        args input:
+            filename (string), set the filename to use. If the file exists
+                it will be loaded directly.
+            data (numpy.array), array to construct data object for
+
+        kwargs input:
+            name (string), default will be 'data<n>'
+            infile (bool), default True
+            inmem (bool), default True
         '''
 
         gobject.GObject.__init__(self)
+
+        name = kwargs.get('name', '')
+        infile = kwargs.get('infile', True)
+        inmem = kwargs.get('inmem', True)
 
         self._inmem = inmem
         self._options = kwargs
@@ -124,13 +175,20 @@ class Data(gobject.GObject):
 
         # Number of data points
         self._npoints = 0
+        self._npoints_last_block = 0
+        self._nblocks = 0
 
-        self._name = name
         self._comment = []
         self._timestamp = time.asctime()
-        self._timemark = time.strftime('%H%M%S')
-        self._datemark = time.strftime('%Y%m%d')
+        self._localtime = time.localtime()
+        self._timemark = time.strftime('%H%M%S', self._localtime)
+        self._datemark = time.strftime('%Y%m%d', self._localtime)
 
+        # FIXME: the name generation here is a bit nasty
+        name = Data._data_list.new_item_name(self, name)
+        self._name = name
+
+        data = get_arg_type(args, kwargs, numpy.ndarray, 'data')
         if data is not None:
             self._data = data
             self._infile = False
@@ -138,13 +196,16 @@ class Data(gobject.GObject):
             self._data = numpy.array([])
             self._infile = infile
 
-        if filepath != '':
+        filepath = get_arg_type(args, kwargs, types.StringType, 'filepath')
+        if filepath is not None and filepath != '':
             self.set_filepath(filepath, inmem)
             self._infile = True
         else:
             self._dir = ''
             self._filename = ''
             self._infile = infile
+
+        Data._data_list.add(name, self)
 
     def __getitem__(self, index):
         return self._data[index]
@@ -215,6 +276,7 @@ class Data(gobject.GObject):
             self._write_data_line(args)
 
         self._npoints += 1
+        self._npoints_last_block += 1
 
         if 'newblock' in kwargs and kwargs['newblock']:
             self.new_block()
@@ -226,6 +288,8 @@ class Data(gobject.GObject):
             self._file.write('\n')
 
         self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
+        self._nblocks += 1
+        self._npoints_last_block = 0
 
         self.emit('new-data-block')
 
@@ -280,6 +344,14 @@ class Data(gobject.GObject):
     def get_npoints(self):
         '''Return number of data points'''
         return self._npoints
+
+    def get_npoints_last_block(self):
+        '''Return number of data points in most recent block'''
+        return self._npoints_last_block
+
+    def get_nblocks(self):
+        '''Return number of blocks'''
+        return self._nblocks
 
     def format_label(self, dim):
         '''Return a formatted label for dimensions dim'''
@@ -513,8 +585,9 @@ class Data(gobject.GObject):
             name = self._name
 
         if filepath is None:
-            self._dir = create_data_dir(qt.config['datadir'])
-            self._filename = new_filename(name)
+            self._dir = create_data_dir(qt.config['datadir'], \
+                ts=self._localtime)
+            self._filename = new_filename(name, ts=self._localtime)
         else:
             self._dir, self._filename = os.path.split(filepath)
 
@@ -549,6 +622,14 @@ class Data(gobject.GObject):
         self.close_file()
 
         self._write_settings_file()
+
+    @staticmethod
+    def get_named_list():
+        return Data._data_list
+
+    @staticmethod
+    def get(name):
+        return Data._data_list.get(name)
 
 def slice(data, coords, vals):
     """

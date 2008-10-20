@@ -31,12 +31,30 @@ class NamedList(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
     }
 
+    TYPE_ACTIVE = 0
+    TYPE_PASSIVE = 1
+
     def __init__(self, base_name='item', **kwargs):
+        '''
+        Construct new named list object.
+
+        Input:
+            base_name (string): the base name for new items
+            type (constant): TYPE_ACTIVE or TYPE_PASSIVE.
+                Active lists make sure that an item always exists, so if an
+                item is requested that does not exist a new one will be
+                created on the fly by calling the create() function
+                Passive lists simply return None if an item does not exist.
+        '''
+
         gobject.GObject.__init__(self)
 
         self._list = {}
         self._auto_counter = 0
         self._base_name = base_name
+
+        type = kwargs.get('type', NamedList.TYPE_PASSIVE)
+        self._type = type
 
     def __repr__(self):
         s = "NamedList with %s" % str(self.get_items())
@@ -44,6 +62,10 @@ class NamedList(gobject.GObject):
 
     def __getitem__(self, name):
         return self.get(name)
+
+    def __delitem__(self, name):
+        if name in self._list:
+            del self._list[name]
 
     def new_item_name(self, item, name):
         '''Generate a new item name.'''
@@ -56,10 +78,20 @@ class NamedList(gobject.GObject):
         return name
 
     def get(self, name=''):
-        '''Get an item from the list; create a new one if it doesn't exist.'''
+        '''
+        Get an item from the list.
+
+        If the list is of TYPE_ACTIVE it will create a new item if the
+        requested one does not exist.
+
+        If it is of TYPE_PASSIVE it will return None.
+        '''
 
         if name in self._list:
             return self._list[name]
+
+        if self._type == NamedList.TYPE_PASSIVE:
+            return None
 
         item = self.create(name)
         name = self.new_item_name(item, name)
@@ -78,7 +110,7 @@ class NamedList(gobject.GObject):
         self.emit('item-removed', name)
 
     def create(self, name, **kwargs):
-        '''Override this function to create a new instance for the list'''
+        '''Function to create a new instance if type is TYPE_ACTIVE'''
         return None
 
     def get_items(self):

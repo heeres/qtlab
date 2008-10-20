@@ -18,12 +18,19 @@
 
 import gobject
 import logging
+import os
 import time
+import types
 
 import qt
+import namedlist
 
-from misc import get_arg_type, get_kwarg
+from misc import get_arg_type
 from data import Data
+
+class _PlotList(namedlist.NamedList):
+    def __init__(self, time_name=False):
+        namedlist.NamedList.__init__(self, base_name='plot')
 
 class Plot(gobject.GObject):
     '''
@@ -34,29 +41,51 @@ class Plot(gobject.GObject):
     plot was last updated longer than mintime (sec) ago.
     '''
 
+    _plot_list = _PlotList()
+
     def __init__(self, *args, **kwargs):
+        '''
+        Create a plot object.
+
+        args input:
+            data objects (Data)
+            filenames (string)
+
+        kwargs input:
+            name (string), default will be 'plot<n>'
+            maxpoints (int), maximum number of points to show, default 10000
+            maxtraces (int), maximum number of traces to show, default 5
+            mintime (int, seconds), default 1
+            autoupdate (bool), default None, which means listen to global
+        '''
+
         gobject.GObject.__init__(self)
 
-        maxpoints = get_kwarg(kwargs, 'maxpoints', 10000)
-        mintime = get_kwarg(kwargs, 'mintime', 1)
-        autoupdate = get_kwarg(kwargs, 'autoupdate', None)
+        maxpoints = kwargs.get('maxpoints', 10000)
+        maxtraces = kwargs.get('maxtraces', 5)
+        mintime = kwargs.get('mintime', 1)
+        autoupdate = kwargs.get('autoupdate', None)
+        name = kwargs.get('name', '')
+        self._name = Plot._plot_list.new_item_name(self, name)
 
         self._config = qt.config
         self._data = []
 
         self._maxpoints = maxpoints
+        self._maxtraces = maxtraces
         self._mintime = mintime
         self._autoupdate = autoupdate
 
         self._last_update = 0
 
-        data = get_arg_type(args, kwargs, Data, 'data')
-        if data is None:
-            if 'datafile' in kwargs:
-                data = Data(kwargs['datafile'])
+        for arg in args:
+            if isinstance(arg, Data):
+                self.add_data(arg)
+            elif type(arg) is types.StringType and os.path.isfile(arg):
+                data = Data(arg)
+                self.add_data(data)
 
-        if data is not None:
-            self.add_data(data)
+        Plot._plot_list.add(name, self)
 
     def add_data(self, data, **kwargs):
         kwargs['data'] = data
@@ -83,13 +112,24 @@ class Plot(gobject.GObject):
             self._do_update(**kwargs)
 
     def _new_data_point_cb(self, sender):
-        self.update(force=False)
+        try:
+            self.update(force=False)
+        except Exception, e:
+            logging.warning('Failed to update plot %s: %s', self._name, str(e))
 
     def _new_data_block_cb(self, sender):
         self.update(force=False)
 
     def set_maxpoints(self, val):
         self._maxpoints = val
+
+    @staticmethod
+    def get_named_list():
+        return Plot._plot_list
+
+    @staticmethod
+    def get(name):
+        return Plot._plot_list[name]
 
 class Plot2D(Plot):
     '''
