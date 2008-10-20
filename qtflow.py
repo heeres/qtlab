@@ -87,31 +87,39 @@ class FlowControl(gobject.GObject):
             self._set_status('stopped')
             self.emit('measurement-end')
 
-    def measurement_idle(self, delay=0.002):
+    def measurement_idle(self, delay=0.0, exact=False, emit_interval=1):
         '''
-        Indicate that the measurement is idle. Note that a delay <= 1msec
-        will result in NO gui interaction.
+        Indicate that the measurement is idle and handle events.
 
         This function will check whether an abort has been requested and
         handle queued events for a time up to 'delay' (in seconds).
         
         It starts by emitting the 'measurement-idle' signal to allow callbacks
         to be executed by the time this function handles the event queue.
+        After that it handles events and sleeps for periods of 10msec. Every
+        <emit_interval> seconds it will emit another measurement-idle signal.
 
-        A 1 msec safety margin is used to ensure proper timing (e.g. no
-        events will be handled if less than this time is available). If no
-        events are available a sleep of 10 msec will be performed.
+        If exact=True, timing should be a bit more precise, but in this case
+        a delay <= 1msec will result in NO gui interaction.
         '''
 
-        self.emit('measurement-idle')
-
         start = qttime()
+
+        self.emit('measurement-idle')
+        lastemit = qttime()
+
         while True:
             self.check_abort()
-            dt = qttime() - start
+
+            curtime = qttime()
+            if curtime - lastemit > emit_interval:
+                self.emit('measurement-idle')
+                lastemit = curtime
+
+            dt = curtime - start
 
             gtk.gdk.threads_enter()
-            while gtk.events_pending() and (dt + 0.001) < delay:
+            while gtk.events_pending() and (not exact or (dt + 0.001) < delay):
                 gtk.main_iteration_do(False)
                 dt = qttime() - start
             gtk.gdk.threads_leave()
