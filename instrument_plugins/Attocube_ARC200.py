@@ -52,7 +52,8 @@ class Attocube_ARC200(Instrument):
         self._address = address
         self._visa = visa.instrument(self._address,
                         baud_rate=57600, data_bits=8, stop_bits=1,
-                        parity=visa.no_parity, term_chars='')
+                        parity=visa.no_parity, term_chars='',
+                        timeout=2)
 
         self.add_parameter('mode',
             flags=Instrument.FLAG_SET,
@@ -79,7 +80,7 @@ class Attocube_ARC200(Instrument):
 
         self.add_parameter('position',
             flags=Instrument.FLAG_GET,
-	    format='%.03f, %.03f, %.03f')
+            format='%.03f, %.03f, %.03f')
 
         if reset:
             self.reset()
@@ -94,10 +95,14 @@ class Attocube_ARC200(Instrument):
         self._visa.write('\r')
 
     def ask(self, query):
-        self._visa.write(query)
-        time.sleep(0.05)
-        reply = self._visa.read()
-        return reply.rstrip(' \t\r\n')
+        try:
+            self._visa.write(query)
+            time.sleep(0.05)
+            reply = self._visa.read()
+            return reply.rstrip(' \t\r\n')
+        except Exception, e:
+            logging.error('Failed to ask ARC200')
+            return ''
         
     def reset(self):
         self.write_line('resetp')

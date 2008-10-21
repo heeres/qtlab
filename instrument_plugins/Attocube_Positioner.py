@@ -41,7 +41,8 @@ class Attocube_Positioner(Instrument):
 
         # Instrument parameters
         self.add_parameter('position',
-            flags=Instrument.FLAG_GET)
+            flags=Instrument.FLAG_GET,
+            format='%.03f, %.03f, %.03f')
         self.add_parameter('speed',
             flags=Instrument.FLAG_GETSET)
         self.add_parameter('channels',
@@ -98,6 +99,6 @@ class Attocube_Positioner(Instrument):
         positioning.move_abs(self._arc, self._anc, pos,
             startstep=4, maxstep=512, minstep=1,
             channel_ofs=1)
-        self._anc.set_mode1('gnd')
-        self._anc.set_mode2('gnd')
-        self._anc.set_mode3('gnd')
+#        self._anc.set_mode1('gnd')
+#        self._anc.set_mode2('gnd')
+#        self._anc.set_mode3('gnd')

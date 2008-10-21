@@ -31,6 +31,8 @@ class Attocube_ANC150(Instrument):
     _RE_CAP = re.compile('capacitance = (\d+) C')
     _RE_SN = re.compile('serial number (\d+)')
 
+    _ERRMSG_AXIS = "Axis not in computer control mode"
+
     def __init__(self, name, address, reset=False, **kwargs):
         Instrument.__init__(self, name, address=address, reset=False, **kwargs)
 
@@ -40,6 +42,7 @@ class Attocube_ANC150(Instrument):
                         parity=visa.no_parity, term_chars='\r\n')
         self._clear_buffer()
         self._last_error = ''
+        self._last_ccon_warning = [0, 0, 0]
 
         self.add_parameter('version',
             flags=Instrument.FLAG_GET)
@@ -119,7 +122,7 @@ class Attocube_ANC150(Instrument):
                 line = self._visa.read()
         finally:
             if line.startswith('ERROR'):
-                self._last_error = line
+                self._last_error = lastline
                 return None
             else:
                 return lastline
@@ -166,7 +169,17 @@ class Attocube_ANC150(Instrument):
             logging.warning('Invalid mode: %s', mode)
             return False
         mode = mode[0]
-        return self._short_cmd('$M%d%s' % (channel, mode))
+        ret = self._short_cmd('$M%d%s' % (channel, mode))
+        if ret:
+            return True
+        else:
+            # Warn about axis not being in computer control once per minute
+            ret = self.get('mode%d' % channel)
+            if ret is None and self.get_last_error() == self._ERRMSG_AXIS and \
+                    (time.time() - self._last_ccon_warning[channel - 1]) > 60:
+                self._last_ccon_warning[channel - 1] = time.time()
+                logging.warning('Axis %d not in computer control mode', channel)
+            return ret
 
     def _do_get_frequency(self, channel):
         reply = self._ask('getf %d' % channel)
@@ -227,28 +240,17 @@ class Attocube_ANC150(Instrument):
     def start(self):
         '''Start continuous motion'''
 
-        print 'Starting motion: %s' % str(self._speed)
         for i in range(len(self._speed)):
             mode = self.get('mode%d' % (i + 1), query=False)
 
-            if self._speed[i] > 0 and mode != 'stp':
-                print 'channel %d up cont' % (i + 1)
-                self.set('mode%d' % (i + 1), 's')
+            self.set('mode%d' % (i + 1), 'stp')
+            if self._speed[i] > 0:
                 self.stepu(i + 1, 'c')
-            elif self._speed[i] < 0 and mode != 'stp':
-                print 'channel %d up cont' % (i + 1)
-                self.set('mode%d' % (i + 1), 's')
+            elif self._speed[i] < 0:
                 self.stepd(i + 1, 'c')
-            elif mode != 'gnd':
-                print 'channel %d gnd' % (i + 1)
-                self.set('mode%d' % (i + 1), 'g')
 
     def stop(self):
         '''Stop continuous motion'''
 
         for i in range(len(self._speed)):
-            mode = self.get('mode%d' % (i + 1), query='False')
-            if mode != 'gnd':
-                print 'channel %d gnd' % (i + 1)
-                self.set('mode%d' % (i + 1), 'g')
-
+            self._ask('stop %d' % (i + 1))
