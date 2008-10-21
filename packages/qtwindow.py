@@ -47,6 +47,8 @@ class QTWindow(gtk.Window):
 
         if show:
             pos = self.get_position()
+            pos = [max(i, 0) for i in pos]
+
             self._config.set('%s_pos' % self._title, pos)
 
     def get_title(self):
