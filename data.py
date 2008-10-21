@@ -216,7 +216,16 @@ class Data(gobject.GObject):
     def add_coordinate(self, name, **kwargs):
         '''
         Add a coordinate dimension. Use add_value() to add a value dimension.
+
+        Input:
+            name (string): the name for this coordinate
+            kwargs: you can add any info here, but predefined are:
+                size (int): the size of this dimension
+                instrument (Instrument): instrument this coordinate belongs to
+                parameter (string): parameter of the instrument
+                units (string): units of this coordinate
         '''
+
         kwargs['name'] = name
         kwargs['type'] = 'coordinate'
         if 'size' not in kwargs:
@@ -226,7 +235,15 @@ class Data(gobject.GObject):
 
     def add_value(self, name, **kwargs):
         '''
-        Add a value dimension. Use add_dimension() to add a coordinate dimension.
+        Add a value dimension. Use add_dimension() to add a coordinate
+        dimension.
+
+        Input:
+            name (string): the name for this coordinate
+            kwargs: you can add any info here, but predefined are:
+                instrument (Instrument): instrument this coordinate belongs to
+                parameter (string): parameter of the instrument
+                units (string): units of this coordinate
         '''
         kwargs['name'] = name
         kwargs['type'] = 'value'
@@ -586,7 +603,7 @@ class Data(gobject.GObject):
 
         if filepath is None:
             self._dir = create_data_dir(qt.config['datadir'], \
-                ts=self._localtime)
+                name=name, ts=self._localtime)
             self._filename = new_filename(name, ts=self._localtime)
         else:
             self._dir, self._filename = os.path.split(filepath)

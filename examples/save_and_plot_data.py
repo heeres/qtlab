@@ -28,7 +28,7 @@ qt.flow.measurement_start()
 
 # a new data object is made, and the file will be called 
 # <timestamp>_test.dat
-data = Data('test.dat', name='testmeasurement')
+data = Data(name='testmeasurement')
 
 # Adding coordinate and values info is optional, but recommended.
 # If you don't supply it, the data class will guess your data format.
