@@ -51,6 +51,8 @@ class PositionControls(gtk.Frame):
     def __init__(self, ins):
         gtk.Frame.__init__(self)
 
+        self._config = qt.config
+
         self.set_label(_L('Controls'))
 
         self._table = gtk.Table(3, 9)
@@ -72,6 +74,28 @@ class PositionControls(gtk.Frame):
         self._button_right.connect('released', lambda x: self._direction_clicked(False, 1, 0, 0))
         self._table.attach(self._button_right, 2, 3, 1, 2, gtk.EXPAND | gtk.FILL, 0)
 
+        self._button_upleft = gtk.Button('\\')
+        self._button_upleft.connect('pressed', lambda x: self._direction_clicked(True, -1, 1, 0))
+        self._button_upleft.connect('released', lambda x: self._direction_clicked(False, -1, 1, 0))
+        self._table.attach(self._button_upleft, 0, 1, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self._button_upright = gtk.Button('/')
+        self._button_upright.connect('pressed', lambda x: self._direction_clicked(True, 1, 1, 0))
+        self._button_upright.connect('released', lambda x: self._direction_clicked(False, 1, 1, 0))
+        self._table.attach(self._button_upright, 2, 3, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+
+        self._button_downleft = gtk.Button('/')
+        self._button_downleft.connect('pressed',
+            lambda x: self._direction_clicked(True, -1, -1, 0))
+        self._button_downleft.connect('released',
+            lambda x: self._direction_clicked(False, -1, -1, 0))
+        self._table.attach(self._button_downleft, 0, 1, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self._button_downright = gtk.Button('\\')
+        self._button_downright.connect('pressed',
+            lambda x: self._direction_clicked(True, 1, -1, 0))
+        self._button_downright.connect('released',
+            lambda x: self._direction_clicked(False, 1, -1, 0))
+        self._table.attach(self._button_downright, 2, 3, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+
         self._button_z_up = gtk.Button('/\\')
         self._button_z_up.connect('pressed', lambda x: self._direction_clicked(True, 0, 0, 1))
         self._button_z_up.connect('released', lambda x: self._direction_clicked(False, 0, 0, 1))
@@ -86,7 +110,6 @@ class PositionControls(gtk.Frame):
         self._max_speed.set_range(1, 500)
         self._max_speed.set_inverted(True)
         self._max_speed.connect('value-changed', self._max_speed_changed_cb)
-        self._max_speed.set_value(250)
         self._max_speed.set_digits(1)
         self._table.attach(gtk.Label(_L('Max speed')), 5, 6, 0, 1, 0, 0)
         self._table.attach(self._max_speed, 5, 6, 1, 3, 0, 0)
@@ -96,7 +119,6 @@ class PositionControls(gtk.Frame):
         self._min_speed.set_range(1, 500)
         self._min_speed.set_inverted(True)
         self._min_speed.connect('value-changed', self._min_speed_changed_cb)
-        self._min_speed.set_value(50)
         self._min_speed.set_digits(1)
         self._table.attach(gtk.Label(_L('Min speed')), 6, 7, 0, 1, 0, 0)
         self._table.attach(self._min_speed, 6, 7, 1, 3, 0, 0)
@@ -106,7 +128,6 @@ class PositionControls(gtk.Frame):
         self._accel.set_range(1.1, 4.0)
         self._accel.set_inverted(True)
         self._accel.connect('value-changed', self._accel_changed_cb)
-        self._accel.set_value(1.5)
         self._accel.set_digits(2)
         self._table.attach(gtk.Label(_L('Acceleration')), 7, 8, 0, 1, 0, 0)
         self._table.attach(self._accel, 7, 8, 1, 3, 0, 0)
@@ -116,7 +137,6 @@ class PositionControls(gtk.Frame):
         self._decel.set_range(1.1, 4.0)
         self._decel.set_inverted(True)
         self._decel.connect('value-changed', self._decel_changed_cb)
-        self._decel.set_value(2.0)
         self._decel.set_digits(2)
         self._table.attach(gtk.Label(_L('Deceleration')), 8, 9, 0, 1, 0, 0)
         self._table.attach(self._decel, 8, 9, 1, 3, 0, 0)
@@ -126,7 +146,34 @@ class PositionControls(gtk.Frame):
 
         self.add(self._table)
 
+        self._inhibit_save = False
         self.set_instrument(ins)
+
+    def _load_settings(self):
+        if self._instrument is None:
+            return
+
+        insname = self._instrument.get_name()
+        cfg = self._config
+
+        self._inhibit_save = True
+        self._max_speed.set_value(cfg.get('positioner_%s_max_speed' % insname, 250))
+        self._min_speed.set_value(cfg.get('positioner_%s_min_speed' % insname, 50))
+        self._accel.set_value(cfg.get('positioner_%s_accel' % insname, 1.5))
+        self._decel.set_value(cfg.get('positioner_%s_decel' % insname, 2.0))
+        self._inhibit_save = False
+
+    def _save_settings(self):
+        if self._instrument is None or self._inhibit_save:
+            return
+
+        insname = self._instrument.get_name()
+        cfg = self._config
+
+        cfg.set('positioner_%s_max_speed' % insname, self._max_speed.get_value())
+        cfg.set('positioner_%s_min_speed' % insname, self._min_speed.get_value())
+        cfg.set('positioner_%s_accel' % insname, self._accel.get_value())
+        cfg.set('positioner_%s_decel' % insname, self._decel.get_value())
 
     def set_instrument(self, ins):
         self._instrument = ins
@@ -140,6 +187,10 @@ class PositionControls(gtk.Frame):
             bval = True
         self._button_left.set_sensitive(bval)
         self._button_right.set_sensitive(bval)
+        self._button_upleft.set_sensitive(bval)
+        self._button_upright.set_sensitive(bval)
+        self._button_downleft.set_sensitive(bval)
+        self._button_downright.set_sensitive(bval)
 
         bval = False
         if self._channels > 1:
@@ -152,6 +203,8 @@ class PositionControls(gtk.Frame):
             bval = True
         self._button_z_up.set_sensitive(bval)
         self._button_z_down.set_sensitive(bval)
+
+        self._load_settings()
 
     def _direction_clicked(self, clicked, x, y, z):
         coord = []
@@ -174,9 +227,11 @@ class PositionControls(gtk.Frame):
         pass
 
     def _max_speed_changed_cb(self, sender):
+        self._save_settings()
         self.emit('max-speed-changed', sender.get_value())
 
     def _min_speed_changed_cb(self, sender):
+        self._save_settings()
         self.emit('min-speed-changed', sender.get_value())
 
     def get_max_speed(self):
@@ -192,9 +247,11 @@ class PositionControls(gtk.Frame):
         return self._decel.get_value()
 
     def _accel_changed_cb(self, sender):
+        self._save_settings()
         self.emit('accel-changed', sender.get_value())
 
     def _decel_changed_cb(self, sender):
+        self._save_settings()
         self.emit('decel-changed', sender.get_value())
 
 class PositionBookmarks(gtk.Frame):
@@ -222,11 +279,15 @@ class PositionBookmarks(gtk.Frame):
         self._remove_button = gtk.Button(_L('Remove'))
         self._remove_button.connect('clicked', self._remove_clicked_cb)
 
+        self._bookmark_data = {}
         self._tree_model = gtk.ListStore(str, str)
         self._tree_view = QTTable([
             ('Label', {}),
             ('Position', {})
             ], self._tree_model)
+
+        self._config = qt.config
+        self._load_bookmarks()
 
         self._label_entry = gtk.Entry()
 
@@ -269,13 +330,27 @@ class PositionBookmarks(gtk.Frame):
         pos = self._ins.get_position()
         posstr = self._ins.format_parameter_value('position', pos)
         label = self._label_entry.get_text()
+
+        index = "%s%s" % (label, posstr)
+        if index in self._bookmark_data:
+            return
+
         self._tree_model.append((label, posstr))
+        self._bookmark_data[index] = pos
+
+        self._save_bookmarks()
 
     def _remove_clicked_cb(self, widget):
         (model, rows) = self._tree_view.get_selection().get_selected_rows()
         for row in rows:
-            iter = model.get_iter(row)
-            model.remove(iter)
+            it = model.get_iter(row)
+            rowdata = model.get(it, 0, 1)
+            index = "%s%s" % (rowdata[0], rowdata[1])
+            if index in self._bookmark_data:
+                del self._bookmark_data[index]
+            model.remove(it)
+
+        self._save_bookmarks()
 
     def _go_clicked_cb(self, widget, nchannels):
         (model, rows) = self._tree_view.get_selection().get_selected_rows()
@@ -283,12 +358,25 @@ class PositionBookmarks(gtk.Frame):
             logging.warning('Select 1 row only!')
 
         row = rows[0]
-        iter = model.get_iter(row)
-        posstr = model.get_value(iter, 1)
+        it = model.get_iter(row)
+        index = "%s%s" % (row[0], row[1])
+        pos = self._bookmark_data[index]
 
-        pos = eval(posstr)
         pos = pos[:nchannels]
         self.emit('go-request', pos)
+
+    def _load_bookmarks(self):
+        for row in self._config.get('positioner_bookmarks', []):
+            it = self._tree_model.append(row[:2])
+            index = "%s%s" % (row[0], row[1])
+            self._bookmark_data[index] = row[2]
+
+    def _save_bookmarks(self):
+        data = []
+        for row in self._tree_model:
+            index = "%s%s" % (row[0], row[1])
+            data.append((row[0], row[1], self._bookmark_data[index]))
+        self._config.set('positioner_bookmarks', data)
 
 class QTPositioner(QTWindow):
 
