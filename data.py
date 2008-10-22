@@ -546,13 +546,13 @@ class Data(gobject.GObject):
 
     def _write_settings_file(self):
         fn = self.get_settings_filepath()
-        f = open(fn)
-        f.write('Filename: %s\n', self._filename)
-        f.write('Timestamp: %s\n\n', self._timestamp)
+        f = open(fn, 'w+')
+        f.write('Filename: %s\n' % self._filename)
+        f.write('Timestamp: %s\n\n' % self._timestamp)
 
-        inslist = dict_to_ordered_tuples(qt.instruments)
+        inslist = dict_to_ordered_tuples(qt.instruments.get_instruments())
         for (iname, ins) in inslist:
-            write('Instrument: %s\n' % iname)
+            f.write('Instrument: %s\n' % iname)
             parlist = dict_to_ordered_tuples(ins.get_parameters())
             for (param, popts) in parlist:
                 f.write('\t%s: %s\n' % (param, ins.get(param, query=False)))
@@ -616,6 +616,8 @@ class Data(gobject.GObject):
 
         self._write_header()
 
+        self._write_settings_file()
+
         return True
 
     def close_file(self):
@@ -637,8 +639,6 @@ class Data(gobject.GObject):
 
         self._write_data()
         self.close_file()
-
-        self._write_settings_file()
 
     @staticmethod
     def get_named_list():
