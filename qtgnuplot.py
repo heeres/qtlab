@@ -54,12 +54,18 @@ class _QTGnuPlot():
         self._zlabel = None
 
     def clear(self):
+        '''Clear the plot.'''
         self._gnuplot.clear()
 
     def get_first_filepath(self):
-        return self._data[0]['data'].get_filepath()
+        '''Return filepath of first data item.'''
+        path = self._data[0]['data'].get_filepath()
+        # Fix GnuPlot on windows issue
+        return path.replace('\\', '\\\\')
 
     def save_as_type(self, terminal, extension):
+        '''Save a different version of the plot.'''
+
         self._gnuplot('set terminal %s' % terminal)
         fn, ext = os.path.splitext(self.get_first_filepath())
         self._gnuplot('set output "%s.%s"' % (fn, extension))
