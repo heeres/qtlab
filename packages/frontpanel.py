@@ -1,0 +1,195 @@
+# frontpanel.py, class to create a front panel for an instrument
+# Reinier Heeres <reinier@heeres.eu>, 2008
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+import types
+import gobject
+import gtk
+
+from instrument import Instrument
+import qtwindow
+import qt
+
+import misc
+
+from gettext import gettext as _L
+
+class StringLabel(gtk.Label):
+
+    def __init__(self, ins, param, opts):
+        gtk.Label.__init__(self)
+        self._instrument = ins
+        self._parameter = param
+        
+    def do_get(self):
+        ins = self._instrument
+        val = ins.get(self._parameter)
+        fmtval = ins.format_parameter_value(self._parameter, val)
+        self.set_text(fmtval)
+        
+    def do_set(self):
+        return
+
+class StringEntry(gtk.Entry):
+
+    def __init__(self, ins, param, opts):
+        gtk.Entry.__init__(self)
+        self._instrument = ins
+        self._parameter = param
+        
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        self.set_text(val)
+        
+    def do_set(self):
+        val = self.get_text()
+        self._instrument.set(self._parameterm, val)
+
+class NumberEntry(gtk.SpinButton):
+
+    def __init__(self, ins, param, opts):
+        gtk.SpinButton.__init__(self)
+        self._instrument = ins
+        self._parameter = param
+
+        minval = 0
+        if 'minval' in opts:
+            minval = opts['minval']
+        maxval = 1
+        if 'maxval' in opts:
+            maxval = opts['maxval']
+        self.set_range(minval, maxval)
+
+        if 'type' in opts:
+            if opts['type'] is types.IntType:
+                self.set_digits(0)
+                self.set_increments(1, 10)
+            elif opts['type'] is types.FloatType:
+                self.set_digits(2)
+                self.set_increments(0.01, 0.1)
+
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        self.set_value(val)
+        
+    def do_set(self):
+        val = self.get_value()
+        self._instrument.set(self._parameter, val)
+
+class ComboEntry(gtk.ComboBox):
+
+    def __init__(self, ins, param, opts):
+        self._instrument = ins
+        self._parameter = param
+
+        self._map = opts['format_map']
+
+        self._model = gtk.ListStore(gobject.TYPE_STRING)
+        for k, v in misc.dict_to_ordered_tuples(self._map):
+            self._model.append([v])
+
+        gtk.ComboBox.__init__(self, model=self._model)
+
+        cell = gtk.CellRendererText()
+        self.pack_start(cell, True)
+        self.add_attribute(cell, 'text', 0)
+
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        valstr = self._map[val]
+        for row in self._model:
+            if row[0] == valstr:
+                self.set_active_iter(row.iter)
+                break
+
+    def do_set(self):
+        val = self._model[self.get_active()][0]
+        for k, v in self._map.iteritems():
+            if v == val:
+                self._instrument.set(self._parameter, k)
+                return
+
+class FrontPanel(qtwindow.QTWindow):
+
+    def __init__(self, ins):
+        if type(ins) is types.StringType:
+            ins = qt.instruments[ins]
+
+        self._instrument = ins
+        if ins is not None:
+            name = ins.get_name()
+        else:
+            name = 'Instrument undefined'
+
+        qtwindow.QTWindow.__init__(self, name, add_to_main=False)
+
+        self._param_info = {}
+
+        self._table = gtk.Table(1, 3)
+        self.add(self._table)
+
+        self._add_parameters()
+        self.show_all()
+
+    def _create_entry(self, param, opts):
+        if not opts['flags'] & Instrument.FLAG_SET:
+            entry = StringLabel(self._instrument, param, opts)
+        elif opts['type'] is types.IntType and 'format_map' in opts:
+            entry = ComboEntry(self._instrument, param, opts)
+        elif opts['type'] in (types.IntType, types.FloatType):
+            entry = NumberEntry(self._instrument, param, opts)
+        else:
+            entry = StringEntry(self._instrument, param, opts)
+
+        entry.do_get()
+
+        return entry
+
+    def _add_parameters(self):
+        rows = 0
+        parameters = self._instrument.get_parameters()
+        for name, opts in misc.dict_to_ordered_tuples(parameters):
+            self._table.resize(rows + 1, 2)
+
+            label = gtk.Label(name)
+            self._table.attach(label, 0, 1, rows, rows + 1)
+
+            entry = self._create_entry(name, opts)
+            self._table.attach(entry, 1, 2, rows, rows + 1)
+
+            self._param_info[name] = {
+                'entry': entry
+            }
+
+            hbox = gtk.HBox()
+            if opts['flags'] & Instrument.FLAG_SET:
+                but = gtk.Button(_L('Set'))
+                but.connect('clicked', self._set_clicked, name)
+                hbox.pack_start(but)
+            if opts['flags'] & Instrument.FLAG_GET or \
+                    opts['flags'] & Instrument.FLAG_SOFTGET:
+                but = gtk.Button(_L('Get'))
+                but.connect('clicked', self._get_clicked, name)
+                hbox.pack_start(but)
+
+            self._table.attach(hbox, 2, 3, rows, rows + 1)
+            rows += 1
+
+    def _set_clicked(self, widget, param):
+        val = self._param_info[param]['entry'].do_set()
+
+    def _get_clicked(self, widget, param):
+        self._param_info[param]['entry'].do_get()
