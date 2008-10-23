@@ -359,7 +359,9 @@ class PositionBookmarks(gtk.Frame):
 
         row = rows[0]
         it = model.get_iter(row)
-        index = "%s%s" % (row[0], row[1])
+        label = model.get_value(it, 0)
+        posstr = model.get_value(it, 1)
+        index = "%s%s" % (label, posstr)
         pos = self._bookmark_data[index]
 
         pos = pos[:nchannels]
