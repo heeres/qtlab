@@ -37,6 +37,8 @@ class FlowControl(gobject.GObject):
                 gobject.TYPE_NONE,()),
             'measurement-idle': (gobject.SIGNAL_RUN_FIRST,
                 gobject.TYPE_NONE,()),
+            'stop-request': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,()),
     }
 
     STATUS_STOPPED = 0
@@ -146,6 +148,7 @@ class FlowControl(gobject.GObject):
 
         if self._abort:
             self._abort = False
+            self.emit('stop-request')
             self.measurement_end(abort=True)
             raise ValueError(_L('Human abort'))
     

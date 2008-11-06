@@ -207,6 +207,11 @@ class Data(gobject.GObject):
 
         Data._data_list.add(name, self)
 
+        try:
+            qt.flow.connect('stop-request', self._stop_request_cb)
+        except:
+            pass
+
     def __getitem__(self, index):
         return self._data[index]
 
@@ -638,6 +643,18 @@ class Data(gobject.GObject):
             return
 
         self._write_data()
+        self.close_file()
+
+    def is_file_open(self):
+        '''Return whether a file is open or not.'''
+
+        if self._file is not None:
+            return True
+        else:
+            return False
+
+    def _stop_request_cb(self, sender):
+        '''Called when qtflow emits a stop-request.'''
         self.close_file()
 
     @staticmethod
