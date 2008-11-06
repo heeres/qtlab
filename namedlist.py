@@ -50,6 +50,7 @@ class NamedList(gobject.GObject):
         gobject.GObject.__init__(self)
 
         self._list = {}
+        self._last_item = None
         self._auto_counter = 0
         self._base_name = base_name
 
@@ -101,6 +102,7 @@ class NamedList(gobject.GObject):
     def add(self, name, item):
         '''Add an item to the list.'''
         self._list[name] = item
+        self._last_item = item
         self.emit('item-added', name)
 
     def remove(self, name):
@@ -118,3 +120,7 @@ class NamedList(gobject.GObject):
         keys = self._list.keys()
         keys.sort()
         return keys
+
+    def get_last(self):
+        '''Return last item added to the list.'''
+        return self._last_item
