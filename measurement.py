@@ -23,6 +23,7 @@ import logging
 from packages import calltimer
 
 import qt
+from data import Data
 
 class Measurement(gobject.GObject):
 
@@ -47,7 +48,10 @@ class Measurement(gobject.GObject):
         self._coords = []
         self._measurements = []
 
-        self._data = qt.data[name]
+        if name in qt.data:
+            self._data = qt.data['name']
+        else:
+            self._data = Data()
 
     def get_data(self):
         return self._data

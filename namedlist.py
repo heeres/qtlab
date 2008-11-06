@@ -68,6 +68,12 @@ class NamedList(gobject.GObject):
         if name in self._list:
             del self._list[name]
 
+    def __contains__(self, key):
+        return key in self._list
+
+    def has_key(self, key):
+        return key in self._list
+
     def new_item_name(self, item, name):
         '''Generate a new item name.'''
 
