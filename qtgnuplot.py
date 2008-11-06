@@ -64,6 +64,8 @@ class _QTGnuPlot():
     def save_as_type(self, terminal, extension):
         '''Save a different version of the plot.'''
 
+        self.update()
+
         self._gnuplot('set terminal %s' % terminal)
         fn, ext = os.path.splitext(self.get_first_filepath())
         # Fix GnuPlot on windows issue
@@ -300,7 +302,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
     def save_gp(self):
         '''Save file that can be opened with gnuplot.'''
 
-        s = '\n'.join(self._COMMANDS[self._style]['style'])
+        s = '\n'.join(self._COMMANDS[self._style]['style']) + '\n'
         s += self.get_label_commands()
         if len(self._data) > 0:
             s += '\nsplot "%s"\n' % (self._data[0]['data'].get_filename())
