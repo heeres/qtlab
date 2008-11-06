@@ -25,7 +25,7 @@ import types
 import qt
 import namedlist
 
-from misc import get_arg_type
+from misc import get_arg_type, get_dict_keys
 from data import Data
 
 class _PlotList(namedlist.NamedList):
@@ -80,7 +80,8 @@ class Plot(gobject.GObject):
 
         for arg in args:
             if isinstance(arg, Data):
-                self.add_data(arg)
+                data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim'))
+                self.add_data(arg, **data_args)
             elif type(arg) is types.StringType and os.path.isfile(arg):
                 data = Data(arg)
                 self.add_data(data)
@@ -88,6 +89,8 @@ class Plot(gobject.GObject):
         Plot._plot_list.add(name, self)
 
     def add_data(self, data, **kwargs):
+        '''Add a Data class with options to the plot list.'''
+
         kwargs['data'] = data
         self._data.append(kwargs)
 
@@ -95,12 +98,23 @@ class Plot(gobject.GObject):
         data.connect('new-data-block', self._new_data_block_cb)
 
     def set_title(self, val):
+        '''Set the title of the plot window. Override in implementation.'''
         pass
 
     def add_legend(self, val):
+        '''Add a legend to the plot window. Override in implementation.'''
         pass
 
     def update(self, force=True, **kwargs):
+        '''
+        Update the plot.
+
+        Input:
+            force (bool): if True force an update, else check whether we
+                would like to autoupdate and whether the last update is longer
+                than 'mintime' ago.
+        '''
+
         dt = time.time() - self._last_update
 
         if not force and self._autoupdate is not None and not self._autoupdate:

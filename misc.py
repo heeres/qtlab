@@ -8,6 +8,18 @@ def dict_to_ordered_tuples(dic):
     ret = [(key, dic[key]) for key in keys]
     return ret
 
+def remove_dict_keys(dic, keys):
+    for key in keys:
+        if key in dic:
+            del dic[key]
+
+def get_dict_keys(dic, keys):
+    ret = {}
+    for key in keys:
+        if key in dic:
+            ret[key] = dic[key]
+    return ret
+
 def seconds_to_str(secs):
     '''Convert a number of seconds to hh:mm:ss string.'''
     hours = math.floor(secs / 3600)
