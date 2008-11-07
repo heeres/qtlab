@@ -235,6 +235,8 @@ class Instrument(gobject.GObject):
         else:
             ch = None
 
+        base_name = kwargs.get('base_name', name)
+
         if options['flags'] & Instrument.FLAG_GET:
             if ch is not None:
                 func = lambda query=True, **lopts: \
@@ -245,6 +247,13 @@ class Instrument(gobject.GObject):
 
             func.__doc__ = 'Get variable %s' % name
             setattr(self, 'get_%s' % name,  func)
+
+            try:
+                options['get_func'] = getattr(self, '_do_get_%s' % base_name)
+            except:
+                options['get_func'] = lambda *a, **kw: \
+                    self._get_not_implemented(base_name)
+                self._get_not_implemented(base_name)
 
         if options['flags'] & Instrument.FLAG_SOFTGET:
             if ch is not None:
@@ -267,6 +276,13 @@ class Instrument(gobject.GObject):
             if 'doc' in options:
                 func.__doc__ += '\n%s' % options['doc']
             setattr(self, 'set_%s' % name, func)
+
+            try:
+                options['set_func'] = getattr(self, '_do_set_%s' % base_name)
+            except:
+                options['set_func'] = lambda *a, **kw: \
+                    self._set_not_implemented(base_name)
+                self._set_not_implemented(base_name)
 
 #        setattr(self, name,
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
@@ -480,16 +496,17 @@ class Instrument(gobject.GObject):
         Output: value of parameter (whatever type the instrument driver returns)
         '''
 
-        if name in self._parameters:
+        try:
             p = self._parameters[name]
-        else:
+        except:
             print 'Could not retrieve options for parameter %s' % name
             return None
 
         if 'channel' in p and 'channel' not in kwargs:
             kwargs['channel'] = p['channel']
 
-        if not query or p['flags'] & self.FLAG_SOFTGET:
+        flags = p['flags']
+        if not query or flags & self.FLAG_SOFTGET:
             if 'value' in p:
                 return p['value']
             else:
@@ -497,7 +514,7 @@ class Instrument(gobject.GObject):
                 return None
 
         # Check this here; getting of cached values should work
-        if not p['flags'] & Instrument.FLAG_GET:
+        if not flags & Instrument.FLAG_GET:
             print 'Instrument does not support getting of %s' % name
             return None
 
@@ -506,12 +523,7 @@ class Instrument(gobject.GObject):
         else:
             base_name = name
 
-        try:
-            func = getattr(self, '_do_get_%s' % base_name)
-        except Exception, e:
-            print 'Instrument does not implement getting of %s' % base_name
-            return None
-
+        func = p['get_func']
         value = func(**kwargs)
         if 'type' in p:
             try:
@@ -531,16 +543,24 @@ class Instrument(gobject.GObject):
         p['value'] = value
         return value
 
-    def get(self, name, query=True, **kwargs):
+    def get(self, name, query=True, fast=False, **kwargs):
         '''
         Get one or more Instrument parameter values.
 
-        Input:  (1) name of parameter (string, or list/tuple of strings)
-                (2) query the instrument or return stored value (Boolean)
-                (3) optional list of arguments
+        Input:
+            name (string or list/tuple of strings): name of parameter(s)
+            query (bool): whether to query the instrument or return the
+                last stored value
+            fast (bool): if True perform as fast as possible, e.g. don't
+                emit a signal to update the GUI.
+            kwargs: Optional keyword args that will be passed on.
+
         Output: Single value, or dictionary of parameter -> values
                 Type is whatever the instrument driver returns.
         '''
+
+        if fast:
+            return self._get_value(name, query, **kwargs)
 
         changed = {}
 
@@ -612,12 +632,7 @@ class Instrument(gobject.GObject):
         else:
             base_name = name
 
-        try:
-            func = getattr(self, '_do_set_%s' % base_name)
-        except Exception, e:
-            print 'Instrument does not implement setting of %s' % base_name
-            return None
-
+        func = p['set_func']
         if 'maxstep' in p:
             curval = p['value']
 
@@ -659,17 +674,21 @@ class Instrument(gobject.GObject):
         p['value'] = value
         return value
 
-    def set(self, name, value, **kwargs):
+    def set(self, name, value, fast=False, **kwargs):
         '''
         Set one or more Instrument parameter values.
 
         Checks whether the Instrument is locked and checks value bounds,
         if specified by minval / maxval.
 
-        Input:  (1) name of parameter (string), or dictionary of
-                    parameter -> value
-                (2) value to send to instrument (whatever the parameter needs)
-                (3) Optional keyword args that will be passed on.
+        Input:
+            name (string or dict): which parameter to set, or dictionary of
+                parameter -> value
+            value (any): the value to set
+            fast (bool): if True perform as fast as possible, e.g. don't
+                emit a signal to update the GUI.
+            kwargs: Optional keyword args that will be passed on.
+
         Output: True or False whether the operation succeeded.
                 For multiple sets return False if any of the parameters failed.
         '''
@@ -688,7 +707,7 @@ class Instrument(gobject.GObject):
             if self._set_value(name, value, **kwargs) is not None:
                 changed[name] = value
 
-        if len(changed) > 0:
+        if not fast and len(changed) > 0:
             self.emit('changed', changed)
 
         return result
@@ -808,3 +827,11 @@ class Instrument(gobject.GObject):
             None
         '''
         self.emit('reload')
+
+    def _get_not_implemented(self, name):
+        logging.warning('Get not implemented for %s.%s' % \
+            (Instrument.get_type(self), name))
+
+    def _set_not_implemented(self, name):
+        logging.warning('Set not implemented for %s.%s' % \
+            (Instrument.get_type(self), name))
