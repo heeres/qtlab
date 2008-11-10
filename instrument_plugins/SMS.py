@@ -30,6 +30,7 @@ from time import sleep
 import logging
 import pickle
 import config
+import os
 
 class SMS(Instrument):
     '''
@@ -68,10 +69,11 @@ class SMS(Instrument):
         self.numdacs = numdacs
         self.pol_num = range(self.numdacs)
         self._values = {}
-        self._filepath = 'f:/qtlab' # FIXME this should come from config
-        self._filename = self._filepath + 'SMS_' + address + '.dat'
-        #self._filepath = config.get_qtlabdir()
-        #self._filename = self._filepath + '/instrument_plugins/' + 'SMS_' + address + '.dat'
+        self._config = config.get_config()
+        self._filepath = os.path.join(self._config['qtlabdir'], 'instrument_plugins/_SMS/')
+        if not os.path.isdir(self._filepath):
+            os.makedirs(self._filepath)
+        self._filename = os.path.join(self._filepath, 'SMS_' + address + '.dat')
 
         # Add functions
         self.add_function('reset')
@@ -331,7 +333,9 @@ class SMS(Instrument):
                 polarity = 'POS'
                 correction = 0.0
             else:
-                logging.error(__name__ + ' : Invalid polarity : %s' % val)
+                logging.error(__name__ + ' : Received invalid polarity : %s' % val)
+                logging.error(__name__ + ' : Possibly caused by low battery.')
+                raise ValueError('Received invalid polarity: %s' % val)
             logging.debug(__name__ + ' : polarity = %s (type = %s), correction = %f (type = %s)' % (polarity, type(polarity), correction, type(correction)))
 
             for i in range(1+(set-1)*4,1+set*4):
@@ -483,8 +487,7 @@ class SMS(Instrument):
             file.close()
             return True
         except:
-            logging.debug(__name__ + " : Try to open nonexisting file")
-            # error or warning??
+            logging.error(__name__ + " : Try to open nonexisting file")
             return False
 
     def _save_values_to_file(self):

@@ -59,7 +59,7 @@ class HP_8657(Instrument):
             'minfreq': 100e3,
             'maxfreq': 2060e6,
             'minpow': -143.5,
-            'maxpow': 13
+            'maxpow': 17
         }
     }
 
