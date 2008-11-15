@@ -22,15 +22,19 @@ from gettext import gettext as _L
 
 import qt
 from packages import dropdowns
+from packages import frontpanel
 
-class QTAddInstrumentFrame(gtk.Frame):
+class QTManageInstrumentFrame(gtk.VBox):
 
     def __init__(self, **kwargs):
-        gtk.Frame.__init__(self, **kwargs)
+        gtk.VBox.__init__(self, **kwargs)
 
         self._instruments = qt.instruments
+        self._frontpanels = {}
+        qt.frontpanels = self._frontpanels
 
-        self.set_label(_L('Add instrument'))
+        self._add_frame = gtk.Frame()
+        self._add_frame.set_label(_L('Create'))
 
         name_label = gtk.Label(_L('Name'))
         self._name_entry = gtk.Entry()
@@ -50,10 +54,44 @@ class QTAddInstrumentFrame(gtk.Frame):
         self._argument_table.attach(self._type_dropdown, 1, 2, 1, 2)
         self._argument_info = {}
 
-        self.add(pack_vbox([
-                self._argument_table,
-                self._add_button
-            ], False, False))
+        vbox = pack_vbox([
+            self._argument_table,
+            self._add_button
+            ], False, False)
+        vbox.set_border_width(4)
+        self._add_frame.add(vbox)
+
+        self._action_frame = gtk.Frame()
+        self._action_frame.set_label(_L('Manage'))
+
+        self._ins_dropdown = dropdowns.InstrumentDropdown()
+
+        self._frontpanel_button = gtk.Button(_L('Make Frontpanel'))
+        self._frontpanel_button.connect('clicked', self._fp_clicked_cb)
+
+        self._reload_button = gtk.Button(_L('Reload'))
+        self._reload_button.connect('clicked', self._reload_clicked_cb)
+
+        self._remove_button = gtk.Button(_L('Remove'))
+        self._remove_button.connect('clicked', self._remove_clicked_cb)
+
+        vbox = pack_vbox([
+            self._ins_dropdown,
+            pack_hbox([
+                self._frontpanel_button,
+                self._reload_button,
+                self._remove_button
+                ], True, True)
+            ], False, False)
+        vbox.set_border_width(4)
+        self._action_frame.add(vbox)
+
+        vbox = pack_vbox([
+            self._add_frame,
+            self._action_frame
+            ], False,False)
+        vbox.set_border_width(4)
+        self.add(vbox)
 
         self.show_all()
 
@@ -133,6 +171,24 @@ class QTAddInstrumentFrame(gtk.Frame):
             self._add_button.set_sensitive(True)
         else:
             self._add_button.set_sensitive(False)
+
+    def _fp_clicked_cb(self, sender):
+        ins = self._ins_dropdown.get_instrument()
+        if ins is not None:
+            name = ins.get_name()
+            if name not in self._frontpanels:
+                self._frontpanels[name] = frontpanel.FrontPanel(ins)
+            self._frontpanels[name].show()
+
+    def _reload_clicked_cb(self, sender):
+        ins = self._ins_dropdown.get_instrument()
+        if ins is not None:
+            return self._instruments.reload(ins)
+
+    def _remove_clicked_cb(self, sender):
+        ins = self._ins_dropdown.get_instrument()
+        if ins is not None:
+            return ins.remove()
 
 class QTInstrumentFrame(gtk.Frame):
 
@@ -285,16 +341,20 @@ class QTInstruments(QTWindow):
         self._instruments = qt.instruments
 
         qt.instruments.connect('instrument-added', self._instrument_added_cb)
-        qt.instruments.connect('instrument-removed', self._instrument_removed_cb)
-        qt.instruments.connect('instrument-changed', self._instrument_changed_cb)
+        qt.instruments.connect('instrument-removed', \
+            self._instrument_removed_cb)
+        qt.instruments.connect('instrument-changed', \
+            self._instrument_changed_cb)
 
         self._tags_dropdown = dropdowns.TagsDropdown()
         self._tags_dropdown.connect('changed', self._tag_changed_cb)
         self._tags_dropdown.show()
 
+        self._outer_vbox = gtk.VBox()
+        self._outer_vbox.set_border_width(4)
         self._vbox = gtk.VBox()
         self._vbox.set_border_width(4)
-        self._vbox.pack_start(pack_hbox([
+        self._outer_vbox.pack_start(pack_hbox([
             gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
 
@@ -305,25 +365,28 @@ class QTInstruments(QTWindow):
         self._rate_toggle.set_active(False)
         self._rate_toggle.connect('toggled', self._rate_toggled_cb)
 
-        self._vbox.pack_start(pack_hbox([
+        self._outer_vbox.pack_start(pack_hbox([
             self._range_toggle,
-            self._rate_toggle], True, True))
+            self._rate_toggle], True, True), False, False)
 
         self._ins_widgets = {}
         self._add_instruments()
 
         self._scrolled_win = gtk.ScrolledWindow()
         self._scrolled_win.show()
-        self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, \
+            gtk.POLICY_AUTOMATIC)
         self._scrolled_win.add_with_viewport(self._vbox)
 
-        self._add_instrument_frame = QTAddInstrumentFrame()
+        self._outer_vbox.pack_start(self._scrolled_win, True, True)
+
+        self._add_instrument_frame = QTManageInstrumentFrame()
 
         self._notebook = gtk.Notebook()
-        self._notebook.append_page(self._scrolled_win,
+        self._notebook.append_page(self._outer_vbox,
             gtk.Label(_L('Info')))
         self._notebook.append_page(self._add_instrument_frame,
-            gtk.Label(_L('Create')))
+            gtk.Label(_L('Manage')))
         self._notebook.show_all()
         self.add(self._notebook)
 
