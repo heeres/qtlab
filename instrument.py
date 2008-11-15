@@ -196,6 +196,9 @@ class Instrument(gobject.GObject):
                 stepdelay (float): delay when setting steps (in milliseconds)
                 tags (array): tags for this parameter
                 doc (string): documentation string to add to get/set functions
+                format_map (dict): map describing allowed options and the
+                    formatted (mostly GUI) representation
+                option_list (array/tuple): allowed options
                 persist (bool): if true load/save values in config file
                 probe_interval (float): interval in sec between automatic gets
 
