@@ -65,8 +65,10 @@ class NamedList(gobject.GObject):
         return self.get(name)
 
     def __delitem__(self, name):
-        if name in self._list:
-            del self._list[name]
+        self.remove(name)
+
+    def __iter__(self):
+        return self._list.__iter__()
 
     def __contains__(self, key):
         return key in self._list
@@ -114,7 +116,7 @@ class NamedList(gobject.GObject):
     def remove(self, name):
         '''Remove an item from the list.'''
         if name in self._list:
-            self._list.__del__(name)
+            del self._list[name]
         self.emit('item-removed', name)
 
     def create(self, name, **kwargs):
