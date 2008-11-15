@@ -23,6 +23,8 @@ import logging
 import sys
 import instrument
 
+import config
+
 class Instruments(gobject.GObject):
 
     __gsignals__ = {
@@ -115,7 +117,8 @@ class Instruments(gobject.GObject):
         '''
 
         ret = []
-        filelist = os.listdir('instrument_plugins')
+        pdir = os.path.join(config.get_workdir(), 'instrument_plugins')
+        filelist = os.listdir(pdir)
         for path_fn in filelist:
             path, fn = os.path.split(path_fn)
             name, ext = os.path.splitext(fn)
@@ -124,6 +127,11 @@ class Instruments(gobject.GObject):
 
         ret.sort()
         return ret
+
+    def type_exists(self, typename):
+        driverfn = os.path.join(config.get_workdir(), 'instrument_plugins')
+        driverfn = os.path.join(driverfn, '%s.py' % typename)
+        return os.path.exists(driverfn)
 
     def get_type_arguments(self, typename):
         '''
@@ -183,6 +191,11 @@ class Instruments(gobject.GObject):
 
         Output: Instrument object
         '''
+
+        if not self.type_exists(instype):
+            logging.error('Instrument type %s not supported', instype)
+            return None
+
         argstr = ''
         for (kwname, kwval) in kwargs.iteritems():
             if kwname in ('tags'):
@@ -194,22 +207,16 @@ class Instruments(gobject.GObject):
                 _ins = instrument_plugins.%(type)s.%(type)s(%(name)r%(args)s)""" \
             % {'type': instype, 'name': name, 'args': argstr}
 
-#        print 'Executing: %s' % importstr
-        try:
-            _ins = None
+        _ins = None
 
-            code.compile_command(importstr)
-            exec importstr
+        code.compile_command(importstr)
+        exec importstr
 
-            if _ins is None:
-                logging.error('Unable to create instrument')
-                return None
-
-            self.add(_ins, create_args=kwargs)
-
-        except Exception, e:
-            logging.error('Error: %s', str(e))
+        if _ins is None:
+            logging.error('Unable to create instrument')
             return None
+
+        self.add(_ins, create_args=kwargs)
 
         self.emit('instrument-added', _ins)
         return _ins
