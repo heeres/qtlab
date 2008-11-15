@@ -195,6 +195,10 @@ class Instrument(gobject.GObject):
                 maxstep (float): maximum step size when changing parameter
                 stepdelay (float): delay when setting steps (in milliseconds)
                 tags (array): tags for this parameter
+                doc (string): documentation string to add to get/set functions
+                persist (bool): if true load/save values in config file
+                probe_interval (float): interval in sec between automatic gets
+
         Output: None
         '''
         options = kwargs
@@ -246,11 +250,17 @@ class Instrument(gobject.GObject):
                     self.get(name, query=query, **lopts)
 
             func.__doc__ = 'Get variable %s' % name
+            if 'doc' in options:
+                func.__doc__ += '\n%s' % options['doc']
             setattr(self, 'get_%s' % name,  func)
 
-            try:
-                options['get_func'] = getattr(self, '_do_get_%s' % base_name)
-            except:
+            # Set function to do_get_%s or _do_get_%s, whichever is available
+            options['get_func'] = getattr(self, 'do_get_%s' % base_name, \
+                getattr(self, '_do_get_%s' % base_name, None))
+            if options['get_func'] is not None:
+                if options['get_func'].__doc__ is not None:
+                    func.__doc__ += '\n%s' % options['get_func'].__doc__
+            else:
                 options['get_func'] = lambda *a, **kw: \
                     self._get_not_implemented(base_name)
                 self._get_not_implemented(base_name)
@@ -277,9 +287,13 @@ class Instrument(gobject.GObject):
                 func.__doc__ += '\n%s' % options['doc']
             setattr(self, 'set_%s' % name, func)
 
-            try:
-                options['set_func'] = getattr(self, '_do_set_%s' % base_name)
-            except:
+            # Set function to do_set_%s or _do_set_%s, whichever is available
+            options['set_func'] = getattr(self, 'do_set_%s' % base_name, \
+                getattr(self, '_do_set_%s' % base_name, None))
+            if options['set_func'] is not None:
+                if options['set_func'].__doc__ is not None:
+                    func.__doc__ += '\n%s' % options['set_func'].__doc__
+            else:
                 options['set_func'] = lambda *a, **kw: \
                     self._set_not_implemented(base_name)
                 self._set_not_implemented(base_name)
@@ -391,6 +405,18 @@ class Instrument(gobject.GObject):
             var_name = '%s%d' % (name, channel)
 
         self.set_parameter_options(var_name, minval=minval, maxval=maxval)
+
+    def set_parameter_rate(self, name, stepsize, stepdelay):
+        '''
+        Change the rate properties for a channel.
+
+        Input:
+            stepsize (float): the maximum step size
+            stepdelay (float): the delay after each step
+        Output:
+            None
+        '''
+        self.set_parameter_options(name, stepsize=stepsize, stepdelay=stepdelay)
 
     def get_parameter_names(self):
         '''
@@ -525,7 +551,7 @@ class Instrument(gobject.GObject):
 
         func = p['get_func']
         value = func(**kwargs)
-        if 'type' in p:
+        if 'type' in p and value is not None:
             try:
                 if p['type'] == types.IntType:
                     value = int(value)
@@ -581,6 +607,35 @@ class Instrument(gobject.GObject):
 
         return result
 
+    def _key_from_format_map_val(self, dic, value):
+        for key, val in dic.iteritems():
+            if val == value:
+                return key
+        return None
+
+    def _val_from_option_list(self, opts, value):
+        if type(opts[0]) is not type(value):
+            return None
+        if type(value) is types.StringType:
+            value = value.upper()
+
+        match = None
+        matches = 0
+        for val in opts:
+            if type(val) is types.StringType:
+                val = val.upper()
+                if val.startswith(value):
+                    matches += 1
+                    match = val.upper()
+
+            if val == value:
+                return val
+
+        if matches == 1:
+            return match
+        else:
+            return None
+
     def _set_value(self, name, value, **kwargs):
         '''
         Private wrapper function to set a value.
@@ -604,13 +659,31 @@ class Instrument(gobject.GObject):
         if 'channel' in p and 'channel' not in kwargs:
             kwargs['channel'] = p['channel']
 
+        # If a format map is available the key should be present
+        if 'format_map' in p:
+            newval = self._val_from_option_list(p['format_map'].keys(), value)
+            if newval is None:
+                logging.error('Value %s is not a valid option for "%s", valid: %r',
+                    value, name, repr(p['format_map'].keys()))
+                return
+            value = newval
+
+        # If an option list is available check whether the value is in there
+        if 'option_list' in p:
+            newval = self._val_from_option_list(p['option_list'], value)
+            if newval is None:
+                logging.error('Value %s is not a valid option for "%s", valid: %r',
+                    value, name, repr(p['option_list']))
+                return
+            value = newval
+
         if 'type' in p:
             if p['type'] == types.IntType:
                 value = int(value)
             elif p['type'] == types.FloatType:
                 value = float(value)
             elif p['type'] == types.StringType:
-                pass
+                value = str(value)
             elif p['type'] == types.BooleanType:
                 value = bool(value)
             elif p['type'] == types.NoneType:
