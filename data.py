@@ -152,14 +152,14 @@ class Data(gobject.GObject):
         kwargs input:
             name (string), default will be 'data<n>'
             infile (bool), default True
-            inmem (bool), default True
+            inmem (bool), default False
         '''
 
         gobject.GObject.__init__(self)
 
         name = kwargs.get('name', '')
         infile = kwargs.get('infile', True)
-        inmem = kwargs.get('inmem', True)
+        inmem = kwargs.get('inmem', False)
 
         self._inmem = inmem
         self._options = kwargs
