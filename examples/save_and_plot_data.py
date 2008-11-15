@@ -32,7 +32,8 @@ data = Data(name='testmeasurement')
 
 # Adding coordinate and values info is optional, but recommended.
 # If you don't supply it, the data class will guess your data format.
-data.add_coordinate('dmm1.value', instrument=dmm1, parameter='value')
+data.add_coordinate('dmm1.value')
+#data.add_coordinate('dmm1.value', instrument=dmm1, parameter='value')
 data.add_coordinate('dmm1.input3')
 data.add_value('dmm1.speed')
 
