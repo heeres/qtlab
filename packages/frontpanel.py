@@ -29,26 +29,41 @@ from gettext import gettext as _L
 
 class StringLabel(gtk.Label):
 
-    def __init__(self, ins, param, opts):
+    def __init__(self, ins, param, opts, autoupdate=True):
         gtk.Label.__init__(self)
         self._instrument = ins
         self._parameter = param
-        
+
+        self._autoupdate = autoupdate
+        if self._autoupdate:
+            ins.connect('changed', self._parameter_changed_cb)
+
+    def _update_value(self, val):
+        fmtval = self._instrument.format_parameter_value(self._parameter, val)
+        self.set_text(fmtval)
+
     def do_get(self):
         ins = self._instrument
         val = ins.get(self._parameter)
-        fmtval = ins.format_parameter_value(self._parameter, val)
-        self.set_text(fmtval)
-        
+        self._update_value(val)
+
     def do_set(self):
         return
 
+    def _parameter_changed_cb(self, sender, params):
+        if self._parameter in params:
+            self._update_value(params[self._parameter])
+
 class StringEntry(gtk.Entry):
 
-    def __init__(self, ins, param, opts):
+    def __init__(self, ins, param, opts, autoupdate=False):
         gtk.Entry.__init__(self)
         self._instrument = ins
         self._parameter = param
+
+        self._autoupdate = autoupdate
+        if self._autoupdate:
+            ins.connect('changed', self._parameter_changed_cb)
         
     def do_get(self):
         val = self._instrument.get(self._parameter)
@@ -58,9 +73,12 @@ class StringEntry(gtk.Entry):
         val = self.get_text()
         self._instrument.set(self._parameterm, val)
 
+    def _parameter_changed_cb(self, sender, params):
+        pass
+
 class NumberEntry(gtk.SpinButton):
 
-    def __init__(self, ins, param, opts):
+    def __init__(self, ins, param, opts, autoupdate=False):
         gtk.SpinButton.__init__(self)
         self._instrument = ins
         self._parameter = param
@@ -81,25 +99,39 @@ class NumberEntry(gtk.SpinButton):
                 self.set_digits(2)
                 self.set_increments(0.01, 0.1)
 
+        self._autoupdate = autoupdate
+        if self._autoupdate:
+            ins.connect('changed', self._parameter_changed_cb)
+
     def do_get(self):
         val = self._instrument.get(self._parameter)
+        if val is None:
+            self.set_value(0)
+            return
         self.set_value(val)
         
     def do_set(self):
         val = self.get_value()
         self._instrument.set(self._parameter, val)
 
+    def _parameter_changed_cb(self, sender, params):
+        pass
+
 class ComboEntry(gtk.ComboBox):
 
-    def __init__(self, ins, param, opts):
+    def __init__(self, ins, param, opts, autoupdate=False):
         self._instrument = ins
         self._parameter = param
 
-        self._map = opts['format_map']
-
         self._model = gtk.ListStore(gobject.TYPE_STRING)
-        for k, v in misc.dict_to_ordered_tuples(self._map):
-            self._model.append([v])
+        if 'format_map' in opts:
+            self._map = opts['format_map']
+            for k, v in misc.dict_to_ordered_tuples(self._map):
+                self._model.append([str(v)])
+        elif 'option_list' in opts:
+            self._map = opts['option_list']
+            for k in self._map:
+                self._model.append([str(k)])
 
         gtk.ComboBox.__init__(self, model=self._model)
 
@@ -107,9 +139,20 @@ class ComboEntry(gtk.ComboBox):
         self.pack_start(cell, True)
         self.add_attribute(cell, 'text', 0)
 
+        self._autoupdate = autoupdate
+        if self._autoupdate:
+            ins.connect('changed', self._parameter_changed_cb)
+
     def do_get(self):
         val = self._instrument.get(self._parameter)
-        valstr = self._map[val]
+        if val is None:
+            return
+
+        if type(self._map) is types.DictType:
+            valstr = str(self._map[val])
+        else:
+            valstr = str(val)
+
         for row in self._model:
             if row[0] == valstr:
                 self.set_active_iter(row.iter)
@@ -117,10 +160,19 @@ class ComboEntry(gtk.ComboBox):
 
     def do_set(self):
         val = self._model[self.get_active()][0]
-        for k, v in self._map.iteritems():
-            if v == val:
-                self._instrument.set(self._parameter, k)
-                return
+        if val is None:
+            return
+
+        if type(self._map) is types.DictType:
+            for k, v in self._map.iteritems():
+                if v == val:
+                    self._instrument.set(self._parameter, k)
+                    return
+        else:
+            self._instrument.set(self._parameter, val)
+
+    def _parameter_changed_cb(self, sender, params):
+        pass
 
 class FrontPanel(qtwindow.QTWindow):
 
@@ -147,7 +199,7 @@ class FrontPanel(qtwindow.QTWindow):
     def _create_entry(self, param, opts):
         if not opts['flags'] & Instrument.FLAG_SET:
             entry = StringLabel(self._instrument, param, opts)
-        elif opts['type'] is types.IntType and 'format_map' in opts:
+        elif 'format_map' in opts or 'option_list' in opts:
             entry = ComboEntry(self._instrument, param, opts)
         elif opts['type'] in (types.IntType, types.FloatType):
             entry = NumberEntry(self._instrument, param, opts)
