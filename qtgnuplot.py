@@ -18,6 +18,7 @@
 
 import Gnuplot
 import os
+import time
 
 import logging
 
@@ -31,6 +32,23 @@ class _GnuPlotList(NamedList):
 
     def create(self, name):
         return Gnuplot.Gnuplot()
+
+    def get(self, name=''):
+        '''Get Gnuplot instance from list and verify whether it's alive.'''
+
+        item = NamedList.get(self, name)
+        if item is None:
+            return None
+
+        try:
+            item('')
+            time.sleep(0.1)
+            item('')
+        except:
+            del self[name]
+            item = NamedList.get(self, name)
+
+        return item
 
 class _QTGnuPlot():
     """
@@ -224,7 +242,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         s = 'set grid\n'
         s += 'set style data lines\n'
         s += self.get_label_commands()
-        s += 'plot "%s"\n' % (self._data.get_filename())
+        for datadict in self._data:
+            s += '\nplot "%s"\n' % (datadict['data'].get_filename())
         self._write_gp(s)
 
 class Plot3D(plot.Plot3D, _QTGnuPlot):
@@ -304,8 +323,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         s = '\n'.join(self._COMMANDS[self._style]['style']) + '\n'
         s += self.get_label_commands()
-        if len(self._data) > 0:
-            s += '\nsplot "%s"\n' % (self._data[0]['data'].get_filename())
+        for datadict in self._data:
+            s += '\nsplot "%s"\n' % (datadict['data'].get_filename())
         self._write_gp(s)
 
     def _new_data_point_cb(self, sender):
