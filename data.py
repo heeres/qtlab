@@ -229,6 +229,9 @@ class Data(gobject.GObject):
                 instrument (Instrument): instrument this coordinate belongs to
                 parameter (string): parameter of the instrument
                 units (string): units of this coordinate
+                precision (int): precision of stored data, default is
+                    'default_precision' from config, or 12 if not defined.
+                format (string): format of stored data, not used by default
         '''
 
         kwargs['name'] = name
@@ -249,6 +252,9 @@ class Data(gobject.GObject):
                 instrument (Instrument): instrument this coordinate belongs to
                 parameter (string): parameter of the instrument
                 units (string): units of this coordinate
+                precision (int): precision of stored data, default is
+                    'default_precision' from config, or 12 if not defined.
+                format (string): format of stored data, not used by default
         '''
         kwargs['name'] = name
         kwargs['type'] = 'value'
@@ -579,10 +585,26 @@ class Data(gobject.GObject):
 
         self._file.write('\n')
 
+    def _format_data_value(self, val, colnum):
+        if type(val) is types.IntType:
+            return '%d' % val
+
+        if colnum < len(self._dimensions):
+            opts = self._dimensions[colnum]
+            if 'format' in opts:
+                return opts['format'] % val
+            elif 'precision' in opts:
+                format = '%%.%de' % opts['precision']
+                return format % val
+
+        precision = qt.config.get('default_precision', 12)
+        format = '%%.%de' % precision
+        return format % val
+
     def _write_data_line(self, args):
-        line = str(args[0])
-        for i in args[1:]:
-            line += '\t%f' % i
+        line = self._format_data_value(args[0], 0)
+        for colnum in range(1, len(args)):
+            line += '\t%s' % self._format_data_value(args[colnum], colnum)
         line += '\n'
         self._file.write(line)
         self._file.flush()
