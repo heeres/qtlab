@@ -166,6 +166,7 @@ class Data(gobject.GObject):
 
         # Dimension info
         self._dimensions = []
+        self._block_sizes = []
 
         # Number of coordinate dimensions
         self._ncoordinates = 0
@@ -176,7 +177,7 @@ class Data(gobject.GObject):
         # Number of data points
         self._npoints = 0
         self._npoints_last_block = 0
-        self._nblocks = 0
+        self._npoints_max_block = 0
 
         self._comment = []
         self._timestamp = time.asctime()
@@ -305,6 +306,8 @@ class Data(gobject.GObject):
 
         self._npoints += 1
         self._npoints_last_block += 1
+        if self._npoints_last_block > self._npoints_max_block:
+            self._npoints_max_block = self._npoints_last_block
 
         if 'newblock' in kwargs and kwargs['newblock']:
             self.new_block()
@@ -316,7 +319,7 @@ class Data(gobject.GObject):
             self._file.write('\n')
 
         self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
-        self._nblocks += 1
+        self._block_sizes.append(self._npoints_last_block)
         self._npoints_last_block = 0
 
         self.emit('new-data-block')
@@ -373,13 +376,33 @@ class Data(gobject.GObject):
         '''Return number of data points'''
         return self._npoints
 
+    def get_npoints_max_block(self):
+        '''Return the maximum number of data points in a block.'''
+        return self._npoints_max_block
+
     def get_npoints_last_block(self):
         '''Return number of data points in most recent block'''
-        return self._npoints_last_block
+        return self.get_block_size(self.get_nblocks() - 1)
 
     def get_nblocks(self):
-        '''Return number of blocks'''
-        return self._nblocks
+        '''Return number of blocks.'''
+        nblocks = len(self._block_sizes)
+        if self._npoints_last_block > 0:
+            return nblocks + 1
+        else:
+            return nblocks
+
+    def get_nblocks_complete(self):
+        '''Return number of completed blocks.'''
+        return len(self._block_sizes)
+
+    def get_block_size(self, blockid):
+        if blockid == len(self._block_sizes):
+            return self._npoints_last_block
+        elif blockid < 0 or blockid > len(self._block_sizes):
+            return 0
+        else:
+            return self._block_sizes[blockid]
 
     def format_label(self, dim):
         '''Return a formatted label for dimensions dim'''
@@ -476,6 +499,9 @@ class Data(gobject.GObject):
 
     def _detect_dimensions_size(self):
         for colnum in range(self.get_ncoordinates()):
+            if colnum not in self._dimensions:
+                return False
+
             opt = self._dimensions[colnum]
             if 'size' in opt and opt['size'] > 0:
                 dimsize = opt['size']
@@ -490,6 +516,8 @@ class Data(gobject.GObject):
 
             logging.info('Column %d has size %d', colnum, dimsize)
             opt['size'] = dimsize
+
+        return True
 
     def _add_missing_dimensions(self, nfields):
         '''

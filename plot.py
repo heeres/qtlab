@@ -88,6 +88,10 @@ class Plot(gobject.GObject):
 
         Plot._plot_list.add(name, self)
 
+    def get_name(self):
+        '''Get plot name.'''
+        return self._name
+
     def add_data(self, data, **kwargs):
         '''Add a Data class with options to the plot list.'''
 
@@ -209,7 +213,7 @@ class Plot2D(Plot):
         if top != '':
             self.set_ylabel(top, top=True)
 
-    def plotxy(self, vecx, vecy):
+    def plot(self, *args, **kwargs):
         pass
 
 class Plot3D(Plot):
@@ -273,6 +277,6 @@ class Plot3D(Plot):
         if z != '':
             self.set_zlabel(z)
 
-    def plotxyz(self, vecx, vecy, vecz):
+    def plot3(self, *args, **kwargs):
         pass
 
