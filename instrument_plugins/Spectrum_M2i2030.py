@@ -40,6 +40,8 @@ class Spectrum_M2i2030(Instrument):
     3) Fix representation and organisation of data
     4) Readout of two channels
     5) Add self._cardopened oid ??
+    6) incosistent use of set_
+    7) fix handling of timeout! (not enough triggers detected) (error nr 263)
     '''
 
     def __init__(self, name):
@@ -98,7 +100,6 @@ class Spectrum_M2i2030(Instrument):
         self.add_function('waitprefull')
         self.add_function('waittrigger')
         self.add_function('waitready')
-        self.add_function('set_card_mode_singleshotreadout')
         self.add_function('select_channel0')
         self.add_function('select_channel1')
         self.add_function('select_channel01')
@@ -116,7 +117,6 @@ class Spectrum_M2i2030(Instrument):
         self.add_function('set_trigger_ORmask_tmask_ext0')
         self.add_function('trigger_termination_50Ohm')
         self.add_function('trigger_termination_highOhm')
-        self.add_function('readout_singlemode')
 
         self.reset()
 
@@ -132,6 +132,10 @@ class Spectrum_M2i2030(Instrument):
         '''
         logging.info(__name__ + ' : Deleting Spectrum instrument')
         self._close()
+
+###########################
+### init related functions
+###########################
 
     def _load_dll(self):
         '''
@@ -159,7 +163,6 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.InValidateBuf  = self._spcm_win32["_spcm_dwInvalidateBuf@8"]
         self._spcm_win32.GetErrorInfo   = self._spcm_win32["_spcm_dwGetErrorInfo_i32@16"]
 
-    # Base communication tools
     def _open(self):
         '''
         Opens the card, and creates a handle.
@@ -195,6 +198,10 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Try to close card')
         self._spcm_win32.close(self._spcm_win32.handel)
 
+############################
+### Base communication tools
+############################
+
     def _set_param(self, regnum, regval):
         '''
         Sets the register to the specified value
@@ -215,8 +222,13 @@ class Spectrum_M2i2030(Instrument):
         err = self._spcm_win32.SetParam32(self._spcm_win32.handel, regnum, regval)
         if (err==0):
             return 0
+        elif (err == 263):
+            logging.error(__name__ + ' : Timeout')
+            return 263
         else:
-            return self._get_error()
+            logging.error(__name__ + ' : Error %s while setting reg %s to %s' % (err, regnum, regval))
+            self._get_error()
+            raise ValueError('Error communicating with device')
 
     def _get_param(self, regnum):
         '''
@@ -235,6 +247,7 @@ class Spectrum_M2i2030(Instrument):
             error (string)  : Error message
         '''
         logging.debug(__name__ + ' : Reading Reg %s' %(regnum))
+
         val = c_int()
         p_antw = pointer(val)
 
@@ -242,10 +255,11 @@ class Spectrum_M2i2030(Instrument):
         if (err==0):
             return p_antw.contents.value
         else:
-            logging.error(__name__ + ' : Error %s while accessing reg %s' %(err,regnum))
-            return self._get_error()
+            logging.error(__name__ + ' : Error %s while getting reg %s' %(err,regnum))
+            self._get_error()
+            raise ValueError('Error communicating with device')
 
-    def _invalidate_buffer(self, buffertype):
+    def _invalidate_buffer(self, buffertype=_spcm_regs.SPCM_BUF_DATA):
         '''
         Discards the buffer.
 
@@ -257,7 +271,13 @@ class Spectrum_M2i2030(Instrument):
             None
         '''
         logging.debug(__name__ + ' : Invalidating buffer')
-        er = self._spcm_win32.InValidateBuf(self._spcm_win32.handel, buffertype)
+        err = self._spcm_win32.InValidateBuf(self._spcm_win32.handel, buffertype)
+        if (err==0):
+            return 0
+        else:
+            logging.error(__name__ + ' : Error %s while setting reg %s to %s' % (err, regnum, regval))
+            self._get_error()
+            raise ValueError('Error communicating with device')
 
     def _get_error(self):
         '''
@@ -287,6 +307,12 @@ class Spectrum_M2i2030(Instrument):
         logging.error(__name__ + ' : ' + tekst)
         return tekst
 
+
+
+########################
+### Card information
+########################
+
     def _do_get_serial(self):
         '''
         Reads out the serial number of the card.
@@ -314,7 +340,12 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Reading Ram size')
         return self._get_param(_spcm_regs.SPC_PCIMEMSIZE)
 
-    def init_default(self, memsize=2048, posttrigger=1024, amp=500):
+
+########################################
+### self defined set of initial settings
+########################################
+
+    def init_channel0_single_mode(self, memsize=2048, posttrigger=1024, amp=500, offs=0):
         '''
         Initiates the card in default single shot readout mode.
         Trigger is set on ext0 with a positive slope
@@ -333,11 +364,11 @@ class Spectrum_M2i2030(Instrument):
         '''
         logging.debug(__name__ + ' : Initialing card for default single shot readout')
 
-        # Set the modes
+        # Set the trigger modes
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_POS);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_PULSEWIDTH, 0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_OUTPUT, 0);
-        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_TERM, 1);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_TERM, 0);
 
         # Set channel information
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0)
@@ -345,8 +376,9 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_MEMSIZE, memsize)
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_POSTTRIGGER, posttrigger)
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_AMP0, amp)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_OFFS0, offs)
 
-        # Set the masks
+        # Set the trigger masks
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_ORMASK, _spcm_regs.SPC_TMASK_EXT0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_ANDMASK,        0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ORMASK0,     0);
@@ -354,11 +386,42 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK0,    0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK1,    0);
 
-    def init_multiple_recording(self, nums = 1024, segsize=2048, posttrigger=1024, amp=500): #use this one
+        ## Alternative:
+
+        ## Set the trigger modes
+        # self.trigger_mode_pos()
+        # self.set_trigger_ext0_pulsewidth(0)
+        # self.disable_trigger_output()
+        ## self.trigger_termination_50Ohm()
+        # self.trigger_termination_hihgOhm()
+
+
+        ## Set channel information
+        # self.select_channel0()
+        # self.set_single_mode()
+        # self.set_memsize(memsize)
+        # self.set_post_trigger(posttrigger)
+        # self.set_input_amp_ch0(amp)
+        # self.set_input_offs_ch0(offs)
+
+
+        ## Set the trigger masks
+        # self.set_trigger_ORmask_tmask_ext0()
+        # self.set_trigger_ANDmask_tmask_NO_ext0()
+        # self.set_trigger_ORmask_tmask_NO_ch0()
+        # self.set_trigger_ORmask_tmask_NO_ch1()
+        # self.set_trigger_ANDmask_tmask_NO_ch0()
+        # self.set_trigger_ANDmask_tmask_NO_ch1()
+
+
+    def init_channel0_multiple_recording(self, nums = 1024, segsize=128, posttrigger=1024, amp=500, offs=0):
         '''
-        Initiates the card in default multiple recording mode.
-        Trigger is set on ext0 with a positive slope
-        The buffersize and range are set, even as the number of readouts
+        Initiates the card in:
+            Standard Multiple Recording mode
+            Using only channel 0
+            Trigger on ext0, positive slope, 50 Ohm
+
+        Sample rate is left unchanged (default for using two channels is 200 MHz).
 
         Input:
             nums (int)      : number of consequtive measurements
@@ -381,7 +444,7 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_POS);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_PULSEWIDTH, 0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_OUTPUT, 0);
-        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_TERM, 1);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_TERM, 0);
 
         # Set channel information
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0)
@@ -390,6 +453,7 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_MEMSIZE, memsize)
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_POSTTRIGGER, posttrigger)
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_AMP0, amp)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_OFFS0, offs)
 
         # Set the masks
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_ORMASK, _spcm_regs.SPC_TMASK_EXT0);
@@ -399,7 +463,119 @@ class Spectrum_M2i2030(Instrument):
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK0,    0);
         self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK1,    0);
 
-    #  Initialization functions
+    def init_channel01_multiple_recording(self, rate=100e6, nums=1024, segsize=128, posttrigger=64, amp0=500, offs0=0, amp1=500, offs1=1):
+        '''
+        Initiates the card in:
+            Standard Multiple Recording mode
+            Using Channel 0 and 1
+            Trigger on ext0, positive slope, 50 Ohm
+
+        Sample rate is left unchanged (default for using two channels is 100 MHz).
+
+        Input:
+            nums (int)      : number of consequtive measurements
+                                default = 128
+            segsize (int)   : number of datapoints that are read out in one shot
+                                default = 2048
+            posttrigger(int): number of datapoints taken after the trigger
+                                default = 1024
+            amp (int)       : half of the range in millivolts
+                                default = 500
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Initialing card for default multiple shot readout')
+
+        memsize = nums*segsize # Note: memsize is defined per channel
+
+        self.set_spc_samplerate(rate)
+        self.set_timeout(5000)
+
+        # Set the modes
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_POS);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_EXT0_PULSEWIDTH, 0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_OUTPUT, 0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_TERM, 0);
+
+        # Set channel information
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0 | _spcm_regs.CHANNEL1)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_CARDMODE, _spcm_regs.SPC_REC_STD_MULTI)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_SEGMENTSIZE, segsize)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_MEMSIZE, memsize)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_POSTTRIGGER, posttrigger)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_AMP0, amp0)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_AMP1, amp1)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_OFFS0, offs0)
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_OFFS1, offs1)
+
+        # Set the masks
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_ORMASK, _spcm_regs.SPC_TMASK_EXT0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_ANDMASK,        0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ORMASK0,     0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ORMASK1,     0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK0,    0);
+        self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_TRIG_CH_ANDMASK1,    0);
+
+#########################
+### General
+#########################
+
+
+    def get_all(self):
+        logging.debug(__name__ + ' : getting all values from card')
+
+        self.get_input_amp_ch0()
+        self.get_input_amp_ch1()
+        self.get_input_offset_ch0()
+        self.get_input_offset_ch1()
+
+        self.get_memsize()
+        self.get_segmentsize()
+        self.get_post_trigger()
+        self.get_spc_samplerate()
+        self.get_reference_clock()
+        self.get_trigger_delay()
+
+        self.get_timeout()
+
+        self.get_ramsize()
+        self.get_serial()
+
+
+################################
+### Standard card setup commands
+################################
+
+    def reset(self):
+        '''
+        Resets the card to default values
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Reset card')
+        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_RESET)
+        self.get_all()
+
+    def writesetup(self):
+        '''
+        Writes the current setup to the card without starting the hardware.
+        This command may be useful if changing some internal settings
+        like clock frequency and enabling outputs.
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Write setup enabled')
+        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_WRITESETUP)
+
     def start(self):
         '''
         Starts the card
@@ -443,68 +619,6 @@ class Spectrum_M2i2030(Instrument):
         self._set_param(_spcm_regs.SPC_M2CMD,
             _spcm_regs.M2CMD_CARD_START | _spcm_regs.M2CMD_CARD_ENABLETRIGGER | _spcm_regs.M2CMD_CARD_WAITREADY)
 
-    def reset(self):
-        '''
-        Resets the card to default values
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Reset card')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_RESET)
-        self.get_all()
-
-    def get_all(self):
-        logging.debug(__name__ + ' : getting all values from card')
-
-        self.get_input_amp_ch0()
-        self.get_input_amp_ch1()
-        self.get_input_offset_ch0()
-        self.get_input_offset_ch1()
-
-        self.get_memsize()
-        self.get_segmentsize()
-        self.get_post_trigger()
-        self.get_spc_samplerate()
-        self.get_reference_clock()
-        self.get_trigger_delay()
-
-        self.get_timeout()
-
-        self.get_ramsize()
-        self.get_serial()
-
-    def writesetup(self):
-        '''
-        Writes the current setup to the card without starting the hardware.
-        This command may be useful if changing some internal settings
-        like clock frequency and enabling outputs.
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Write setup enabled')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_WRITESETUP)
-
-    def enable_trigger(self):
-        '''
-        Enables the trigger
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Enable trigger')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_ENABLETRIGGER)
-
     def force_trigger(self):
         '''
         Force a trigger
@@ -517,19 +631,6 @@ class Spectrum_M2i2030(Instrument):
         '''
         logging.debug(__name__ + ' : Force trigger')
         self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_FORCETRIGGER)
-
-    def disable_trigger(self):
-        '''
-        Disables the trigger
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Disable trigger')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_DISABLETRIGGER)
 
     def stop(self):
         '''
@@ -555,10 +656,11 @@ class Spectrum_M2i2030(Instrument):
             None
 
         Output:
-            None
-       '''
+            Error number (0 is no error)
+        '''
         logging.debug(__name__ + ' : Wait prefull enabled')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_WAITPREFULL)
+        err = self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_WAITPREFULL)
+        return err
 
     def waittrigger(self):
         '''
@@ -571,10 +673,12 @@ class Spectrum_M2i2030(Instrument):
             None
 
         Output:
-            None
-       '''
+            Error number (0 is no error)
+        '''
         logging.debug(__name__ + ' : Wait trigger enabled')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_WAITTRIGGER)
+        err = self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_WAITTRIGGER)
+        return err
+
 
     def waitready(self):
         '''
@@ -584,10 +688,609 @@ class Spectrum_M2i2030(Instrument):
             None
 
         Output:
-            None
+            Error number (0 is no error)
         '''
         logging.debug(__name__ + ' : Waitready activated')
-        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_WAITREADY)
+        err = self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_WAITREADY)
+        return err
+
+
+    def _do_get_card_status(self):
+        '''
+        Returns the card status, see p136 of manual
+
+        Input:
+            None
+
+        Output:
+            status (int): Integer corresponding to the card thatus
+        '''
+        logging.debug(__name__ + ' : Get card status')
+        return self._get_param(_spcm_regs.SPC_M2STATUS)
+
+
+#################
+### channel setup
+#################
+
+### select channel
+
+    def select_channel0(self):
+        '''
+        Select channel 0 for measurement
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Select channel 0')
+        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0)
+
+    def select_channel1(self):
+        '''
+        Select channel 1 for measurement
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Select channel 1')
+        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL1)
+
+    def select_channel01(self):
+        '''
+        Select channels 0 and 1 for measurement
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Select channels 0 and 1')
+        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0 | _spcm_regs.CHANNEL1)
+
+
+### set channel termination
+
+    def input_term_ch0_50Ohm(self):
+        '''
+        Sets the input termination of
+        channel 0 to 50 Ohm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set input termination ch0 to 50 Ohm')
+        self._set_param(_spcm_regs.SPC_50OHM0, 1)
+
+    def input_term_ch0_1MOhm(self):
+        '''
+        Sets the input termination of
+        channel 0 tot 1 MOhm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set input termination ch0 to 1 MOhm')
+        self._set_param(_spcm_regs.SPC_50OHM0, 0)
+
+    def input_term_ch1_50Ohm(self):
+        '''
+        Sets the input termination of
+        channel 1 to 50 Ohm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set input termination ch1 to 50 Ohm')
+        self._set_param(_spcm_regs.SPC_50OHM1, 1)
+
+    def input_term_ch1_1MOhm(self):
+        '''
+        Sets the input termination of
+        channel 1 to 1 MOhm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set input termination ch1 to 1 MOhm')
+        self._set_param(_spcm_regs.SPC_50OHM1, 0)
+
+
+##################
+### Clock settings
+##################
+
+### set clock mode
+
+    def set_clockmode_pll(self):
+        '''
+        Sets the clock mode to PLL
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set clock mode to pll')
+        self._set_param(_spcm_regs.SPC_CLOCKMODE, _spcm_regs.SPC_CM_INTPLL)
+
+    def set_clockmode_quartz1(self):
+        '''
+        Sets the clock mode to quartz1
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set clock mode to quartz1')
+        self._set_param(_spcm_regs.SPC_CLOCKMODE, _spcm_regs.SPC_CM_QUARTZ1)
+
+### set clock termination
+
+    def set_clock_50Ohm(self):
+        '''
+        Sets the clock input termination to 50 Ohm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set clock termination to 50 Ohm')
+        self._set_param(_spcm_regs.SPC_CLOCK50OHM, 1)
+
+    def set_clock_highOhm(self):
+        '''
+        Sets the clock input termination
+        to high impedance
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set clock termination to high impedance')
+        self._set_param(_spcm_regs.SPC_CLOCK50OHM, 0)
+
+
+###########################
+### Readout Mode for card
+###########################
+
+    def set_single_mode(self):
+        '''
+        Sets the card in single mode readout status
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set the card in single mode readout status')
+        self._set_param(_spcm_regs.SPC_CARDMODE, _spcm_regs.SPC_REC_STD_SINGLE)
+
+    def set_multi_mode(self):
+        '''
+        Sets the card in 'multiple recording' mode readout status
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set the card in multi mode readout status')
+        self._set_param(_spcm_regs.SPC_CARDMODE, _spcm_regs.SPC_REC_STD_MULTI)
+
+
+##############
+### Trigger
+##############
+
+    def enable_trigger(self):
+        '''
+        Enables the trigger
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Enable trigger')
+        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_ENABLETRIGGER)
+
+    def disable_trigger(self):
+        '''
+        Disables the trigger
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Disable trigger')
+        self._set_param(_spcm_regs.SPC_M2CMD, _spcm_regs.M2CMD_CARD_DISABLETRIGGER)
+
+    def disable_trigger_output(self):
+        '''
+        Disables the trigger
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Disable trigger output')
+        self._set_param(_spcm_regs.SPC_TRIG_OUTPUT, 0)
+
+### set trigger mode
+
+    def trigger_mode_pos(self):
+        '''
+        Sets the trigger mode of ext0
+        to positive slope
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger mode pos')
+        self._set_param(_spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_POS)
+
+    def trigger_mode_neg(self):
+        '''
+        Sets the trigger mode of ext0
+        to negative slope
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger mode neg')
+        self._set_param(_spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_NEG)
+
+### set trigger properties
+
+    def set_trigger_ext0_pulsewidth(self, width):
+        '''
+        Sets the pulsewidth for external trigger in samples
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger pulsewidth to %i' % width)
+        self._set_param(_spcm_regs.SPC_TRIG_EXT0_PULSEWIDTH, width)
+
+### set trigger mask
+
+    ## ORmask
+
+    def set_trigger_ORmask_tmask_ext0(self):
+        '''
+        Set trigger OR mask tmask ext0
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger OR mask tmask ext0')
+        self._set_param(_spcm_regs.SPC_TRIG_ORMASK, _spcm_regs.SPC_TMASK_EXT0)
+
+    def set_trigger_ORmask_tmask_NO_ch0(self):
+        '''
+        Set trigger OR mask tmask No ch 0
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger OR mask tmask No ch 0')
+        self._set_param(_spcm_regs.SPC_TRIG_CH_ORMASK0, 0)
+
+    def set_trigger_ORmask_tmask_NO_ch1(self):
+        '''
+        Set trigger OR mask tmask No ch 1
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger OR mask tmask No ch 1')
+        self._set_param(_spcm_regs.SPC_TRIG_CH_ORMASK1, 0)
+
+    ## ANDmask
+
+    def set_trigger_ANDmask_tmask_ext0(self):
+        '''
+        Set trigger AND mask tmask No ext0
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger No mask tmask No ext0')
+        self._set_param(_spcm_regs.SPC_TRIG_ANDMASK, 0)
+
+    def set_trigger_ANDmask_tmask_NO_ch0(self):
+        '''
+        Set trigger AND mask tmask No ch 0
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger AND mask tmask No ch 0')
+        self._set_param(_spcm_regs.SPC_TRIG_CH_ANDMASK0, 0)
+
+    def set_trigger_ANDmask_tmask_NO_ch1(self):
+        '''
+        Set trigger AND mask tmask No ch 1
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger AND mask tmask No ch 1')
+        self._set_param(_spcm_regs.SPC_TRIG_CH_ANDMASK1, 0)
+
+### set trigger termination
+
+    def trigger_termination_50Ohm(self):
+        '''
+        Sets the trigger input termination
+        to 50 Ohm
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger termination to 50 Ohm')
+        self._set_param(_spcm_regs.SPC_TRIG_TERM, 1)
+
+    def trigger_termination_highOhm(self):
+        '''
+        Sets the trigger input termination
+        to high impedance
+
+        Input:
+            None
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set trigger termination to high impedance')
+        self._set_param(_spcm_regs.SPC_TRIG_TERM, 0)
+
+
+#######################
+### read data from card
+#######################
+
+    def readout_raw_buffer(self, nr_of_channels=1):
+        '''
+        Reads out the buffer, and returns a list with the size of the
+        buffer. Contains only data if the channel is triggered.
+
+        Input:
+            None
+
+        Output:
+            data (int[memsize]): The data of the buffer
+        '''
+        logging.debug(__name__ + ' : Readout raw buffer')
+        lMemsize = self.get_memsize()
+        lBufsize = lMemsize * nr_of_channels
+
+        a = (c_int8 * lBufsize)()
+        p_data = pointer(a)
+
+        # setup buffer
+        err = self._spcm_win32.DefTransfer64(self._spcm_win32.handel, _spcm_regs.SPCM_BUF_DATA, 1,
+            0, p_data, c_int64(0), c_int64(lBufsize))
+        if (err!=0):
+            logging.error(__name__ + ' : Error setting up buffer')
+            self._get_error()
+            raise ValueError('Error communicating with device')
+
+        # readout data
+        err = self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_M2CMD,
+            _spcm_regs.M2CMD_DATA_STARTDMA | _spcm_regs.M2CMD_DATA_WAITDMA)
+        if (err!=0):
+            logging.error(__name__ + ' : Error during read, error nr: %i' % err)
+            self._get_error()
+            raise ValueError('Error communicating with device')
+
+        data = p_data.contents[:]
+        return data
+
+    def readout_singlechannel_singlemode_bin(self):
+        '''
+        Reads out the buffer, and returns a list with the size of the
+        buffer. Contains only data if the channel is triggered.
+
+        Input:
+            None
+
+        Output:
+            data (int[memsize]): The data of the buffer
+        '''
+        logging.debug(__name__ + ' : Readout binaries from buffer')
+
+        data = self.readout_raw_buffer()
+        return data
+
+    def readout_singlechannel_singlemode_float(self):
+        '''
+        Reads out the buffer, and converts the data to the actual input voltage.
+        Returns a list with the size of the buffer.
+        Contains only data if the channel is triggered.
+
+        Input:
+            None
+
+        Output:
+            dataout (float[memsize]): The data of the buffer
+        '''
+        logging.debug(__name__ + ' : Readout float after converting from binaries')
+
+        amp = float(self.get_input_amp_ch0())
+        offset = float(self.get_input_offset_ch0())
+
+        data = self.readout_raw_buffer()
+        if data == 'timeout':
+            return data
+        data = numpy.array(data, numpy.float32)
+        data = []
+        data = 2.0 * amp * (data / 255.0) + offset
+        return data
+
+    def readout_singlechannel_multimode_bin(self):
+        lMemsize = self.get_memsize()
+        lSegsize = self.get_segmentsize()
+
+        lnumber_of_samples = lMemsize / lSegsize
+
+        data = self.readout_raw_buffer()
+        if data == 'timeout':
+            return data
+        data = numpy.array(data, numpy.int8)
+        data = numpy.reshape(data, (lnumber_of_samples, lSegsize))
+        return data
+
+    def readout_singlechannel_multimode_float(self):
+        lMemsize = self.get_memsize()
+        lSegsize = self.get_segmentsize()
+        amp = float(self.get_input_amp_ch0())
+        offset = float(self.get_input_offset_ch0())
+
+        lnumber_of_samples = lMemsize / lSegsize
+
+        data = self.readout_raw_buffer()
+        if data == 'timeout':
+            return data
+        data = numpy.array(data, numpy.float32)
+        data = numpy.reshape(data, (lnumber_of_samples, lSegsize))
+        data = 2.0 * amp * (data / 255.0) + offset
+        return data
+
+    def readout_doublechannel_multimode_bin(self):
+        lMemsize = self.get_memsize()
+        lSegsize = self.get_segmentsize()
+
+        lnumber_of_samples = lMemsize / lSegsize
+
+        data = self.readout_raw_buffer(nr_of_channels=2)
+        if data == 'timeout':
+            return data
+        data = numpy.array(data, numpy.int8)
+        data = numpy.reshape(data, (lMemsize, 2))
+        data0 = data[:,0]
+        data1 = data[:,1]
+        data0 = numpy.reshape(data0, (lnumber_of_samples, lSegsize))
+        data1 = numpy.reshape(data1, (lnumber_of_samples, lSegsize))
+        return (data0, data1)
+
+    def readout_doublechannel_multimode_float(self):
+        lMemsize = self.get_memsize()
+        lSegsize = self.get_segmentsize()
+        amp0 = float(self.get_input_amp_ch0())
+        offset0 = float(self.get_input_offset_ch1())
+        amp1 = float(self.get_input_amp_ch0())
+        offset1 = float(self.get_input_offset_ch1())
+
+        lnumber_of_samples = lMemsize / lSegsize
+
+        data = self.readout_raw_buffer(nr_of_channels=2)
+        if data == 'timeout':
+            return data
+        data = numpy.array(data, numpy.int8)
+        data = numpy.reshape(data, (lMemsize, 2))
+        data0 = data[:,0]
+        data1 = data[:,1]
+        data0 = numpy.reshape(data0, (lnumber_of_samples, lSegsize))
+        data1 = numpy.reshape(data1, (lnumber_of_samples, lSegsize))
+        data0 = 2.0 * amp0 * (data0 / 255.0) + offset0
+        data1 = 2.0 * amp1 * (data1 / 255.0) + offset1
+        return (data0, data1)
+
+
+### test run
+
+    def test(self, memsize=2048, posttrigger=1024, amp=500):
+        '''
+        Reads out the buffer, and returns a list with the size of the
+        buffer. Contains only data if the channel is triggered.
+
+        Input:
+            memsize (int)       : number of datapoints taken
+                                    default = 2048
+            posttrigger (int)   : numbers of points taken after the trigger
+                                    default = 1024
+            amp (int)           : half of the range in millivolts
+                                    default = 500
+
+        Output:
+            data (int[memsize]): Measurement data
+        '''
+        self.init_default(memsize=memsize, posttrigger=posttrigger, amp=amp)
+        print 'starting card and waiting for trigger'
+        self.start_with_trigger_and_waitready()
+        print "received trigger"
+        self.data = self.readout_singlemode_float()
+        return self.data
+
+
+###################################
+### setting / getting of parameters
+###################################
 
     def _do_set_timeout(self, timeout):
         '''
@@ -615,18 +1318,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Get timeout')
         return self._get_param(_spcm_regs.SPC_TIMEOUT)
 
-    def _do_get_card_status(self):
-        '''
-        Returns the card status, see p136 of manual
-
-        Input:
-            None
-
-        Output:
-            status (int): Integer corresponding to the card thatus
-        '''
-        logging.debug(__name__ + ' : Get card status')
-        return self._get_param(_spcm_regs.SPC_M2STATUS)
+### timing
 
     def _do_set_trigger_delay(self, nums):
         '''
@@ -654,46 +1346,6 @@ class Spectrum_M2i2030(Instrument):
         '''
         logging.debug(__name__ + ' : Get trigger delay')
         return self._get_param(_spcm_regs.SPC_TRIG_DELAY)
-
-    def set_card_mode_singleshotreadout(self):
-        '''
-        Set the card to the single shot readout mode.
-        Use this one for default measurements
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set to single shot readout')
-        self._set_param(_spcm_regs.SPC_CARDMODE, _spcm_regs.SPC_REC_STD_SINGLE)
-
-    def _do_set_memsize(self, lMemsize):
-        '''
-        Sets the size of the datapoints taken
-
-        Input:
-            lMemsize (int) : number of datapoints
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set memsize to %s' % lMemzise)
-        self._set_param(_spcm_regs.SPC_MEMSIZE, lMemsize)
-
-    def _do_get_memsize(self):
-        '''
-        Get the number of datapoints that are read out
-
-        Input:
-            None
-
-        Output:
-            memsize (int) : number of datapoints
-        '''
-        logging.debug(__name__ + ' : Get memzise')
-        return self._get_param(_spcm_regs.SPC_MEMSIZE)
 
     def _do_set_segmentsize(self, lSegsize):
         '''
@@ -750,44 +1402,35 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Get post trigger')
         return self._get_param( _spcm_regs.SPC_POSTTRIGGER)
 
-    def select_channel0(self):
+### buffer
+
+    def _do_set_memsize(self, lMemsize):
         '''
-        Select channel 0 for measurement
+        Sets the size of the datapoints taken
+
+        Input:
+            lMemsize (int) : number of datapoints
+
+        Output:
+            None
+        '''
+        logging.debug(__name__ + ' : Set memsize to %s' % lMemzise)
+        self._set_param(_spcm_regs.SPC_MEMSIZE, lMemsize)
+
+    def _do_get_memsize(self):
+        '''
+        Get the number of datapoints that are read out
 
         Input:
             None
 
         Output:
-            None
+            memsize (int) : number of datapoints
         '''
-        logging.debug(__name__ + ' : Select channel 0')
-        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0)
+        logging.debug(__name__ + ' : Get memzise')
+        return self._get_param(_spcm_regs.SPC_MEMSIZE)
 
-    def select_channel1(self):
-        '''
-        Select channel 1 for measurement
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Select channel 1')
-        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL1)
-
-    def select_channel01(self):
-        '''
-        Select channels 0 and 1 for measurement
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Select channels 0 and 1')
-        self._set_param(_spcm_regs.SPC_CHENABLE, _spcm_regs.CHANNEL0 | _spcm_regs.CHANNEL1)
+### channel parameters
 
     def _do_set_input_amp_ch0(self, amp):
         '''
@@ -901,114 +1544,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Getting input offset1')
         return self._get_param(_spcm_regs.SPC_OFFS1)
 
-    def input_term_ch0_50Ohm(self):
-        '''
-        Sets the input termination of
-        channel 0 to 50 Ohm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set input termination ch0 to 50 Ohm')
-        self._set_param(_spcm_regs.SPC_50OHM0, 1)
-
-    def input_term_ch0_1MOhm(self):
-        '''
-        Sets the input termination of
-        channel 0 tot 1 MOhm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set input termination ch0 to 1 MOhm')
-        self._set_param(_spcm_regs.SPC_50OHM0, 0)
-
-    def input_term_ch1_50Ohm(self):
-        '''
-        Sets the input termination of
-        channel 1 to 50 Ohm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set input termination ch1 to 50 Ohm')
-        self._set_param(_spcm_regs.SPC_50OHM1, 1)
-
-    def input_term_ch1_1MOhm(self):
-        '''
-        Sets the input termination of
-        channel 1 to 1 MOhm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set input termination ch1 to 1 MOhm')
-        self._set_param(_spcm_regs.SPC_50OHM1, 0)
-
-    def set_clock_50Ohm(self):
-        '''
-        Sets the clock input termination to 50 Ohm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set clock termination to 50 Ohm')
-        self._set_param(_spcm_regs.SPC_CLOCK50OHM, 1)
-
-    def set_clock_highOhm(self):
-        '''
-        Sets the clock input termination
-        to high impedance
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set clock termination to high impedance')
-        self._set_param(_spcm_regs.SPC_CLOCK50OHM, 0)
-
-    def set_clockmode_pll(self):
-        '''
-        Sets the clock mode to PLL
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set clock mode to pll')
-        self._set_param(_spcm_regs.SPC_CLOCKMODE, _spcm_regs.SPC_CM_INTPLL)
-
-    def set_clockmode_quartz1(self):
-        '''
-        Sets the clock mode to quartz1
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set clock mode to quartz1')
-        self._set_param(_spcm_regs.SPC_CLOCKMODE, _spcm_regs.SPC_CM_QUARTZ1)
+### clock
 
     def _do_set_spc_samplerate(self, rate):
         '''
@@ -1064,178 +1600,3 @@ class Spectrum_M2i2030(Instrument):
         '''
         logging.debug(__name__ + ' : Get reference clock setting')
         return self._get_param(_spcm_regs.SPC_REFERENCECLOCK)
-
-    def set_single_mode(self):
-        '''
-        Sets the card in single mode readout status
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set the card in single mode readout status')
-        self._set_param(_spcm_regs.SPC_CARDMODE, _spcm_regs.SPC_REC_STD_SINGLE)
-
-    def trigger_mode_pos(self):
-        '''
-        Sets the trigger mode of ext0
-        to positive slope
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger mode pos')
-        self._set_param(_spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_POS)
-
-    def trigger_mode_neg(self):
-        '''
-        Sets the trigger mode of ext0
-        to negative slope
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger mode neg')
-        self._set_param(_spcm_regs.SPC_TRIG_EXT0_MODE, _spcm_regs.SPC_TM_NEG)
-
-    def set_trigger_ORmask_tmask_ext0(self):
-        '''
-        Set trigger OR mask tmask ext0
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger OR mask tmask ext0')
-        self._set_param(_spcm_regs.SPC_TRIG_ORMASK, _spcm_regs.SPC_TMASK_EXT0)
-
-    def set_trigger_ORmask_tmask_NO_ch0(self):
-        '''
-        Set trigger OR mask tmask No ch 0
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger OR mask tmask No ch 0')
-        self._set_param(_spcm_regs.SPC_TRIG_CH_ORMASK0, 0)
-
-    def set_trigger_ORmask_tmask_NO_ch1(self):
-        '''
-        Set trigger OR mask tmask No ch 1
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger OR mask tmask No ch 1')
-        self._set_param(_spcm_regs.SPC_TRIG_CH_ORMASK1, 0)
-
-    def trigger_termination_50Ohm(self):
-        '''
-        Sets the trigger input termination
-        to 50 Ohm
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger termination to 50 Ohm')
-        self._set_param(_spcm_regs.SPC_TRIG_TERM, 1)
-
-    def trigger_termination_highOhm(self):
-        '''
-        Sets the trigger input termination
-        to high impedance
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Set trigger termination to high impedance')
-        self._set_param(_spcm_regs.SPC_TRIG_TERM, 0)
-
-    def readout_singlemode_bin(self):
-        '''
-        Reads out the buffer, and returns a list with the size of the
-        buffer. Contains only data if the channel is triggered.
-
-        Input:
-            None
-
-        Output:
-            data (int[memsize]): The data of the buffer
-        '''
-        logging.debug(__name__ + ' : Readout binaries from buffer')
-        lMemsize = self.get_memsize()
-
-        a = (c_int8 * lMemsize)()
-        p_data = pointer(a)
-
-        err = self._spcm_win32.DefTransfer64(self._spcm_win32.handel, _spcm_regs.SPCM_BUF_DATA, 1,
-            0, p_data, c_int64(0), c_int64(lMemsize))
-        err = self._spcm_win32.SetParam32(self._spcm_win32.handel, _spcm_regs.SPC_M2CMD,
-            _spcm_regs.M2CMD_DATA_STARTDMA)
-        return p_data.contents[:]
-
-    def readout_singlemode_float(self):
-        '''
-        Reads out the buffer, and converts the data to the actual input voltage.
-        Returns a list with the size of the buffer.
-        Contains only data if the channel is triggered.
-
-        Input:
-            None
-
-        Output:
-            dataout (float[memsize]): The data of the buffer
-        '''
-        logging.debug(__name__ + ' : Readout float after converting from binaries')
-        amp = float(self.get_input_amp_ch0())
-        offset = float(self.get_input_offset_ch0())
-        datain = self.readout_singlemode_bin()
-        dataout = []
-        datain = numpy.array(datain, numpy.float32)
-        dataout = 2.0 * amp * (datain / 255.0) + offset
-        return dataout
-
-    def test(self, memsize=2048, posttrigger=1024, amp=500):
-        '''
-        Reads out the buffer, and returns a list with the size of the
-        buffer. Contains only data if the channel is triggered.
-
-        Input:
-            memsize (int)       : number of datapoints taken
-                                    default = 2048
-            posttrigger (int)   : numbers of points taken after the trigger
-                                    default = 1024
-            amp (int)           : half of the range in millivolts
-                                    default = 500
-
-        Output:
-            data (int[memsize]): Measurement data
-        '''
-        self.init_default(memsize=memsize, posttrigger=posttrigger, amp=amp)
-        print 'starting card and waiting for trigger'
-        self.start_with_trigger_and_waitready()
-        print "received trigger"
-        self.data = self.readout_singlemode_float()
-        return self.data
