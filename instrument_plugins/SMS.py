@@ -87,7 +87,10 @@ class SMS(Instrument):
         # Add parameters
         self.add_parameter('dac', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, self.numdacs), minval=0, maxval=0, units='Volts')
+            channels=(1, self.numdacs),
+            minval=0, maxval=0,
+            maxstep=0.01, stepdelay=50,
+            units='Volts', format='%.6e')
         self.add_parameter('pol_dac', type=types.StringType,
             flags=Instrument.FLAG_GET, channels=(1, self.numdacs))
         self.add_parameter('battvoltage_pos', type=types.FloatType,
