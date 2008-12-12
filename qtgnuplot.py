@@ -247,6 +247,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
                 filepath = data.get_filepath()
             else:
                 filepath = data.get_filename()
+            filepath = filepath.replace('\\','/')
+
             using = '%d:%d' % (coorddims[0] + 1, valdim + 1)
             npoints = data.get_npoints()
             if npoints < 2:
@@ -302,7 +304,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     _COMMANDS = {
         STYLE_IMAGE: {
-            'style': ['set view map', 'set style data image'],
+            'style': ['set view map', 'set style data image', 'unset key'],
             'splotopt': {},
         },
         STYLE_3D: {
@@ -359,6 +361,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                 filepath = data.get_filepath()
             else:
                 filepath = data.get_filename()
+            filepath = filepath.replace('\\','/')
+
             using = '%d:%d:%d' % (coorddims[0] + 1, coorddims[1] + 1, valdim + 1)
 
             stopblock = data.get_nblocks_complete() - 1
@@ -375,6 +379,11 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
             for k, v in self._COMMANDS[self._style]['splotopt'].iteritems():
                 s += ' %s %s' % (k, v)
+
+        # gnuplot (version 4.3 november) has bug for placing keys (legends)
+        # here we put ugly hack as a temporary fix
+        # also remove 'unset key' above __init__ when reverting this hack
+        s  = ('set label 1 "%s" at screen 0.1,0.9' % filepath) + '\n' + s
 
         if first:
             return ''
