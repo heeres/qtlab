@@ -268,7 +268,7 @@ class QTInstrumentFrame(gtk.Frame):
         self._val_box = gtk.VBox()
         self._val_box.show()
         self._range_box = gtk.VBox()
-        self._range_box.show()
+        self._range_box.hide()
         self._rate_box = gtk.VBox()
         self._rate_box.hide()
 
@@ -359,7 +359,7 @@ class QTInstruments(QTWindow):
             self._tags_dropdown]), False, False)
 
         self._range_toggle = gtk.ToggleButton(_L('Range'))
-        self._range_toggle.set_active(True)
+        self._range_toggle.set_active(False)
         self._range_toggle.connect('toggled', self._range_toggled_cb)
         self._rate_toggle = gtk.ToggleButton(_L('Rate'))
         self._rate_toggle.set_active(False)
@@ -388,6 +388,7 @@ class QTInstruments(QTWindow):
         self._notebook.append_page(self._add_instrument_frame,
             gtk.Label(_L('Manage')))
         self._notebook.show_all()
+        self._notebook.set_current_page(0)
         self.add(self._notebook)
 
     def _add_instrument(self, ins):

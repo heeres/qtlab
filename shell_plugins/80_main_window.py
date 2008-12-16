@@ -126,7 +126,7 @@ class QTLab(gtk.Window):
         if (window.flags() & gtk.VISIBLE):
             window.hide()
         else:
-            window.show_all()
+            window.show()
 
     def _visibility_changed_cb(self, window, button):
         if window.flags() & gtk.VISIBLE:

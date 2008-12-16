@@ -69,10 +69,12 @@ class QTTune(QTWindow):
         h3 = pack_hbox([
             gtk.Label(_('Function')),
             self._function_combo])
-        self.add(pack_vbox([h1, h2, param_getset, h3, self._call_but, controls], False, False))
 
-        self.hide_all()
+        self._vbox = pack_vbox([h1, h2, param_getset, h3, self._call_but, controls], False, False)
 
+        self._vbox.show_all()
+        self.add(self._vbox)
+ 
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding tune window, use showtune() to get it back'
         self.hide()
