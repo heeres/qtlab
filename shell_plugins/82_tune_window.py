@@ -74,7 +74,7 @@ class QTTune(QTWindow):
 
         self._vbox.show_all()
         self.add(self._vbox)
- 
+
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding tune window, use showtune() to get it back'
         self.hide()
