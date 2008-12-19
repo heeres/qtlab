@@ -44,6 +44,12 @@ class SR_400(Instrument):
             flags=Instrument.FLAG_GETSET,
             type=types.IntType,
             minval=0, maxval=3,
+            format_map={
+                0: 'A, B for preset T',
+                1: 'A - B for preset T',
+                2: 'A + B for preset T',
+                3: 'A for preset B',
+            },
             doc="""
             Get / set mode, modes:
                 0: A, B for preset T
@@ -59,10 +65,10 @@ class SR_400(Instrument):
 
         self.add_parameter('count',
             flags=Instrument.FLAG_GET,
-            type=types.IntType,
-            channels=('A', 'B'),
+            channels=('A', 'B', 'T'),
             doc="""
             Start counting and return data (all n periods).
+            Channel A, B, or T (= A and B as tuple)
             """)
 
         self.add_parameter('counter_input',
@@ -170,6 +176,8 @@ class SR_400(Instrument):
             self.get('counter%s' % chan)
             self.get('counter_input%s' % chan)
             self.get('counter_preset%s' % chan)
+            self.get('disc_level%s' % chan)
+            self.get('disc_slope%s' % chan)
 
     def _do_get_identification(self):
         return self._visa.ask('*IDN?')
@@ -187,7 +195,11 @@ class SR_400(Instrument):
 
     def _do_get_count(self, channel):
         ans = self._visa.ask('CR; F%s' % channel)
-        return int(ans)
+        if channel == 'T':
+            ans2 = self._visa.read()
+            return int(ans), int(ans2)
+        else:
+            return int(ans)
 
     def _do_get_counter_input(self, channel):
         ans = self._visa.ask('CI %d' % self._counter_num(channel))
