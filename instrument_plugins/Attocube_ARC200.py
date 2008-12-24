@@ -24,27 +24,6 @@ import time
 
 class Attocube_ARC200(Instrument):
 
-    REF_5V = 0
-    REF_3V = 1
-    REF_1V = 2
-    REF_05V = 3
-    REF_03V = 4
-    REF_01V = 5
-
-    UNIT_PERCENT = 0
-    UNIT_MICRON = 1
-    UNIT_MM = 2
-    UNIT_V = 3
-    UNIT_MG = 4
-    UNIT_G = 5
-    UNITS = {
-        UNIT_PERCENT: '%',
-        UNIT_MICRON: '',
-        UNIT_MM: 'mm',
-        UNIT_V: 'V',
-        UNIT_MG: 'mS',
-        UNIT_G: 'S'
-    }
 
     def __init__(self, name, address, reset=False, **kwargs):
         Instrument.__init__(self, name, address=address, reset=reset, **kwargs)
@@ -67,16 +46,30 @@ class Attocube_ARC200(Instrument):
                 0: Continuous
                 1: Single measurement
             """)
+
         self.add_parameter('refvoltage',
-            flags=Instrument.FLAG_GETSET,
+            flags=Instrument.FLAG_SET | Instrument.FLAG_SOFTGET,
             type=types.IntType,
-            minval=0, maxval=self.REF_01V)
+            format_map={
+                0: 5,
+                1: 3,
+                2: 1,
+                3: 0.5,
+                4: 0.3,
+                5: 0.1,
+            }, units='V')
 
         self.add_parameter('units',
             flags=Instrument.FLAG_SET,
             type=types.IntType,
-            minval=0, maxval=self.UNIT_G,
-            format_function=lambda uid: self.UNITS[uid])
+            format_map={
+                0: '%',
+                1: 'um',
+                2: 'mm',
+                3: 'V',
+                4: 'mS',
+                5: 'S',
+            })
 
         self.add_parameter('position',
             flags=Instrument.FLAG_GET,
@@ -86,18 +79,18 @@ class Attocube_ARC200(Instrument):
             self.reset()
         else:
             self.set_mode(1)
-            self.set_units(self.UNIT_PERCENT)
+            self.set_units('%')
             self.get_all()
 
     def write_line(self, query):
         self._visa.write(query)
-        time.sleep(0.05)
+        time.sleep(0.02)
         self._visa.write('\r')
 
     def ask(self, query):
         try:
             self._visa.write(query)
-            time.sleep(0.05)
+            time.sleep(0.02)
             reply = self._visa.read()
             return reply.rstrip(' \t\r\n')
         except Exception, e:
@@ -123,14 +116,17 @@ class Attocube_ARC200(Instrument):
         self.write_line('SM%d' % mode)
         self._visa.clear()
 
-    def _do_set_voltage(self, ref):
+    def _do_set_refvoltage(self, ref):
         self.write_line('SRE %d' % ref)
 
     def _do_get_position(self):
         reply = self.ask('C')
         str_list = reply.split(',')
-        float_list = [float(str_item) for str_item in str_list]
-        return float_list
+        try:
+            float_list = [float(str_item) for str_item in str_list]
+            return float_list
+        except Exception, e:
+            return None
 
     def _do_set_channel_units(self, channel, units_id):
         self.write_line('SU%d%d' % (channel, units_id))
@@ -139,4 +135,5 @@ class Attocube_ARC200(Instrument):
         self._do_set_channel_units(1, units_id)
         self._do_set_channel_units(2, units_id)
         self._do_set_channel_units(3, units_id)
-        self.set_parameter_options('values', units=self.UNITS[units_id])
+        map = self.get_parameter_options('units')['format_map']
+        self.set_parameter_options('position', units=map[units_id])

@@ -30,6 +30,7 @@ class Attocube_ANC150(Instrument):
     _RE_VOLT = re.compile('voltage = (\d+) V')
     _RE_CAP = re.compile('capacitance = (\d+) C')
     _RE_SN = re.compile('serial number (\d+)')
+    _RE_VER = re.compile('version (.*)')
 
     _ERRMSG_AXIS = "Axis not in computer control mode"
 
@@ -39,19 +40,26 @@ class Attocube_ANC150(Instrument):
         self._address = address
         self._visa = visa.instrument(self._address,
                         baud_rate=38400, data_bits=8, stop_bits=1,
-                        parity=visa.no_parity, term_chars='\r\n')
+                        parity=visa.no_parity, term_chars='\r\n',
+                        timeout=2)
         self._clear_buffer()
         self._last_error = ''
         self._last_ccon_warning = [0, 0, 0]
 
         self.add_parameter('version',
-            flags=Instrument.FLAG_GET)
+            flags=Instrument.FLAG_GET,
+            type=types.StringType)
 
         self.add_parameter('mode',
             flags=Instrument.FLAG_GETSET,
             channels=(1, 3),
             type=types.StringType,
-            format_function=lambda m: self._mode_string(m),
+            format_map={
+                'E': 'Ext',
+                'S': 'Stp',
+                'G': 'Gnd',
+                'C': 'Cap',
+            },
             doc="mode is one of 'ext', 'stp', 'gnd' or 'cap', or first letter")
 
         self.add_parameter('frequency',
@@ -78,7 +86,7 @@ class Attocube_ANC150(Instrument):
             Set speed for continuous motion mode.
             """)
 
-        self.add_function('stepd', parameters=[{
+        self.add_function('step', parameters=[{
                 'name': 'channel',
                 'type': types.IntType,
             }, {
@@ -94,20 +102,9 @@ class Attocube_ANC150(Instrument):
         else:
             self.get_all()
 
-    def _mode_string(self, m):
-        m = m.upper()
-        if m[0] == 'E':
-            return 'ext'
-        elif m[0] == 'S':
-            return 'stp'
-        elif m[0] == 'G':
-            return 'gnd'
-        elif m[0] == 'C':
-            return 'cap'
-
     def _clear_buffer(self):
         self._visa.clear()
-        time.sleep(0.05)
+        time.sleep(0.02)
         self._visa.write('')
 
     def get_last_error(self):
@@ -139,7 +136,7 @@ class Attocube_ANC150(Instrument):
         if reply is None:
             return None
 
-        m = regexp.match(reply)
+        m = regexp.search(reply)
         if m is None:
             return None
         else:
@@ -156,19 +153,14 @@ class Attocube_ANC150(Instrument):
 
     def _do_get_version(self):
         reply = self._ask('ver')
-        sn = self._parse(reply, self._RE_SN)
-        return 'SN %s' % sn
+        ver = self._parse(reply, self._RE_VER)
+        return ver
 
     def _do_get_mode(self, channel):
         reply = self._ask('getm %d' % channel)
         return self._parse(reply, self._RE_MODE)
 
     def _do_set_mode(self, mode, channel):
-        mode = mode.upper()
-        if mode not in ['E', 'S', 'G', 'C', 'EXT', 'STP', 'GND', 'CAP']:
-            logging.warning('Invalid mode: %s', mode)
-            return False
-        mode = mode[0]
         ret = self._short_cmd('$M%d%s' % (channel, mode))
         if ret:
             return True
@@ -190,7 +182,6 @@ class Attocube_ANC150(Instrument):
         return (reply is not None)
 
     def _do_get_voltage(self, channel):
-        print 'Getting voltage'
         reply = self._ask('getv %d' % channel)
         return self._parse(reply, self._RE_VOLT)
 
@@ -202,34 +193,37 @@ class Attocube_ANC150(Instrument):
         reply = self._ask('getc %d' % channel)
         return self._parse(reply, self._RE_CAP)
 
-    def stepd(self, channel, steps):
-        if steps == 1:
-            return self._short_cmd('$S%dD' % channel)
-
-        if steps == 'c' or steps == -1:
-            steps = 'c'
-        else:
-            steps = str(steps)
-        reply = self._ask('stepd %d %s' % (channel, steps))
-        return (reply is not None)
-
-    def stepu(self, channel, steps):
-        if steps == 1:
-            return self._short_cmd('$S%dU' % channel)
-
-        if steps == 'c' or steps == -1:
-            steps = 'c'
-        else:
-            steps = str(steps)
-        reply = self._ask('stepu %d %s' % (channel, steps))
-        return (reply is not None)
-
     def step(self, channel, steps):
+        if steps == 0:
+            return True
+
         if steps > 0:
-            return self.stepu(channel, steps)
-        elif steps < 0:
-            return self.stepd(channel, -steps)
-        return True
+            dir = 'u'
+        else:
+            dir = 'd'
+            steps = -steps
+
+        if steps == 1:
+            ret = self._short_cmd('$S%d%s' % (channel, dir.upper()))
+            if not ret:
+                logging.info('Axis %d problem, trying to set mode', channel)
+                self.set('mode%d' % channel, 's')
+                ret = self._short_cmd('$S%d%s' % (channel, dir.upper()))
+
+            return ret
+
+        if steps == 'c' or steps == -1:
+            steps = 'c'
+        else:
+            steps = str(steps)
+
+        reply = self._ask('step%s %d %s' % (dir, channel, steps))
+        if not reply:
+            logging.info('Axis %d problem, trying to set mode', channel)
+            self.set('mode%d' % channel, 's')
+            reply = self._ask('step%s %d %s' % (dir, channel, steps))
+
+        return (reply is not None)
 
     def _do_set_speed(self, val):
         for i in range(len(self._speed)):
