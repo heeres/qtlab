@@ -639,6 +639,12 @@ class Instrument(gobject.GObject):
         else:
             return None
 
+    def _val_from_option_dict(self, map, value):
+        for k, v in map.iteritems():
+            if v == value:
+                return k
+        return self._val_from_option_list(map.keys(), value)
+
     def _set_value(self, name, value, **kwargs):
         '''
         Private wrapper function to set a value.
@@ -662,12 +668,12 @@ class Instrument(gobject.GObject):
         if 'channel' in p and 'channel' not in kwargs:
             kwargs['channel'] = p['channel']
 
-        # If a format map is available the key should be present
+        # If a format map is available the key should be found.
         if 'format_map' in p:
-            newval = self._val_from_option_list(p['format_map'].keys(), value)
+            newval = self._val_from_option_dict(p['format_map'], value)
             if newval is None:
-                logging.error('Value %s is not a valid option for "%s", valid: %r',
-                    value, name, repr(p['format_map'].keys()))
+                logging.error('Value %s is not a valid option for "%s", valid options: %r',
+                    value, name, repr(p['format_map']))
                 return
             value = newval
 
