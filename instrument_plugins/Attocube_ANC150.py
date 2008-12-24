@@ -55,10 +55,10 @@ class Attocube_ANC150(Instrument):
             channels=(1, 3),
             type=types.StringType,
             format_map={
-                'E': 'Ext',
-                'S': 'Stp',
-                'G': 'Gnd',
-                'C': 'Cap',
+                'e': 'ext',
+                's': 'stp',
+                'g': 'gnd',
+                'c': 'cap',
             },
             doc="mode is one of 'ext', 'stp', 'gnd' or 'cap', or first letter")
 
@@ -161,7 +161,7 @@ class Attocube_ANC150(Instrument):
         return self._parse(reply, self._RE_MODE)
 
     def _do_set_mode(self, mode, channel):
-        ret = self._short_cmd('$M%d%s' % (channel, mode))
+        ret = self._short_cmd('$M%d%s' % (channel, mode.upper()))
         if ret:
             return True
         else:
