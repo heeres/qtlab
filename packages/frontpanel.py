@@ -67,11 +67,13 @@ class StringEntry(gtk.Entry):
         
     def do_get(self):
         val = self._instrument.get(self._parameter)
+        if val is None:
+            val = ''
         self.set_text(val)
         
     def do_set(self):
         val = self.get_text()
-        self._instrument.set(self._parameterm, val)
+        self._instrument.set(self._parameter, val)
 
     def _parameter_changed_cb(self, sender, params):
         pass
@@ -107,8 +109,8 @@ class NumberEntry(gtk.SpinButton):
         val = self._instrument.get(self._parameter)
         if val is None:
             self.set_value(0)
-            return
-        self.set_value(val)
+        else:
+            self.set_value(val)
         
     def do_set(self):
         val = self.get_value()
@@ -187,6 +189,7 @@ class FrontPanel(qtwindow.QTWindow):
             name = 'Instrument undefined'
 
         qtwindow.QTWindow.__init__(self, name, add_to_main=False)
+        self.connect('delete-event', self._delete_event_cb)
 
         self._param_info = {}
 
@@ -195,6 +198,10 @@ class FrontPanel(qtwindow.QTWindow):
 
         self._add_parameters()
         self.show_all()
+
+    def _delete_event_cb(self, widget, event, data=None):
+        self.hide()
+        return True
 
     def _create_entry(self, param, opts):
         if not opts['flags'] & Instrument.FLAG_SET:
