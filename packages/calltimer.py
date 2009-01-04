@@ -39,7 +39,40 @@ def qttime():
 
     return _time_func()
 
-class CallTimerThread(threading.Thread, gobject.GObject):
+class GObjectThread(threading.Thread, gobject.GObject):
+
+    def __init__(self):
+        gobject.GObject.__init__(self)
+        threading.Thread.__init__(self)
+
+        self.stop = ThreadVariable(False)
+
+    def _idle_emit(self, signal, *args):
+        try:
+            gobject.GObject.emit(self, signal, *args)
+        except Exception, e:
+            print 'Error: %s' % e
+
+    def emit(self, signal, *args):
+        gobject.idle_add(self._idle_emit, signal, *args)
+
+class ThreadVariable():
+    def __init__(self, value=None):
+        self._value = value
+        self._lock = threading.Lock()
+
+    def get(self):
+        self._lock.acquire()
+        ret = self._value
+        self._lock.release()
+        return ret
+
+    def set(self, value):
+        self._lock.acquire()
+        self._value = value
+        self._lock.release()
+
+class CallTimerThread(GObjectThread):
     '''
     Class to several times do a callback with a specified delay in a separate
     thread.
@@ -63,8 +96,7 @@ class CallTimerThread(threading.Thread, gobject.GObject):
             **kwargs: optional named arguments to the callback
         '''
 
-        gobject.GObject.__init__(self)
-        threading.Thread.__init__(self)
+        GObjectThread.__init__(self)
 
         self._cb = cb
         self._delay = delay
@@ -124,15 +156,6 @@ class CallTimerThread(threading.Thread, gobject.GObject):
     def get_stop_message(self):
         return self._stop_message
 
-    def _idle_emit(self, signal, *args):
-        try:
-            gobject.GObject.emit(self, signal, *args)
-        except Exception, e:
-            print 'Error: %s' % e
-
-    def emit(self, signal, *args):
-        gobject.idle_add(self._idle_emit, signal, *args)
-
 class CallTimer:
     '''
     Class to several times do a callback with a specified delay, blocking.
@@ -191,8 +214,13 @@ class ThreadCall(threading.Thread):
         self._func = func
         self._args = args
         self._kwargs = kwargs
+        self._return_value = None
 
         self.start()
 
     def run(self):
-        self._func(*self._args, **self._kwargs)
+        ret = self._func(*self._args, **self._kwargs)
+        self._return_value = ret
+
+    def get_return_value(self):
+        return self._return_value

@@ -20,8 +20,11 @@ import gobject
 import copy
 import time
 import math
+import threading
+from packages import calltimer
 
 import logging
+import qt
 
 class Instrument(gobject.GObject):
     """
@@ -84,6 +87,8 @@ class Instrument(gobject.GObject):
 
         self._default_read_var = None
         self._default_write_var = None
+
+        self._access_lock = threading.Lock()
 
     def __str__(self):
         return "Instrument '%s'" % (self.get_name())
@@ -588,8 +593,12 @@ class Instrument(gobject.GObject):
                 Type is whatever the instrument driver returns.
         '''
 
+        self._access_lock.acquire()
+
         if fast:
-            return self._get_value(name, query, **kwargs)
+            ret = self._get_value(name, query, **kwargs)
+            self._access_lock.release()
+            return ret
 
         changed = {}
 
@@ -608,7 +617,26 @@ class Instrument(gobject.GObject):
         if len(changed) > 0 and query:
             self.emit('changed', changed)
 
+        self._access_lock.release()
         return result
+
+    def get_threaded(self, *args, **kwargs):
+        '''
+        Perform a get in a separate thread. Run gobject main loop while
+        executing and return when the get finishes.
+        '''
+        thread = calltimer.ThreadCall(self.get, *args, **kwargs)
+
+        # In python 2.6 the function is called is_alive
+        try:
+            isalive = thread.is_alive
+        except:
+            isalive = thread.isAlive
+
+        while isalive():
+            qt.flow.run_mainloop(0.005)
+
+        return thread.get_return_value()
 
     def _key_from_format_map_val(self, dic, value):
         for key, val in dic.iteritems():
@@ -774,9 +802,12 @@ class Instrument(gobject.GObject):
         Output: True or False whether the operation succeeded.
                 For multiple sets return False if any of the parameters failed.
         '''
+
         if self._locked:
             print 'Trying to set value of locked instrument (%s)' % self.get_name()
             return False
+
+        self._access_lock.acquire()
 
         result = True
         changed = {}
@@ -791,6 +822,8 @@ class Instrument(gobject.GObject):
 
         if not fast and len(changed) > 0:
             self.emit('changed', changed)
+
+        self._access_lock.release()
 
         return result
 

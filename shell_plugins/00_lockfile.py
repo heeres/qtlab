@@ -1,3 +1,4 @@
+import qt
 import os
 import sys
 import config
@@ -8,7 +9,9 @@ def get_lockfile():
     return os.path.join(config.get_workdir(), 'qtlab.lock')
 
 def qtlab_exit():
-    print "Closing QTlab..."
+    print "\nClosing QTlab..."
+
+    qt.flow.exit_request()
 
     global _remove_lock
     if _remove_lock:
@@ -17,7 +20,10 @@ def qtlab_exit():
         except:
             pass
 
-sys.exitfunc = qtlab_exit
+onkill = [qtlab_exit]
+for cb in __IP.on_kill:
+    onkill.append(cb)
+__IP.on_kill = onkill
 
 if os.path.exists(get_lockfile()):
     if '-f' not in sys.argv:

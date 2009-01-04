@@ -39,6 +39,8 @@ class FlowControl(gobject.GObject):
                 gobject.TYPE_NONE,()),
             'stop-request': (gobject.SIGNAL_RUN_FIRST,
                 gobject.TYPE_NONE,()),
+            'exit-request': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,()),
     }
 
     STATUS_STOPPED = 0
@@ -89,6 +91,19 @@ class FlowControl(gobject.GObject):
             self._set_status('stopped')
             self.emit('measurement-end')
 
+    def run_mainloop(self, delay):
+        '''Run mainloop for a short time, sleep rest of the time.'''
+        start = qttime()
+        dt = 0
+        gtk.gdk.threads_enter()
+        while gtk.events_pending() and dt < delay:
+            gtk.main_iteration_do(False)
+            dt = qttime() - start
+        gtk.gdk.threads_leave()
+
+        if delay > dt:
+            time.sleep(delay - dt)
+
     def measurement_idle(self, delay=0.0, exact=False, emit_interval=1):
         '''
         Indicate that the measurement is idle and handle events.
@@ -131,6 +146,10 @@ class FlowControl(gobject.GObject):
             else:
                 time.sleep(max(0, delay - dt))
                 return
+
+    def exit_request(self):
+        '''Emit exit-request signal when exiting.'''
+        self.emit('exit-request')
 
     ############
     ### status

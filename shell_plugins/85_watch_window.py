@@ -24,6 +24,48 @@ from gettext import gettext as _L
 from packages.qttable import QTTable
 from packages import dropdowns
 
+import gobject
+from packages.calltimer import GObjectThread
+
+class WatchThread(GObjectThread):
+
+    __gsignals__ = {
+        'update': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,
+                ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT])),
+        'set-delay': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,
+                ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT])),
+    }
+
+    def __init__(self, id, ins, var, delay):
+        GObjectThread.__init__(self)
+
+        self._id = id
+        self._ins = ins
+        self._var = var
+        self._delay = delay
+
+    def run(self):
+        avgtime = self._delay
+
+        while not self.stop.get():
+            start = time.time()
+            val = self._ins.get(self._var)
+            stop = time.time()
+
+            self.emit('update', self._id, val)
+
+            # Update delay if we're querying too fast
+            avgtime = avgtime * 0.9 + (stop - start) * 0.1
+            if avgtime > self._delay:
+                self._delay *= 2
+                self.emit('set-delay', self._id, self._delay)
+
+            delay = self._delay - (stop - start)
+            if delay > 0:
+                time.sleep(delay)
+
 class QTWatch(QTWindow):
 
     def __init__(self):
@@ -77,6 +119,8 @@ class QTWatch(QTWindow):
 
         vbox.show_all()
 
+        qt.flow.connect('exit-request', self._exit_request_cb)
+
     def _delete_event_cb(self, widget, event, data=None):
         print 'Hiding watch window, use showwatch() to get it back'
         self.hide()
@@ -98,15 +142,37 @@ class QTWatch(QTWindow):
             return
 
         iter = self._tree_model.append((ins_param, '%d ms' % delay, ''))
+        thread = WatchThread(ins_param, ins, param, delay / 1000.0)
+        thread.connect('update', self._update_cb)
+        thread.connect('set-delay', self._set_delay_cb)
         info = {
             'instrument': ins,
             'parameter': param,
             'delay': delay,
-            'iter': iter
+            'iter': iter,
+            'thread': thread,
         }
-        hid = gobject.timeout_add(delay, lambda: self._get_value(info))
 
-        self._watch[ins_param] = hid
+        self._watch[ins_param] = info
+        thread.start()
+
+    def _update_cb(self, sender, ins_param, val):
+        if not (self.flags() & gtk.VISIBLE):
+            return
+
+        if ins_param not in self._watch:
+            return
+
+        info = self._watch[ins_param]
+        ins = info['instrument']
+        param = info['parameter']
+        strval = ins.format_parameter_value(param, val)
+        self._tree_model.set(info['iter'], 2, strval)
+
+    def _set_delay_cb(self, sender, ins_param, delay):
+        info = self._watch[ins_param]
+        strval = '%d ms' % (delay * 1000.0)
+        self._tree_model.set(info['iter'], 1, strval)
 
     def _remove_clicked_cb(self, widget):
         (model, rows) = self._tree_view.get_selection().get_selected_rows()
@@ -115,21 +181,16 @@ class QTWatch(QTWindow):
             ins_param = model.get_value(iter, 0)
             model.remove(iter)
 
-            gobject.source_remove(self._watch[ins_param])
+            thread = self._watch[ins_param]['thread']
+            thread.stop.set(True)
             del self._watch[ins_param]
 
-    def _get_value(self, info):
-        if not (self.flags() & gtk.VISIBLE):
-            return True
-
-        ins = info['instrument']
-        param = info['parameter']
-
-        val = ins.get(param)
-        strval = ins.format_parameter_value(param, val)
-        self._tree_model.set(info['iter'], 2, strval)
-
-        return True
+    def _exit_request_cb(self, sender):
+        print 'Closing watch threads...'
+        for ins_param, info in self._watch.iteritems():
+            thread = info['thread']
+            thread.stop.set(True)
+        self._watch = {}
 
 def showwatch():
     get_watchwin().show_all()
