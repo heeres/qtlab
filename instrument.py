@@ -177,6 +177,21 @@ class Instrument(gobject.GObject):
         '''
         return self._initialized
 
+    def _add_options_to_doc(self, options):
+        doc = options.get('doc', '')
+
+        if 'option_list' in options:
+            doc += '\n\nAllowed parameters:\n'
+            for fmtval in options['option_list']:
+                doc += '    %s\n' % str(fmtval)
+        if 'format_map' in options:
+            doc += '\n\nAllowed parameters:\n'
+            for fmtkey, fmtval in options['format_map'].iteritems():
+                doc += '    %s or %s\n' % (fmtkey, fmtval)
+
+        if doc != '':
+            options['doc'] = doc
+
     def add_parameter(self, name, **kwargs):
         '''
         Create an instrument 'parameter' that is known by the whole
@@ -257,9 +272,11 @@ class Instrument(gobject.GObject):
                 func = lambda query=True, **lopts: \
                     self.get(name, query=query, **lopts)
 
+            self._add_options_to_doc(options)
             func.__doc__ = 'Get variable %s' % name
             if 'doc' in options:
                 func.__doc__ += '\n%s' % options['doc']
+
             setattr(self, 'get_%s' % name,  func)
 
             # Set function to do_get_%s or _do_get_%s, whichever is available
