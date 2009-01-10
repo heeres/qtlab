@@ -2,6 +2,7 @@ import qt
 import os
 import sys
 import config
+import temp
 
 _remove_lock = True
 
@@ -12,6 +13,9 @@ def qtlab_exit():
     print "\nClosing QTlab..."
 
     qt.flow.exit_request()
+
+    # Remove temporary files
+    temp.File.remove_all()
 
     global _remove_lock
     if _remove_lock:
