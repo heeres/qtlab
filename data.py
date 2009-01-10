@@ -23,6 +23,7 @@ import numpy
 import types
 import re
 import logging
+import random
 
 from misc import dict_to_ordered_tuples, get_arg_type
 from gettext import gettext as _L
@@ -30,6 +31,7 @@ from gettext import gettext as _L
 import namedlist
 import qt
 import config
+import temp
 
 def create_data_dir(datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
     '''
@@ -140,6 +142,12 @@ class Data(gobject.GObject):
     _META_COLRE = re.compile('^#.*Column ?(\d+)', re.I)
     _META_COMMENTRE = re.compile('^#(.*)', re.I)
 
+    _INT_TYPES = (
+            types.IntType, types.LongType,
+            numpy.int, numpy.int0, numpy.int8,
+            numpy.int16, numpy.int32, numpy.int64,
+    )
+
     def __init__(self, *args, **kwargs):
         '''
         Create data object
@@ -153,6 +161,8 @@ class Data(gobject.GObject):
             name (string), default will be 'data<n>'
             infile (bool), default True
             inmem (bool), default False
+            tempfile (bool), default False. If True create a temporary file
+                for the data.
         '''
 
         gobject.GObject.__init__(self)
@@ -162,6 +172,7 @@ class Data(gobject.GObject):
         inmem = kwargs.get('inmem', False)
 
         self._inmem = inmem
+        self._tempfile = kwargs.get('tempfile', False)
         self._options = kwargs
 
         # Dimension info
@@ -192,13 +203,16 @@ class Data(gobject.GObject):
         data = get_arg_type(args, kwargs, numpy.ndarray, 'data')
         if data is not None:
             self._data = data
+            self._inmem = True
             self._infile = False
         else:
             self._data = numpy.array([])
             self._infile = infile
 
         filepath = get_arg_type(args, kwargs, types.StringType, 'filepath')
-        if filepath is not None and filepath != '':
+        if self._tempfile:
+            self.create_tempfile(filepath)
+        elif filepath is not None and filepath != '':
             self.set_filepath(filepath, inmem)
             self._infile = True
         else:
@@ -498,8 +512,9 @@ class Data(gobject.GObject):
             self._comment.append(m.group(1))
 
     def _detect_dimensions_size(self):
-        for colnum in range(self.get_ncoordinates()):
-            if colnum not in self._dimensions:
+        ncoords = self.get_ncoordinates()
+        for colnum in range(ncoords):
+            if colnum >= len(self._dimensions):
                 return False
 
             opt = self._dimensions[colnum]
@@ -516,6 +531,19 @@ class Data(gobject.GObject):
 
             logging.info('Column %d has size %d', colnum, dimsize)
             opt['size'] = dimsize
+
+        if self._data is not None:
+            newshape = []
+            for colnum in range(ncoords):
+                opt = self._dimensions[colnum]
+                newshape.append(opt['size'])
+
+            newshape.append(self.get_ndimensions())
+            try:
+                self._data = self._data.reshape(newshape)
+                logging.warning('Data reshaped, but axis might be reversed.')
+            except Exception, e:
+                print 'Unable to reshape array: %s' % e
 
         return True
 
@@ -556,8 +584,22 @@ class Data(gobject.GObject):
         data = []
         nfields = 0
 
+        self._block_sizes = []
+        self._npoints = 0
+        self._npoints_last_block = 0
+        self._npoints_max_block = 0
+
+        blocksize = 0
+
         for line in f:
             line = line.rstrip(' \n\t\r')
+
+            # Count blocks
+            if len(line) == 0 and len(data) > 0:
+                self._block_sizes.append(blocksize)
+                if blocksize > self._npoints_max_block:
+                    self._npoints_max_block = blocksize
+                blocksize = 0
 
             # Strip comment
             commentpos = line.find('#')
@@ -572,12 +614,15 @@ class Data(gobject.GObject):
             fields = [float(f) for f in fields]
             if len(fields) > 0:
                 data.append(fields)
+                blocksize += 1
 
         self._add_missing_dimensions(nfields)
 
         self._data = numpy.array(data)
         self._npoints = len(self._data)
         self._inmem = True
+
+        self._npoints_last_block = blocksize
 
         self._detect_dimensions_size()
 
@@ -614,7 +659,7 @@ class Data(gobject.GObject):
         self._file.write('\n')
 
     def _format_data_value(self, val, colnum):
-        if type(val) is types.IntType:
+        if type(val) in self._INT_TYPES:
             return '%d' % val
 
         if colnum < len(self._dimensions):
@@ -630,9 +675,22 @@ class Data(gobject.GObject):
         return format % val
 
     def _write_data_line(self, args):
-        line = self._format_data_value(args[0], 0)
-        for colnum in range(1, len(args)):
-            line += '\t%s' % self._format_data_value(args[colnum], colnum)
+        '''
+        Write a line of data.
+        Args can be a single value or an numpy.array / list / tuple.
+        '''
+
+        if hasattr(args, '__len__'):
+            if len(args) > 0:
+                line = self._format_data_value(args[0], 0)
+                for colnum in range(1, len(args)):
+                    line += '\t%s' % \
+                            self._format_data_value(args[colnum], colnum)
+            else:
+                line = ''
+        else:
+            line = self._format_data_value(args, 0)
+
         line += '\n'
         self._file.write(line)
         self._file.flush()
@@ -674,6 +732,24 @@ class Data(gobject.GObject):
         self._write_settings_file()
 
         return True
+
+    def create_tempfile(self, path=None):
+        '''
+        Create a temporary file, optionally called <path>.
+        '''
+
+        self._file = temp.File(path)
+
+        try:
+            self._write_data()
+            self._dir, self._filename = os.path.split(self._file.name)
+            self._file.close()
+            self._tempfile = True
+        except Exception, e:
+            logging.warning('Error creating temporary file: %s', e)
+            self._dir = ''
+            self._filename = ''
+            self._tempfile = False
 
     def close_file(self):
         '''
