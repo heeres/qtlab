@@ -80,7 +80,7 @@ def get_arg_type(args, kwargs, checktype, name=None):
     '''
 
     if name is not None and name in kwargs:
-        return kwargs['name']
+        return kwargs[name]
 
     for arg in args:
         if isinstance(arg, checktype):
