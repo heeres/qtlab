@@ -119,6 +119,10 @@ class NamedList(gobject.GObject):
             del self._list[name]
         self.emit('item-removed', name)
 
+    def clear(self):
+        for name in self._list.keys():
+            self.remove(name)
+
     def create(self, name, **kwargs):
         '''Function to create a new instance if type is TYPE_ACTIVE'''
         return None
