@@ -124,3 +124,13 @@ def get_workdir():
     '''Get work directory we started in.'''
     global _work_dir
     return _work_dir
+
+def get_tempdir():
+    '''Get directory for temporary files.'''
+    dir = get_config().get('tempdir', None)
+    if dir == None:
+        dir = os.path.join(get_workdir(), 'tmp')
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    return dir
+
