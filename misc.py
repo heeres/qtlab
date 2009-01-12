@@ -1,5 +1,7 @@
 import math
 import StringIO
+import types
+import numpy
 
 def dict_to_ordered_tuples(dic):
     '''Convert a dictionary to a list of tuples, sorted by key.'''
@@ -73,18 +75,37 @@ def sign(val):
     else:
         return 1
 
-def get_arg_type(args, kwargs, checktype, name=None):
+def get_arg_type(args, kwargs, checktypes, name=None):
     '''
-    Get first argument of type 'typename'.
+    Get first argument of a type in 'checktypes' (single type or list/tuple).
     If a specific name is specified, the kwargs dictionary is checked first.
     '''
 
     if name is not None and name in kwargs:
         return kwargs[name]
 
+    if type(checktypes) not in (types.ListType, types.TupleType):
+        checktypes = [checktypes]
+
     for arg in args:
-        if isinstance(arg, checktype):
-            return arg
+        for checktype in checktypes:
+            if isinstance(arg, checktype):
+                return arg
 
     return None
 
+def zip_arrays(array1, array2):
+    '''
+    "Zip" array1 and array2, e.g. if array1 is [1,2,3] and array2 = [4,5,6],
+    return [[1,4], [2,5], [3,6]]
+    '''
+
+    if len(array1) != len(array2) or len(array1) == 0:
+        return None
+    if len(array1.shape) != 1 or len(array2.shape) != 1:
+        return None
+
+    ret = numpy.zeros([len(array1), 2])
+    ret[:,0] = array1
+    ret[:,1] = array2
+    return ret
