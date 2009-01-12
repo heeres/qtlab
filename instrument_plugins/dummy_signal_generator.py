@@ -6,20 +6,20 @@ import math
 
 class dummy_signal_generator(Instrument):
 
-    TYPE_SIN = 1
-    TYPE_SQUARE = 2
-    TYPE_SAW = 3
+    TYPE_SIN = 'SIN'
+    TYPE_SQUARE = 'SQUARE'
+    TYPE_SAW = 'SAW'
 
     def __init__(self, name, address=None):
         Instrument.__init__(self, name, tags=['measure', 'generate'])
 
-        self.add_parameter('type', type=types.IntType,
+        self.add_parameter('type', type=types.StringType,
                 flags=Instrument.FLAG_GETSET,
-                format_map={
-                    1: 'SIN',
-                    2: 'SQUARE',
-                    3: 'SAW'
-                })
+                option_list=(
+                    'SIN',
+                    'SQUARE',
+                    'SAW'
+                ))
 
         self.add_parameter('amplitude', type=types.FloatType,
                 flags=Instrument.FLAG_SET | Instrument.FLAG_SOFTGET,
@@ -39,7 +39,15 @@ class dummy_signal_generator(Instrument):
                 Arbitrary units.
                 """)
 
-        self.set_type(1)
+        self.add_parameter('slow_wave', type=types.FloatType,
+                tags=['measure'],
+                flags=Instrument.FLAG_GET,
+                units='AU', doc="""
+                Return the current value of the generated wave.
+                Arbitrary units. (takes 1sec)
+                """)
+
+        self.set_type('SIN')
         self.set_amplitude(1)
         self.set_frequency(0.2)
 
@@ -75,3 +83,7 @@ class dummy_signal_generator(Instrument):
                 return (amod - 0.45) * 2 / 0.9 * self._amplitude
             else:
                 return -(amod - 0.95) * 2 / 0.1 * self._amplitude
+
+    def _do_get_slow_wave(self):
+        time.sleep(1)
+        return self._do_get_wave()
