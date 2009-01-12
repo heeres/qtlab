@@ -21,11 +21,12 @@ import logging
 import os
 import time
 import types
+import numpy
 
 import qt
 import namedlist
 
-from misc import get_arg_type, get_dict_keys
+from misc import get_arg_type, get_dict_keys, zip_arrays
 from data import Data
 
 class _PlotList(namedlist.NamedList):
@@ -57,6 +58,8 @@ class Plot(gobject.GObject):
             maxtraces (int), maximum number of traces to show, default 5
             mintime (int, seconds), default 1
             autoupdate (bool), default None, which means listen to global
+            needtempfile (bool), default False. Whether the plot needs data
+            in a temporary file.
         '''
 
         gobject.GObject.__init__(self)
@@ -65,6 +68,7 @@ class Plot(gobject.GObject):
         maxtraces = kwargs.get('maxtraces', 5)
         mintime = kwargs.get('mintime', 1)
         autoupdate = kwargs.get('autoupdate', None)
+        needtempfile = kwargs.get('needtempfile', False)
         name = kwargs.get('name', '')
         self._name = Plot._plot_list.new_item_name(self, name)
 
@@ -75,6 +79,7 @@ class Plot(gobject.GObject):
         self._maxtraces = maxtraces
         self._mintime = mintime
         self._autoupdate = autoupdate
+        self._needtempfile = needtempfile
 
         self._last_update = 0
 
@@ -86,7 +91,7 @@ class Plot(gobject.GObject):
                 data = Data(arg)
                 self.add_data(data)
 
-        Plot._plot_list.add(name, self)
+        Plot._plot_list.add(self._name, self)
 
     def get_name(self):
         '''Get plot name.'''
@@ -96,10 +101,22 @@ class Plot(gobject.GObject):
         '''Add a Data class with options to the plot list.'''
 
         kwargs['data'] = data
+        kwargs['new-data-point-hid'] = \
+                data.connect('new-data-point', self._new_data_point_cb)
+        kwargs['new-data-block-hid'] = \
+                data.connect('new-data-block', self._new_data_block_cb)
         self._data.append(kwargs)
 
-        data.connect('new-data-point', self._new_data_point_cb)
-        data.connect('new-data-block', self._new_data_block_cb)
+    def clear(self):
+        '''Clear the plot and remove all data items.'''
+
+        while len(self._data) > 0:
+            info = self._data[0]
+            if 'new-data-point-hid' in info:
+                info['data'].disconnect(info['new-data-point-hid'])
+            if 'new-data-block-hid' in info:
+                info['data'].disconnect(info['new-data-block-hid'])
+            del self._data[0]
 
     def set_title(self, val):
         '''Set the title of the plot window. Override in implementation.'''
@@ -149,6 +166,10 @@ class Plot(gobject.GObject):
     def get(name):
         return Plot._plot_list[name]
 
+    def get_needtempfile(self):
+        '''Return whether this plot type needs temporary files.'''
+        return self._needtempfile
+
 class Plot2D(Plot):
     '''
     Abstract base class for a 2D plot.
@@ -174,9 +195,14 @@ class Plot2D(Plot):
         '''
 
         if coorddim is None:
-            if data.get_ncoordinates() > 1:
-                logging.info('Data object has multiple coordinates, using the first one')
-            coorddims = (0,)
+            ncoord = data.get_ncoordinates()
+            #FIXME: labels
+            if ncoord == 0:
+                coorddims = ()
+            else:
+                coorddims = (0,)
+                if ncoord > 1:
+                    logging.info('Data object has multiple coordinates, using the first one')
         else:
             coorddims = (coorddim,)
 
@@ -184,8 +210,6 @@ class Plot2D(Plot):
             if data.get_nvalues() > 1:
                 logging.info('Data object has multiple values, using the first one')
             valdim = data.get_ncoordinates()
-            if valdim < 1:
-                valdim = 1
 
         kwargs['coorddims'] = coorddims
         kwargs['valdim'] = valdim
@@ -212,9 +236,6 @@ class Plot2D(Plot):
             self.set_ylabel(bottom)
         if top != '':
             self.set_ylabel(top, top=True)
-
-    def plot(self, *args, **kwargs):
-        pass
 
 class Plot3D(Plot):
     '''
@@ -277,6 +298,84 @@ class Plot3D(Plot):
         if z != '':
             self.set_zlabel(z)
 
-    def plot3(self, *args, **kwargs):
-        pass
+def _get_plot_options(i, *args):
+    return ()
+
+def plot(*args, **kwargs):
+    '''
+    Plot items.
+
+    Variable argument input:
+        Data object(s)
+        numpy array(s), size n x 1 (two n x 1 arrays to represent y and x),
+            or n x 2
+        color string(s), such as 'r', 'g', 'b'
+
+    Keyword argument input:
+        name (string): the plot name to use, defaults to 'plot'
+        coorddim, valdim: specify coordinate and value dimension for Data
+            object.
+    '''
+
+    plotname = kwargs.get('name', 'plot')
+    graph = qt.plots[plotname]
+    if graph is None:
+        graph = qt.Plot2D(name=plotname)
+    coorddim = kwargs.get('coorddim', None)
+    valdim = kwargs.get('valdim', None)
+    globalx = kwargs.get('x', None)
+    if type(globalx) in (types.ListType, types.TupleType):
+        globalx = numpy.array(globalx)
+
+    # Clear plot if requested
+    clear = kwargs.get('clear', False)
+    if clear:
+        graph.clear()
+
+    # Convert all lists / tuples to numpy.arrays
+    args = list(args)
+    for i in range(len(args)):
+        if type(args[i]) in (types.ListType, types.TupleType):
+            args[i] = numpy.array(args[i])
+
+    i = 0
+    while i < len(args):
+
+        # This is easy
+        if isinstance(args[i], Data):
+            opts = _get_plot_options(i + 1, *args)
+            graph.add_data(args[i], coorddim=coorddim, valdim=valdim)
+            i += 1 + len(opts)
+
+        elif isinstance(args[i], numpy.ndarray):
+            if len(args[i].shape) == 1:
+                y = args[i]
+                if globalx is not None:
+                    data = zip_arrays(globalx, y)
+                elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
+                    x = args[i + 1]
+                    data = zip_arrays(x, y)
+                    i += 1
+                else:
+                    data = y
+
+            elif len(args[i].shape) == 2:
+                data = args[i]
+
+            else:
+                print 'Unable to plot array of shape %r' % (args[i].shape)
+                i += 1
+                continue
+
+            tmp = graph.get_needtempfile()
+            data = Data(data=data, tempfile=tmp)
+            graph.add_data(data, coorddim=coorddim, valdim=valdim)
+            i += 1
+
+        else:
+            print 'Unhandled argument: %r' % args[i]
+            i += 1
+
+    graph.update()
+    return graph
 
