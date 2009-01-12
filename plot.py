@@ -110,6 +110,7 @@ class Plot(gobject.GObject):
     def clear(self):
         '''Clear the plot and remove all data items.'''
 
+        logging.info('Clearing plot %s...', self._name)
         while len(self._data) > 0:
             info = self._data[0]
             if 'new-data-point-hid' in info:
@@ -247,6 +248,8 @@ class Plot3D(Plot):
     '''
 
     def __init__(self, *args, **kwargs):
+        if 'mintime' not in kwargs:
+            kwargs['mintime'] = 2
         Plot.__init__(self, *args, **kwargs)
 
     def add_data(self, data, coorddims=None, valdim=None):
