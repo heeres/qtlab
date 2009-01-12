@@ -531,8 +531,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         style = kwargs.get('style', None)
 
-        self.set_labels()
         self.set_style(style)
+        self.set_labels()
         self.set_palette('default', gamma=1.0)
 
     def create_command(self, name, val):
