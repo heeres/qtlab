@@ -23,6 +23,7 @@ import plot
 qt.Plot2D = Plot2D
 qt.plots = plot.Plot.get_named_list()
 qt.Plot3D = Plot3D
+from plot import plot
 
 # Set exception handler
 try:
