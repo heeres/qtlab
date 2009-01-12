@@ -44,9 +44,7 @@ data.create_file()
 # you create two plot-objects. If the 'name' already exists, then
 # that window will be used in stead of opening a new one.
 plot2d = qt.Plot2D(data, name='measure2D')
-plot2d.clear()
-plot3d = qt.Plot3D(data, name='measure3D', style=Plot3D.STYLE_IMAGE)
-plot3d.clear()
+plot3d = qt.Plot3D(data, name='measure3D', style='image3d')
 
 tic = time()
 
@@ -54,7 +52,7 @@ for j in arange(0,size(y)-1):
     tic2 = time()
     for i in arange(0,size(x)-1):
         data.add_data_point(x[i],y[j],z(x[i],y[j]))
-        qt.flow.measurement_idle(0.01)
+        qt.flow.measurement_idle(0.001)
     data.new_block()
     toc2 = time()
     print toc2 - tic2
