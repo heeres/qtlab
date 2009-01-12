@@ -200,11 +200,11 @@ class Data(gobject.GObject):
         name = Data._data_list.new_item_name(self, name)
         self._name = name
 
-        data = get_arg_type(args, kwargs, numpy.ndarray, 'data')
+        data = get_arg_type(args, kwargs,
+                (numpy.ndarray, list, tuple),
+                'data')
         if data is not None:
-            self._data = data
-            self._inmem = True
-            self._infile = False
+            self.set_data(data)
         else:
             self._data = numpy.array([])
             self._infile = infile
@@ -226,6 +226,10 @@ class Data(gobject.GObject):
             qt.flow.connect('stop-request', self._stop_request_cb)
         except:
             pass
+
+    def __repr__(self):
+        ret = "Data '%s', filename '%s'" % (self._name, self._filename)
+        return ret
 
     def __getitem__(self, index):
         return self._data[index]
@@ -350,6 +354,34 @@ class Data(gobject.GObject):
             return self._data
         else:
             return None
+
+    def set_data(self, data):
+        '''
+        Set data, can be a numpy.array or a list / tuple. The latter will be
+        converted to a numpy.array.
+        '''
+
+        if not isinstance(data, numpy.ndarray):
+            data = numpy.array(data)
+        self._data = data
+        self._inmem = True
+        self._infile = False
+        self._npoints = len(self._data)
+
+        # Add dimension information
+        if len(data.shape) == 1:
+            self.add_value('Y')
+        elif len(data.shape) == 2:
+            if data.shape[1] == 2:
+                self.add_coordinate('X')
+                self.add_value('Y')
+            elif data.shape[1] == 3:
+                self.add_coordinate('X')
+                self.add_coordinate('Y')
+                self.add_value('Z')
+            else:
+                for i in range(data.shape[1]):
+                    self.add_coordinate('col%d' % i)
 
     def get_dimensions(self):
         '''Return info for all dimensions.'''
