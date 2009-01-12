@@ -32,6 +32,14 @@ class QTComboBox(gtk.ComboBox):
         self.pack_start(cell, True)
         self.add_attribute(cell, 'text', 0)
 
+    def set_item(self, item):
+        model = self.get_model()
+        for i in range(len(model)):
+            if model[i][0] == item:
+                self.set_active(i)
+                return True
+        return False
+
 class InstrumentDropdown(QTComboBox):
     '''
     Dropdown to select an instrument.
@@ -353,3 +361,48 @@ class TagsDropdown(QTComboBox):
     def _tags_added_cb(self, sender, tags):
         for tag in tags:
             self._tags.append([tag])
+
+class NamedListDropdown(QTComboBox):
+
+    def __init__(self, namedlist):
+        self._items = gtk.ListStore(gobject.TYPE_STRING)
+        QTComboBox.__init__(self, model=self._items)
+
+        self._namedlist = namedlist
+        self._namedlist.connect('item-added', self._item_added_cb)
+        self._namedlist.connect('item-changed', self._item_changed_cb)
+        self._namedlist.connect('item-removed', self._item_removed_cb)
+
+        for item in self._namedlist.get_items():
+            self._items.append(item)
+
+    def _item_added_cb(self, sender, item):
+        self._items.append([item])
+
+    def _item_removed_cb(self, sender, item):
+        pass
+
+    def _item_changed_cb(self, sender, item):
+        pass
+
+    def get_item(self):
+        try:
+            item = self.get_active_iter()
+            name = self._items.get(item, 0)[0]
+            return self._namedlist[name]
+        except:
+            return None
+
+class StringListDropdown(QTComboBox):
+
+    def __init__(self, stringlist):
+        self._items = gtk.ListStore(gobject.TYPE_STRING)
+        QTComboBox.__init__(self, model=self._items)
+
+        for item in stringlist:
+            self._items.append([item])
+
+    def get_item(self):
+        item = self.get_active_iter()
+        name = self._items.get(item, 0)[0]
+        return name
