@@ -37,6 +37,7 @@ class File():
         try:
             if self.name != '':
                 os.remove(self.name)
+                del File._files[name]
         except Exception:
             pass
         self.name = ''
