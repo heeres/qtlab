@@ -130,7 +130,6 @@ class _QTGnuPlot():
     def set_value(self, name, val, update=False):
         '''Set a plot property value.'''
         cmd = self.create_command(name, val)
-        print 'Cmd: %s' % cmd
         self.cmd(cmd)
         self._info[name] = val
         if update:
