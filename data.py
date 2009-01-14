@@ -174,6 +174,7 @@ class Data(gobject.GObject):
         self._inmem = inmem
         self._tempfile = kwargs.get('tempfile', False)
         self._options = kwargs
+        self._file = None
 
         # Dimension info
         self._dimensions = []
