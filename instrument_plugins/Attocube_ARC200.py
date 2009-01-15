@@ -82,15 +82,17 @@ class Attocube_ARC200(Instrument):
             self.set_units('%')
             self.get_all()
 
+    def write(self, query):
+        for char in query:
+            self._visa.write(char)
+            time.sleep(0.025)
+
     def write_line(self, query):
-        self._visa.write(query)
-        time.sleep(0.02)
-        self._visa.write('\r')
+        return self.write('%s\r' % query)
 
     def ask(self, query):
         try:
-            self._visa.write(query)
-            time.sleep(0.02)
+            self.write(query)
             reply = self._visa.read()
             return reply.rstrip(' \t\r\n')
         except Exception, e:
