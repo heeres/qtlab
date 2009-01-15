@@ -93,11 +93,6 @@ class _QTGnuPlot():
     def __init__(self):
         name = self.get_name()
         self._gnuplot = self._gnuplot_list[name]
-        self._info = {
-            'xlabel': '', 'x2label': '',
-            'ylabel': '', 'y2label': '',
-            'zlabel': '',
-        }
         self.cmd('reset')
 
         term = self._gnuplot.get_default_terminal()
@@ -113,6 +108,10 @@ class _QTGnuPlot():
 
     def create_command(self, name, val):
         '''Create command for a plot property.'''
+
+        if name not in self._COMMAND_MAP:
+            return None
+
         if type(val) is types.BooleanType:
             if val:
                 cmd = self._COMMAND_MAP[name] % ''
@@ -123,30 +122,20 @@ class _QTGnuPlot():
 
         return cmd
 
-    def get_info(self):
-        '''Return the current dictionary of plot properties.'''
-        return self._info
-
-    def set_value(self, name, val, update=False):
+    def set_property(self, name, val, update=False):
         '''Set a plot property value.'''
         cmd = self.create_command(name, val)
-        self.cmd(cmd)
-        self._info[name] = val
-        if update:
-            self.update()
-
-    def set_info(self, info, update=True):
-        '''Set a dictionary of plot properties.'''
-        for key, val in info.iteritems():
-            self.set_value(key, val, update=False)
-        if update:
-            self.update()
+        if cmd is not None and cmd != '':
+            self.cmd(cmd)
+        return plot.Plot.set_property(self, name, val, update=update)
 
     def get_commands(self):
         '''Get commands for the current plot properties.'''
         cmd = ''
-        for key, val in self._info.iteritems():
-            cmd += self.create_command(key, val)
+        for key, val in self.get_properties().iteritems():
+            line = self.create_command(key, val)
+            if line is not None and line != '':
+                cmd += line
         return cmd
 
     def clear(self):
@@ -228,69 +217,13 @@ class _QTGnuPlot():
         f.write(s)
         f.close()
 
-    def set_xlabel(self, val, update=True):
-        '''Set label for left x axis.'''
-        self.set_value('xlabel', val, update=update)
-
-    def set_x2label(self, val, update=True):
-        '''Set label for right x axis.'''
-        self.set_value('x2label', val, update=update)
-
-    def set_ylabel(self, val, update=True):
-        '''Set label for bottom y axis.'''
-        self.set_value('ylabel', val, update=update)
-
-    def set_y2label(self, val, update=True):
-        '''Set label for top y axis.'''
-        self.set_value('y2label', val, update=update)
-
-    def set_zlabel(self, val, update=True):
-        '''Set label for z/color axis.'''
-        self.set_value('zlabel', val, update=update)
-
-    def set_xlog(self, val, update=True):
-        '''Set log scale on left x axis.'''
-        self.set_value('xlog', val, update=update)
-
-    def set_x2log(self, val, update=True):
-        '''Set log scale on right x axis.'''
-        self.set_value('x2log', val, update=update)
-
-    def set_ylog(self, val, update=True):
-        '''Set log scale on bottom y axis.'''
-        self.set_value('ylog', val, update=update)
-
-    def set_y2log(self, val, update=True):
-        '''Set log scale on top y axis.'''
-        self.set_value('y2log', val, update=update)
-
-    def _set_range(self, axis, minval, maxval, update=True):
+    def set_range(self, axis, minval, maxval, update=True):
         if minval is None or minval == '':
             minval = '*'
         if maxval is None or maxval == '':
             maxval = '*'
         cmd = '%srange' % axis
-        self.set_value(cmd, (minval, maxval), update=update)
-
-    def set_xrange(self, minval=None, maxval=None, update=True):
-        '''Set left x axis range, None means auto.'''
-        self._set_range('x', minval, maxval, update=update)
-
-    def set_x2range(self, minval=None, maxval=None, update=True):
-        '''Set right x axis range, None means auto.'''
-        self._set_range('x2', minval, maxval, update=update)
-
-    def set_yrange(self, minval=None, maxval=None, update=True):
-        '''Set bottom y axis range, None means auto.'''
-        self._set_range('y', minval, maxval, update=update)
-
-    def set_y2range(self, minval=None, maxval=None, update=True):
-        '''Set top y axis range, None means auto.'''
-        self._set_range('y2', minval, maxval, update=update)
-
-    def set_zrange(self, minval=None, maxval=None, update=True):
-        '''Set z axis range, None means auto.'''
-        self._set_range('z', minval, maxval, update=update)
+        self.set_property(cmd, (minval, maxval), update=update)
 
     @staticmethod
     def get_named_list():
@@ -329,6 +262,9 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
         self.set_labels()
         self.update()
+
+    def set_property(self, *args, **kwargs):
+        return _QTGnuPlot.set_property(self, *args, **kwargs)
 
     def create_plot_command(self, fullpath=True, data_entry=None):
         '''
@@ -534,6 +470,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         self.set_labels()
         self.set_palette('default', gamma=1.0)
 
+    def set_property(self, *args, **kwargs):
+        return _QTGnuPlot.set_property(self, *args, **kwargs)
+
     def create_command(self, name, val):
         if name == 'style':
             ret = '\n'.join(self._STYLES[val]['style']) + '\n'
@@ -565,7 +504,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             logging.warning('Unknown style: %s', style)
             return None
 
-        self.set_value('style', style, update=update)
+        self.set_property('style', style, update=update)
 
     @staticmethod
     def get_palettes():
@@ -589,7 +528,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             logging.warning('Unknown palette: %s', pal)
             return False
 
-        self.set_value('palette', dict(name=pal, gamma=gamma), update=update)
+        self.set_property('palette', dict(name=pal, gamma=gamma), \
+                update=update)
 
     def create_plot_command(self, fullpath=True, data_entry=None):
         '''
@@ -610,7 +550,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
-            style = self._info['style']
+            style = self.get_property('style')
 
             if len(coorddims) != 2:
                 logging.error('Unable to plot without two coordinate columns')
@@ -658,7 +598,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         self._write_gp(s)
 
     def _new_data_point_cb(self, sender):
-        if self._info['style'] != self.STYLE_IMAGE:
+        if self.get_property('style') != self.STYLE_IMAGE:
             self.update(force=False)
 
     def _create_palette_commands(self, **kwargs):

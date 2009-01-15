@@ -63,7 +63,7 @@ class AxisSettings(gtk.Frame):
 
     def set_plot(self, plot):
         self._plot = plot
-        info = plot.get_info()
+        info = plot.get_properties()
 
         self._ignore_changes = True
 
@@ -102,8 +102,7 @@ class AxisSettings(gtk.Frame):
             return
         log = self._logcheck.get_active()
         name = '%slog' % self._axis
-        print 'Setting %s to %s' % (name, log)
-        self._plot.set_value(name, log, update=True)
+        self._plot.set_property(name, log, update=True)
 
     def _range_clicked_cb(self, widget):
         if self._ignore_changes or self._plot is None:
@@ -111,14 +110,14 @@ class AxisSettings(gtk.Frame):
         minval = self._min_range.get_text()
         maxval = self._max_range.get_text()
         name = '%srange' % self._axis
-        self._plot.set_value(name, (minval, maxval), update=True)
+        self._plot.set_property(name, (minval, maxval), update=True)
 
     def _label_clicked_cb(self, widget):
         if self._ignore_changes or self._plot is None:
             return
         name = '%slabel' % self._axis
         label = self._label_entry.get_text()
-        self._plot.set_value(name, label, update=True)
+        self._plot.set_property(name, label, update=True)
 
 class QTGnuplotTweak(QTWindow):
 
@@ -223,7 +222,7 @@ class QTGnuplotTweak(QTWindow):
         self._ignore_changes = True
 
         self._current_plot = plot
-        info = plot.get_info()
+        info = plot.get_properties()
         if 'style' in info:
             self._styles_dropdown.set_item(info['style'])
         if 'palette' in info:

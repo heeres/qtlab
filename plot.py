@@ -75,6 +75,9 @@ class Plot(gobject.GObject):
         self._config = qt.config
         self._data = []
 
+        # Plot properties, things such as maxpoints might be migrated here.
+        self._properties = {}
+
         self._maxpoints = maxpoints
         self._maxtraces = maxtraces
         self._mintime = mintime
@@ -106,6 +109,84 @@ class Plot(gobject.GObject):
         kwargs['new-data-block-hid'] = \
                 data.connect('new-data-block', self._new_data_block_cb)
         self._data.append(kwargs)
+
+    def set_property(self, prop, val, update=False):
+        self._properties[prop] = val
+        if update:
+            self.update()
+
+    def get_property(self, prop, default=None):
+        return self._properties.get(prop, default)
+
+    def get_properties(self):
+        return self._properties
+
+    def set_properties(self, props, update=True):
+        for key, val in props.iteritems():
+            self.set_property(key, val, update=False)
+        if update:
+            self.update()
+
+    # Predefined properties, actual handling needs to be implemented in
+    # the set_property() function of the implementation class.
+
+    def set_xlabel(self, val, update=True):
+        '''Set label for left x axis.'''
+        self.set_property('xlabel', val, update=update)
+
+    def set_x2label(self, val, update=True):
+        '''Set label for right x axis.'''
+        self.set_property('x2label', val, update=update)
+
+    def set_ylabel(self, val, update=True):
+        '''Set label for bottom y axis.'''
+        self.set_property('ylabel', val, update=update)
+
+    def set_y2label(self, val, update=True):
+        '''Set label for top y axis.'''
+        self.set_property('y2label', val, update=update)
+
+    def set_zlabel(self, val, update=True):
+        '''Set label for z/color axis.'''
+        self.set_property('zlabel', val, update=update)
+
+    def set_xlog(self, val, update=True):
+        '''Set log scale on left x axis.'''
+        self.set_property('xlog', val, update=update)
+
+    def set_x2log(self, val, update=True):
+        '''Set log scale on right x axis.'''
+        self.set_property('x2log', val, update=update)
+
+    def set_ylog(self, val, update=True):
+        '''Set log scale on bottom y axis.'''
+        self.set_property('ylog', val, update=update)
+
+    def set_y2log(self, val, update=True):
+        '''Set log scale on top y axis.'''
+        self.set_property('y2log', val, update=update)
+
+    # Implementation classes need to implement set_range()
+
+    def set_xrange(self, minval=None, maxval=None, update=True):
+        '''Set left x axis range, None means auto.'''
+        self.set_range('x', minval, maxval, update=update)
+
+    def set_x2range(self, minval=None, maxval=None, update=True):
+        '''Set right x axis range, None means auto.'''
+        self.set_range('x2', minval, maxval, update=update)
+
+    def set_yrange(self, minval=None, maxval=None, update=True):
+        '''Set bottom y axis range, None means auto.'''
+        self.set_range('y', minval, maxval, update=update)
+
+    def set_y2range(self, minval=None, maxval=None, update=True):
+        '''Set top y axis range, None means auto.'''
+        self.set_range('y2', minval, maxval, update=update)
+
+    def set_zrange(self, minval=None, maxval=None, update=True):
+        '''Set z axis range, None means auto.'''
+        self.set_range('z', minval, maxval, update=update)
 
     def clear(self):
         '''Clear the plot and remove all data items.'''
@@ -216,7 +297,7 @@ class Plot2D(Plot):
         kwargs['valdim'] = valdim
         Plot.add_data(self, data, **kwargs)
 
-    def set_labels(self, left='', bottom='', right='', top=''):
+    def set_labels(self, left='', bottom='', right='', top='', update=True):
         for datadict in self._data:
             data = datadict['data']
             if 'right' in datadict and right == '':
@@ -230,13 +311,16 @@ class Plot2D(Plot):
                 bottom = data.format_label(datadict['valdim'])
 
         if left != '':
-            self.set_xlabel(left)
+            self.set_xlabel(left, update=False)
         if right != '':
-            self.set_xlabel(right, right=True)
+            self.set_x2label(right, update=False)
         if bottom != '':
-            self.set_ylabel(bottom)
+            self.set_ylabel(bottom, update=False)
         if top != '':
-            self.set_ylabel(top, top=True)
+            self.set_y2label(top, update=False)
+
+        if update:
+            self.update()
 
 class Plot3D(Plot):
     '''
