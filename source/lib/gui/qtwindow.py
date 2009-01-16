@@ -2,7 +2,7 @@ import gtk
 import gobject
 
 from gettext import gettext as _
-
+from lib import namedlist
 import qt
 import config
 

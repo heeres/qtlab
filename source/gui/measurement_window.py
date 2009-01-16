@@ -1,4 +1,4 @@
-# 84_measurement_window.py, window to do 1d/2d/3d measurements
+# measurement_window.py, window to do 1d/2d/3d measurements
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -24,12 +24,12 @@ import logging
 from gettext import gettext as _L
 
 from instrument import Instrument
-from packages.calltimer import CallTimerThread
-from packages.dropdowns import AllParametersDropdown
+from lib.calltimer import CallTimerThread
+from lib.gui.dropdowns import AllParametersDropdown
 
 import misc
 
-import measurement
+import lib.measurement
 
 class StepToggleButton(gtk.ToggleButton):
 
@@ -442,21 +442,4 @@ class QTMeasure(QTWindow):
 
     def _hold_toggled_cb(self, sender):
         self._hold = sender.get_active()
-
-def showmeasure():
-    get_measurewin().show()
-
-def hidemeasure():
-    get_measurewin().hide()
-
-try:
-    qt.measurewin
-except:
-    qt.measurewin = QTMeasure()
-
-def get_measurewin():
-    return qt.measurewin
-
-if __name__ == "__main__":
-    gtk.main()
 

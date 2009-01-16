@@ -1,3 +1,16 @@
+import types
+from instrument import Instrument
+from lib.gui.qtwindow import QTWindow
+from lib.calltimer import qttime
+from lib.gui import pack_hbox, pack_vbox
+
+try:
+    import psyco
+    psyco.full()
+    logging.info('psyco acceleration enabled')
+except:
+    logging.info('psyco acceleration not enabled')
+        
 import qt
 
 import qtflow
@@ -9,15 +22,16 @@ qt.instruments = instruments.get_instruments()
 import config
 qt.config = config.get_config()
 qt.config['qtlabdir'] = config.get_workdir()
-sys.path.append(qt.config['qtlabdir'])
+sys.path.append('%s/source' % qt.config['qtlabdir'])
 
 from data import Data
 qt.data = Data.get_named_list()
+qt.Data = Data
 
 if qt.config.get('plot_type', 'gnuplot') == 'matplotlib':
-    from qtmatplotlib import Plot2D, Plot3D
+    from plot_engines.qtmatplotlib import Plot2D, Plot3D
 else:
-    from qtgnuplot import Plot2D, Plot3D
+    from plot_engines.qtgnuplot import Plot2D, Plot3D
 
 import plot
 qt.Plot2D = Plot2D

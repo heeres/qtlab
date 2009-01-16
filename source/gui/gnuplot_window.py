@@ -1,4 +1,4 @@
-# 85_gnuplot_window.py, window to tweak apearance of a gnuplot instance
+# gnuplot_window.py, window to tweak apearance of a gnuplot instance
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,11 +18,11 @@
 import gtk
 import gobject
 import qt
-import qtgnuplot
+import plot_engines.qtgnuplot
 
 from gettext import gettext as _L
 
-from packages import dropdowns
+from lib.gui import dropdowns
 
 class AxisSettings(gtk.Frame):
 
@@ -289,21 +289,4 @@ class QTGnuplotTweak(QTWindow):
             self._axis_z._min_range.set_text('')
             self._axis_z._max_range.set_text('')
             self._current_plot.set_zrange()
-
-def showgnuplotwin():
-    get_gnuplotwin().show_all()
-
-def hidegnuplotwin():
-    get_gnuplotwin().hide_all()
-
-try:
-    qt.gnuplotwin
-except:
-    qt.gnuplotwin = QTGnuplotTweak()
-
-def get_gnuplotwin():
-    return qt.gnuplotwin
-
-if __name__ == "__main__":
-    gtk.main()
 

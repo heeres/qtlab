@@ -30,7 +30,7 @@ from misc import get_arg_type, get_dict_keys
 from data import Data
 
 class _PlotList(namedlist.NamedList):
-    def __init__(self, time_name=False):
+    def __init__(self):
         namedlist.NamedList.__init__(self, base_name='plot')
 
 class Plot(gobject.GObject):

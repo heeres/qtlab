@@ -1,4 +1,4 @@
-# 81_instrument_window.py, window to monitor instruments
+# instrument_window.py, window to monitor instruments
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -21,8 +21,8 @@ import gobject
 from gettext import gettext as _L
 
 import qt
-from packages import dropdowns
-from packages import frontpanel
+from lib.gui import dropdowns
+from lib.gui import frontpanel
 
 class QTManageInstrumentFrame(gtk.VBox):
 
@@ -445,21 +445,4 @@ class QTInstruments(QTWindow):
         state = self._rate_toggle.get_active()
         for name, widget in self._ins_widgets.iteritems():
             widget.show_rate_column(state)
-
-try:
-    qt.inswin
-except:
-    qt.inswin = QTInstruments()
-
-def showinstruments():
-    get_inswin().show()
-
-def hideinstruments():
-    get_inswin().hide()
-
-def get_inswin():
-    return qt.inswin
-
-if __name__ == "__main__":
-    gtk.main()
 

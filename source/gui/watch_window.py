@@ -1,4 +1,4 @@
-# 85_watch_window.py, window to watch one or more instrument parameters
+# watch_window.py, window to watch one or more instrument parameters
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -21,11 +21,11 @@ import qt
 
 from gettext import gettext as _L
 
-from packages.qttable import QTTable
-from packages import dropdowns
+from lib.gui.qttable import QTTable
+from lib.gui import dropdowns
 
 import gobject
-from packages.calltimer import GObjectThread
+from lib.calltimer import GObjectThread
 
 class WatchThread(GObjectThread):
 
@@ -191,21 +191,4 @@ class QTWatch(QTWindow):
             thread = info['thread']
             thread.stop.set(True)
         self._watch = {}
-
-def showwatch():
-    get_watchwin().show_all()
-
-def hidewatch():
-    get_watchwin().hide_all()
-
-try:
-    qt.watchwin
-except:
-    qt.watchwin = QTWatch()
-
-def get_watchwin():
-    return qt.watchwin
-
-if __name__ == "__main__":
-    gtk.main()
 

@@ -1,4 +1,4 @@
-# 82_tune_window.py, window to tune instrument parameter
+# tune_window.py, window to tune instrument parameter
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -21,8 +21,8 @@ import qt
 
 from gettext import gettext as _
 
-from packages.flexscale import FlexScale
-from packages import dropdowns
+from lib.gui.flexscale import FlexScale
+from lib.gui import dropdowns
 
 class QTTune(QTWindow):
 
@@ -111,21 +111,4 @@ class QTTune(QTWindow):
         ins = self._ins_combo.get_instrument()
         funcname = self._function_combo.get_function()
         ins.call(funcname)
-
-def showtune():
-    get_tunewin().show_all()
-
-def hidetune():
-    get_tunewin().hide_all()
-
-try:
-    qt.tunewin
-except:
-    qt.tunewin = QTTune()
-
-def get_tunewin():
-    return qt.tunewin
-
-if __name__ == "__main__":
-    gtk.main()
 

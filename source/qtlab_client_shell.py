@@ -49,7 +49,7 @@ if __name__ == '__main__':
             ignore_list.append(sys.argv[i])
         i += 1
 
-    filelist = get_shell_files('shell_plugins', ignore_list)
+    filelist = get_shell_files('shell', ignore_list)
     for (dir, name) in filelist:
         filename = '%s/%s' % (dir, name)
         print 'Executing %s...' % (filename)

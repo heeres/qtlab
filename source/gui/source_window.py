@@ -1,4 +1,4 @@
-# 83_source_window.py, source edit window for the QT Lab environment
+# source_window.py, source edit window for the QT Lab environment
 # Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -33,7 +33,7 @@ import pango
 
 from gettext import gettext as _L
 
-import gui
+import lib.gui as gui
 
 def get_python_filter():
     filter = gtk.FileFilter()
@@ -268,22 +268,4 @@ class QTSource(QTWindow):
         qtrun_thread(fn)
 
 #        os.remove(fn)
-
-def showsource():
-    get_sourcewin().show()
-
-def hidesource():
-    get_sourcewin().hide()
-
-if _have_gtksourceview:
-    try:
-        qt.sourcewin
-    except:
-        qt.sourcewin = QTSource()
-
-def get_sourcewin():
-    return qt.sourcewin
-
-if __name__ == "__main__":
-    gtk.main()
 

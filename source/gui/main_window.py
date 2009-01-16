@@ -1,4 +1,4 @@
-# 80_main_window.py, main window for QT lab environment
+# main_window.py, main window for QT lab environment
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 
 import gtk
 import qt
-import gui
+import lib.gui as gui
 
 from gettext import gettext as _L
 
@@ -140,19 +140,3 @@ class QTLab(gtk.Window):
     def _toggle_stop_cb(self, widget):
         qt.flow.set_abort()
 
-try:
-    qt.mainwin
-except:
-    qt.mainwin = QTLab()
-
-def get_mainwin():
-    return qt.mainwin
-
-def showmain():
-    get_mainwin().show()
-
-def hidemain():
-    get_mainwin().hide()
-
-if __name__ == "__main__":
-    gtk.main()

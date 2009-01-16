@@ -1,4 +1,4 @@
-# gui.py, GUI helper functions for QT lab environment
+# misc.py, GUI helper functions for QT lab environment
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify

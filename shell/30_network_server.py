@@ -1,6 +1,6 @@
-from packages import network
+from lib.network import tcpserver
 
-class QTHandler(network.GlibTCPHandler):
+class QTHandler(tcpserver.GlibTCPHandler):
 
     def handle(self, data):
         data = data.strip()

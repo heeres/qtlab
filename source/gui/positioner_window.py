@@ -1,4 +1,4 @@
-# 85_positioner_window.py, window to control a positioning instrument
+# positioner_window.py, window to control a positioning instrument
 # Reinier Heeres, <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@ import qt
 
 from gettext import gettext as _L
 
-from packages.qttable import QTTable
-from packages.dropdowns import InstrumentDropdown
+from lib.gui.qttable import QTTable
+from lib.gui.dropdowns import InstrumentDropdown
 
 class PositionControls(gtk.Frame):
 
@@ -516,21 +516,4 @@ class QTPositioner(QTWindow):
 
     def _decel_changed_cb(self, sender, val):
         self._decel_factor = val
-
-def showpositioner():
-    get_positionerwin().show_all()
-
-def hidepositioner():
-    get_positionerwin().hide_all()
-
-try:
-    qt.positionerwin
-except:
-    qt.positionerwin = QTPositioner()
-
-def get_positionerwin():
-    return qt.positionerwin
-
-if __name__ == "__main__":
-    gtk.main()
 
