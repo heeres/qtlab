@@ -93,19 +93,3 @@ def get_arg_type(args, kwargs, checktypes, name=None):
                 return arg
 
     return None
-
-def zip_arrays(array1, array2):
-    '''
-    "Zip" array1 and array2, e.g. if array1 is [1,2,3] and array2 = [4,5,6],
-    return [[1,4], [2,5], [3,6]]
-    '''
-
-    if len(array1) != len(array2) or len(array1) == 0:
-        return None
-    if len(array1.shape) != 1 or len(array2.shape) != 1:
-        return None
-
-    ret = numpy.zeros([len(array1), 2])
-    ret[:,0] = array1
-    ret[:,1] = array2
-    return ret

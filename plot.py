@@ -26,7 +26,7 @@ import numpy
 import qt
 import namedlist
 
-from misc import get_arg_type, get_dict_keys, zip_arrays
+from misc import get_arg_type, get_dict_keys
 from data import Data
 
 class _PlotList(namedlist.NamedList):
@@ -438,10 +438,10 @@ def plot(*args, **kwargs):
             if len(args[i].shape) == 1:
                 y = args[i]
                 if globalx is not None:
-                    data = zip_arrays(globalx, y)
+                    data = numpy.column_stack((globalx, y))
                 elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
                     x = args[i + 1]
-                    data = zip_arrays(x, y)
+                    data = numpy.column_stack((x, y))
                     i += 1
                 else:
                     data = y

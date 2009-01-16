@@ -16,7 +16,6 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import numpy
-import misc
 
 from namedstruct import *
 
@@ -286,7 +285,7 @@ class SPEFile:
                 [self.convert_value('x', i) for i in range(len(self._data))])
         yvals = numpy.array(
                 [self.convert_value('y', i) for i in self._data])
-        return misc.zip_arrays(xvals, yvals)
+        return numpy.column_stack((xvals, yvals))
 
 if __name__ == '__main__':
     spe = SPEFile('test.spe')
