@@ -84,7 +84,7 @@ class SourceWindow(QTWindow):
         self._run_button = gtk.Button(_L('Run'))
         self._run_button.connect('clicked', self._run_clicked_cb)
 
-        self._options = pack_hbox([
+        self._options = gui.pack_hbox([
             gtk.Label(_L('Name')),
             self._name,
             self._run_button
