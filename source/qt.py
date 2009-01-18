@@ -1,1 +1,9 @@
-# qt.py, empty module to use as global namespace
+# Global namespace
+
+# Variables will be filled in later
+config = None
+data = None
+flow = None
+plots = None
+windows = None
+
