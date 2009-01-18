@@ -21,7 +21,7 @@ import copy
 import time
 import math
 import threading
-from packages import calltimer
+from lib import calltimer
 
 import logging
 import qt
