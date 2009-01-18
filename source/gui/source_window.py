@@ -123,7 +123,6 @@ class SourceWindow(QTWindow):
         self._find_tag.props.foreground = 'yellow'
 
     def _delete_event_cb(self, widget, event, data=None):
-        print 'Hiding source window, use showsource() to get it back'
         self.hide()
         return True
 

@@ -125,7 +125,6 @@ class WatchWindow(qtwindow.QTWindow):
         qt.flow.connect('exit-request', self._exit_request_cb)
 
     def _delete_event_cb(self, widget, event, data=None):
-        print 'Hiding watch window, use showwatch() to get it back'
         self.hide()
         return True
 

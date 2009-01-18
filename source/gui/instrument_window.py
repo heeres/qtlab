@@ -414,7 +414,6 @@ class InstrumentWindow(qtwindow.QTWindow):
             self._add_instrument(ins)
 
     def _delete_event_cb(self, widget, event, data=None):
-        print 'Hiding instruments window, use showinstruments() to get it back'
         self.hide()
         return True
 

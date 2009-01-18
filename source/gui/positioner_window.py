@@ -430,7 +430,6 @@ class PositionerWindow(QTWindow):
         vbox.show_all()
 
     def _delete_event_cb(self, widget, event, data=None):
-        print 'Hiding positioner window, use showpositioner() to get it back'
         self.hide()
         return True
 
