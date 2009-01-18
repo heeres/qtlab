@@ -109,6 +109,7 @@ class Instrument(gobject.GObject):
         return modname.split('.')[1]
 
     def get_options(self):
+        '''Return instrument options.'''
         return self._options
 
     def get_tags(self):
@@ -327,7 +328,6 @@ class Instrument(gobject.GObject):
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
 
         if options['flags'] & self.FLAG_PERSIST:
-            import qt
             val = qt.config.get('persist_%s_%s' % (self._name, name))
             options['value'] = val
         else:
@@ -506,6 +506,10 @@ class Instrument(gobject.GObject):
         return '%s%s' % (valstr, unitstr)
 
     def format_range(self, param):
+        '''
+        Format the range allowed for parameter <param>
+        '''
+
         popts = self.get_parameter_options(param)
         text = ''
         if 'minval' in popts or 'maxval' in popts:
@@ -526,6 +530,10 @@ class Instrument(gobject.GObject):
         return text
 
     def format_rate(self, param):
+        '''
+        Format the rate allowed for parameter <param>
+        '''
+
         popts = self.get_parameter_options(param)
         text = ''
         if 'maxstep' in popts:
@@ -794,7 +802,6 @@ class Instrument(gobject.GObject):
             value = self._get_value(name, **kwargs)
 
         if p['flags'] & self.FLAG_PERSIST:
-            import qt
             qt.config.set('persist_%s_%s' % (self._name, name), value)
             qt.config.save()
 
