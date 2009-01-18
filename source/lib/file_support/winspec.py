@@ -17,7 +17,7 @@
 
 import numpy
 
-from namedstruct import *
+from lib.namedstruct import *
 
 class SPEFile:
 
