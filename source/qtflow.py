@@ -23,7 +23,7 @@ import types
 
 import time
 from gettext import gettext as _L
-from packages.calltimer import qttime
+from lib.calltimer import qttime
 
 class FlowControl(gobject.GObject):
     '''

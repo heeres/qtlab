@@ -20,7 +20,7 @@ import gtk
 import gobject
 
 import logging
-from packages import calltimer
+from lib import calltimer
 
 import qt
 from data import Data
