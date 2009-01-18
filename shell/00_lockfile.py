@@ -1,8 +1,7 @@
-import qt
 import os
 import sys
 import config
-import temp
+from lib import temp
 
 _remove_lock = True
 temp.File.set_temp_dir(config.get_tempdir())

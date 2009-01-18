@@ -1,5 +1,4 @@
 import os
-import os.path
 import sys
 
 def insert_in_file_list(entries, entry, ignore_list):
@@ -40,6 +39,8 @@ def get_shell_files(path, ignore_list):
 
 if __name__ == '__main__':
     print 'Starting QT Lab environment...'
+
+    sys.path.append('%s/source/' % os.getcwd())
 
     ignore_list = []
     i = 1

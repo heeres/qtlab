@@ -16,21 +16,23 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
-import qt
-import lib.gui as gui
-
 from gettext import gettext as _L
 
-class QTLab(gtk.Window):
+import qt
+import lib.gui as gui
+from lib.gui import qtwindow
+
+class MainWindow(qtwindow.QTWindow):
+
+    _main_created = False
 
     def __init__(self):
-        gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
-        self.move(0, 0)
+        if MainWindow._main_created:
+            logging.error('Error: Main window already created!')
+            return
+        MainWindow._main_created = True
 
-        self.set_size_request(200, -1)
-        self.set_border_width(1)
-        self.set_title('QT Lab')
-
+        qtwindow.QTWindow.__init__(self, 'main', 'QT Lab', add_to_main=False)
         self.connect("delete-event", self._delete_event_cb)
 
         self._flow = qt.flow
@@ -64,7 +66,7 @@ class QTLab(gtk.Window):
         self._window_button_vbox = gtk.VBox()
         self._window_buttons = []
 
-        v1 = pack_vbox([
+        v1 = gui.pack_vbox([
             self._liveplot_but,
             self._stop_but,
             self._window_button_vbox])
@@ -97,24 +99,19 @@ class QTLab(gtk.Window):
         return
 
     def _delete_event_cb(self, widget, event, data=None):
-        # Change False to True and the main window will not be destroyed
-        # with a "delete_event".
-        print 'Hiding main window, use showmain() to get it back'
         self.hide()
         return True
 
     def _destroy_cb(self, widget, data=None):
-        print 'Storing configuration settings...'
         config = config.get_config()
         config.save()
         gtk.main_quit()
 
     def _save_cb(self, widget):
-        print 'Save'
+        pass
 
     def _exit_cb(self, widget):
         pass
-#        gtk.main_quit()
 
     def _measurement_start_cb(self, widget):
         self._stop_but.set_sensitive(True)

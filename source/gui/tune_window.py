@@ -21,13 +21,14 @@ import qt
 
 from gettext import gettext as _
 
+import lib.gui as gui
 from lib.gui.flexscale import FlexScale
-from lib.gui import dropdowns
+from lib.gui import dropdowns, qtwindow
 
-class QTTune(QTWindow):
+class TuneWindow(qtwindow.QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Tune')
+        qtwindow.QTWindow.__init__(self, 'tune', 'Tune')
         self.connect("delete-event", self._delete_event_cb)
 
         self._ins_combo = dropdowns.InstrumentDropdown()
@@ -41,7 +42,8 @@ class QTTune(QTWindow):
         self._param_edit = gtk.Entry()
         self._set_but = gtk.Button('Set')
         self._set_but.connect('clicked', self._set_param_clicked_cb)
-        param_getset = pack_hbox([self._get_but, self._param_edit, self._set_but])
+        param_getset = gui.pack_hbox([self._get_but, self._param_edit, \
+                self._set_but])
 
         self._function_combo = dropdowns.InstrumentFunctionDropdown()
         self._function_combo.connect('changed', self._function_changed_cb)
@@ -55,22 +57,23 @@ class QTTune(QTWindow):
         self._coarse_slider.set_range(-10, 10)
         self._fine_slider = gtk.VScale()
         self._fine_slider.set_range(-1, 1)
-        controls = pack_hbox([
+        controls = gui.pack_hbox([
             self._spin_but,
             self._coarse_slider,
             self._fine_slider])
 
-        h1 = pack_hbox([
+        h1 = gui.pack_hbox([
             gtk.Label(_('Instrument')),
             self._ins_combo])
-        h2 = pack_hbox([
+        h2 = gui.pack_hbox([
             gtk.Label(_('Parameter')),
             self._param_combo])
-        h3 = pack_hbox([
+        h3 = gui.pack_hbox([
             gtk.Label(_('Function')),
             self._function_combo])
 
-        self._vbox = pack_vbox([h1, h2, param_getset, h3, self._call_but, controls], False, False)
+        self._vbox = gui.pack_vbox([h1, h2, param_getset, h3,
+                self._call_but, controls], False, False)
 
         self._vbox.show_all()
         self.add(self._vbox)

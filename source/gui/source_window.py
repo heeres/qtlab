@@ -34,6 +34,7 @@ import pango
 from gettext import gettext as _L
 
 import lib.gui as gui
+from lib.gui.qtwindow import QTWindow
 
 def get_python_filter():
     filter = gtk.FileFilter()
@@ -41,10 +42,10 @@ def get_python_filter():
     filter.add_pattern('*.py')
     return filter
 
-class QTSource(QTWindow):
+class SourceWindow(QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Source')
+        QTWindow.__init__(self, 'source', 'Source')
 
         self.connect("delete-event", self._delete_event_cb)
 

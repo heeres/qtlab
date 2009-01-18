@@ -15,6 +15,6 @@ class QTHandler(tcpserver.GlibTCPHandler):
         self.socket.send(str(retval))
 
 try:
-    qt.server = network.GlibTCPServer(("127.0.0.1", 12000), QTHandler)
+    qt.server = tcpserver.GlibTCPServer(("127.0.0.1", 12000), QTHandler)
 except Exception, e:
     logging.warning('Failed to start network server: %s', str(e))

@@ -18,11 +18,12 @@
 import gtk
 import gobject
 import qt
-import plot_engines.qtgnuplot
+from plot_engines import qtgnuplot
 
 from gettext import gettext as _L
 
-from lib.gui import dropdowns
+import lib.gui as gui
+from lib.gui import dropdowns, qtwindow
 
 class AxisSettings(gtk.Frame):
 
@@ -47,12 +48,12 @@ class AxisSettings(gtk.Frame):
         self._logcheck.set_active(False)
         self._logcheck.connect('toggled', self._log_toggled_cb)
 
-        vbox = pack_vbox([
-            pack_hbox([
+        vbox = gui.pack_vbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Label')),
                 self._label_entry,
                 self._label_but], True, True),
-            pack_hbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Range')),
                 self._min_range,
                 self._max_range,
@@ -119,10 +120,10 @@ class AxisSettings(gtk.Frame):
         label = self._label_entry.get_text()
         self._plot.set_property(name, label, update=True)
 
-class QTGnuplotTweak(QTWindow):
+class GnuplotWindow(qtwindow.QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Gnuplot Tweak')
+        qtwindow.QTWindow.__init__(self, 'gnuplot', 'Gnuplot Tweak')
         self.connect("delete-event", self._delete_event_cb)
 
         self._ignore_changes = False
@@ -157,11 +158,11 @@ class QTGnuplotTweak(QTWindow):
         self._save_gp_button = gtk.Button(_L('Save .gp file'))
         self._save_gp_button.connect('clicked', self._save_gp_clicked_cb)
 
-        vbox = pack_vbox([
-            pack_hbox([
+        vbox = gui.pack_vbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Filename')),
                 self._filename_entry], True, True),
-            pack_hbox([
+            gui.pack_hbox([
                 self._save_as_dropdown,
                 self._save_button], True, True),
             self._save_gp_button], False, False)
@@ -177,17 +178,17 @@ class QTGnuplotTweak(QTWindow):
         self._autorange_xyz = gtk.Button(_L('Autorange XYZ'))
         self._autorange_xyz.connect('clicked', self._autorange_xyz_cb, True)
 
-    	vbox = pack_vbox([
-            pack_hbox([
+        vbox = gui.pack_vbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Plot')),
                 self._plot_dropdown], True, True),
-            pack_hbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Style')),
                 self._styles_dropdown], True, True),
-            pack_hbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Palette')),
                 self._palette_dropdown], True, True),
-            pack_hbox([
+            gui.pack_hbox([
                 gtk.Label(_L('Gamma')),
                 self._gamma_spin], True, True),
             self._save_as_frame,
@@ -195,7 +196,7 @@ class QTGnuplotTweak(QTWindow):
             self._axis_y,
             self._axis_z,
             self._axis_cb,
-            pack_hbox([
+            gui.pack_hbox([
                 self._autorange_xy,
                 self._autorange_xyz], True, True),
     	], False, False)

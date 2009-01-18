@@ -21,8 +21,8 @@ import gobject
 from gettext import gettext as _L
 
 import qt
-from lib.gui import dropdowns
-from lib.gui import frontpanel
+import lib.gui as gui
+from lib.gui import dropdowns, frontpanel, qtwindow
 
 class QTManageInstrumentFrame(gtk.VBox):
 
@@ -54,7 +54,7 @@ class QTManageInstrumentFrame(gtk.VBox):
         self._argument_table.attach(self._type_dropdown, 1, 2, 1, 2)
         self._argument_info = {}
 
-        vbox = pack_vbox([
+        vbox = gui.pack_vbox([
             self._argument_table,
             self._add_button
             ], False, False)
@@ -75,9 +75,9 @@ class QTManageInstrumentFrame(gtk.VBox):
         self._remove_button = gtk.Button(_L('Remove'))
         self._remove_button.connect('clicked', self._remove_clicked_cb)
 
-        vbox = pack_vbox([
+        vbox = gui.pack_vbox([
             self._ins_dropdown,
-            pack_hbox([
+            gui.pack_hbox([
                 self._frontpanel_button,
                 self._reload_button,
                 self._remove_button
@@ -86,7 +86,7 @@ class QTManageInstrumentFrame(gtk.VBox):
         vbox.set_border_width(4)
         self._action_frame.add(vbox)
 
-        vbox = pack_vbox([
+        vbox = gui.pack_vbox([
             self._add_frame,
             self._action_frame
             ], False,False)
@@ -277,7 +277,7 @@ class QTInstrumentFrame(gtk.Frame):
         for param in parameters:
             self._add_parameter_by_name(param)
 
-        hbox = pack_hbox([self._name_box, self._val_box, self._range_box,
+        hbox = gui.pack_hbox([self._name_box, self._val_box, self._range_box,
             self._rate_box])
         hbox.set_border_width(1)
         hbox.show()
@@ -331,10 +331,10 @@ class QTInstrumentFrame(gtk.Frame):
         self._label_range[param].set_text(self._instrument.format_range(param))
         self._label_rate[param].set_text(self._instrument.format_rate(param))
 
-class QTInstruments(QTWindow):
+class InstrumentWindow(qtwindow.QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Instruments')
+        qtwindow.QTWindow.__init__(self, 'instruments', 'Instruments')
 
         self.connect("delete-event", self._delete_event_cb)
 
@@ -354,7 +354,7 @@ class QTInstruments(QTWindow):
         self._outer_vbox.set_border_width(4)
         self._vbox = gtk.VBox()
         self._vbox.set_border_width(4)
-        self._outer_vbox.pack_start(pack_hbox([
+        self._outer_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
 
@@ -365,7 +365,7 @@ class QTInstruments(QTWindow):
         self._rate_toggle.set_active(False)
         self._rate_toggle.connect('toggled', self._rate_toggled_cb)
 
-        self._outer_vbox.pack_start(pack_hbox([
+        self._outer_vbox.pack_start(gui.pack_hbox([
             self._range_toggle,
             self._rate_toggle], True, True), False, False)
 

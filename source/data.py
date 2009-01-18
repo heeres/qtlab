@@ -25,13 +25,12 @@ import re
 import logging
 import random
 
-from misc import dict_to_ordered_tuples, get_arg_type
 from gettext import gettext as _L
 
-import namedlist
 import qt
 import config
-import temp
+from lib import namedlist, temp
+from lib.misc import dict_to_ordered_tuples, get_arg_type
 
 def create_data_dir(datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
     '''

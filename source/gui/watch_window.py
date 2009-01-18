@@ -21,8 +21,9 @@ import qt
 
 from gettext import gettext as _L
 
+import lib.gui as gui
 from lib.gui.qttable import QTTable
-from lib.gui import dropdowns
+from lib.gui import dropdowns, qtwindow
 
 import gobject
 from lib.calltimer import GObjectThread
@@ -66,10 +67,10 @@ class WatchThread(GObjectThread):
             if delay > 0:
                 time.sleep(delay)
 
-class QTWatch(QTWindow):
+class WatchWindow(qtwindow.QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Watch')
+        qtwindow.QTWindow.__init__(self, 'watch', 'Watch')
         self.connect("delete-event", self._delete_event_cb)
 
         self._watch = {}
@@ -86,14 +87,16 @@ class QTWatch(QTWindow):
         self._interval = gtk.SpinButton(climb_rate=1, digits=0)
         self._interval.set_range(10, 100000)
         self._interval.set_value(500)
-        interval = pack_hbox([self._interval, gtk.Label('ms')], False, False)
+        interval = gui.pack_hbox([self._interval, gtk.Label('ms')], \
+                False, False)
 
         self._add_button = gtk.Button(_L('Add'))
         self._add_button.connect('clicked', self._add_clicked_cb)
         self._remove_button = gtk.Button(_L('Remove'))
         self._remove_button.connect('clicked', self._remove_clicked_cb)
 
-        buttons = pack_hbox([self._add_button, self._remove_button], False, False)
+        buttons = gui.pack_hbox([self._add_button, self._remove_button], \
+                False, False)
 
         self._tree_model = gtk.ListStore(str, str, str)
         self._tree_view = QTTable([
@@ -102,7 +105,7 @@ class QTWatch(QTWindow):
             (_L('Value'), {'scale': 3.0}),
             ], self._tree_model)
 
-    	vbox = pack_vbox([
+        vbox = gui.pack_vbox([
             self._ins_combo,
     		self._param_combo,
     		interval,
@@ -111,7 +114,7 @@ class QTWatch(QTWindow):
         vbox.set_border_width(4)
         self._frame.add(vbox)
 
-        vbox = pack_vbox([
+        vbox = gui.pack_vbox([
             self._frame,
             self._tree_view,
         ], False, False)

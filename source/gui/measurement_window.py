@@ -18,17 +18,18 @@
 import gtk
 import gobject
 import time
-import qt
-
+import types
 import logging
 from gettext import gettext as _L
 
+import qt
 from instrument import Instrument
+from lib.gui.qtwindow import QTWindow
 from lib.calltimer import CallTimerThread
 from lib.gui.dropdowns import AllParametersDropdown
+import lib.gui as gui
 
-import misc
-
+import lib.misc
 import lib.measurement
 
 class StepToggleButton(gtk.ToggleButton):
@@ -79,7 +80,7 @@ class QTSweepVarSettings(gobject.GObject):
                                     types=(types.IntType, types.FloatType),
                                     tags=['sweep'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Sweep variable')),
             self._variable_dropdown]), False, False)
 
@@ -106,14 +107,14 @@ class QTSweepVarSettings(gobject.GObject):
 
         self._units_label = gtk.Label()
 
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Start')),
             self._start_val,
             gtk.Label(_L('End')),
             self._end_val,
             self._units_label]))
 
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Nr of steps')),
             self._n_steps,
             self._steps_or_size,
@@ -200,7 +201,7 @@ class QTMeasureVarSettings(gobject.GObject):
                                     types=(types.IntType, types.FloatType),
                                     tags=['measure'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Measurement variable')),
             self._variable_dropdown]), False, False)
 
@@ -210,7 +211,7 @@ class QTMeasureVarSettings(gobject.GObject):
         self._units = gtk.Entry()
         self._units.set_width_chars(12)
 
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Scaling')),
             self._scale,
             gtk.Label(_L('Units')),
@@ -237,13 +238,13 @@ class QTMeasureVarSettings(gobject.GObject):
         self._scale.set_sensitive(sensitive)
         self._units.set_sensitive(sensitive)
 
-class QTMeasure(QTWindow):
+class MeasurementWindow(QTWindow):
 
     PLOT_IMAGE  = 1
     PLOT_LINE   = 2
 
     def __init__(self):
-        QTWindow.__init__(self, 'Measure')
+        QTWindow.__init__(self, 'measure', 'Measure')
 
         self.connect("delete-event", self._delete_event_cb)
 
@@ -263,14 +264,14 @@ class QTMeasure(QTWindow):
         self._option_frame.add(self._option_vbox)
 
         self._name_entry = gtk.Entry()
-        self._option_vbox.pack_start(pack_hbox([
+        self._option_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Name')), self._name_entry]), False, False)
 
         self._delay = gtk.SpinButton(climb_rate=0.1, digits=0)
         self._delay.set_range(0, 100000)
         self._delay.set_increments(1, 2)
         self._delay.set_value(100)
-        self._option_vbox.pack_start(pack_hbox([
+        self._option_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Delay (ms)')), self._delay]), False, False)
 
         self._plot_type_combo = gtk.combo_box_new_text()
@@ -278,12 +279,12 @@ class QTMeasure(QTWindow):
         self._plot_type_combo.append_text(_L('Line'))
         self._plot_type_combo.connect('changed', self._plot_type_changed_cb)
         self._plot_type_combo.set_active(0)
-        self._option_vbox.pack_start(pack_hbox([
+        self._option_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Plot type')), self._plot_type_combo]))
 
         self._hold_check = gtk.CheckButton()
         self._hold_check.connect('toggled', self._hold_toggled_cb)
-        self._option_vbox.pack_start(pack_hbox([
+        self._option_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Hold')), self._hold_check]))
 
         self._sweep_z = QTSweepVarSettings('Z loop')
@@ -311,7 +312,7 @@ class QTMeasure(QTWindow):
         self._vbox.pack_start(self._measure_1.get_layout(), False, False)
         self._vbox.pack_start(self._measure_2.get_layout(), False, False)
 
-        self._vbox.pack_start(pack_hbox([
+        self._vbox.pack_start(gui.pack_hbox([
             self._start_but,
             self._stop_but]), False, False)
 

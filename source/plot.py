@@ -24,10 +24,9 @@ import types
 import numpy
 
 import qt
-import namedlist
-
-from misc import get_arg_type, get_dict_keys
 from data import Data
+from lib import namedlist
+from lib.misc import get_arg_type, get_dict_keys
 
 class _PlotList(namedlist.NamedList):
     def __init__(self):

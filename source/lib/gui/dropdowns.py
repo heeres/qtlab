@@ -21,7 +21,7 @@ import logging
 import types
 
 from instrument import Instrument
-import misc
+import lib.misc as misc
 import qt
 
 class QTComboBox(gtk.ComboBox):

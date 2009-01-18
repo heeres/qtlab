@@ -22,11 +22,13 @@ qt.instruments = instruments.get_instruments()
 import config
 qt.config = config.get_config()
 qt.config['qtlabdir'] = config.get_workdir()
-sys.path.append('%s/source' % qt.config['qtlabdir'])
 
 from data import Data
 qt.data = Data.get_named_list()
 qt.Data = Data
+
+from lib.gui import qtwindow
+qt.windows = qtwindow.QTWindow.get_named_list()
 
 if qt.config.get('plot_type', 'gnuplot') == 'matplotlib':
     from plot_engines.qtmatplotlib import Plot2D, Plot3D

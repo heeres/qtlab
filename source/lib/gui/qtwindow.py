@@ -1,16 +1,20 @@
 import gtk
 import gobject
 
-from gettext import gettext as _
+from gettext import gettext as _L
+
 from lib import namedlist
-import qt
 import config
 
 class QTWindow(gtk.Window):
 
-    def __init__(self, title, add_to_main=True):
+    _window_list = namedlist.NamedList()
+    _name_counters = {}
+
+    def __init__(self, name, title, add_to_main=True):
         gtk.Window.__init__(self, gtk.WINDOW_TOPLEVEL)
 
+        self._name = self.generate_name(name)
         self._title = title
         self._config = config.get_config()
 
@@ -23,7 +27,7 @@ class QTWindow(gtk.Window):
 
         self.set_border_width(1)
 
-        self.set_title(_(title))
+        self.set_title(_L(title))
 
         show = self._config.get('%s_show' % self._title, False)
         if show:
@@ -33,8 +37,19 @@ class QTWindow(gtk.Window):
         self.connect('show', lambda x: self._show_hide_cb(x, True))
         self.connect('hide', lambda x: self._show_hide_cb(x, False))
 
+        QTWindow._window_list.add(self._name, self)
+
         if add_to_main:
             self._add_to_main()
+
+    def generate_name(self, name):
+        if name not in QTWindow._name_counters:
+            QTWindow._name_counters[name] = 1
+            return name
+        else:
+            ret = '%s%d' % (name, QTWindow._name_counters[name])
+            QTWindow._name_counters[name] += 1
+            return ret
 
     def _do_show(self):
         self.show()
@@ -56,4 +71,12 @@ class QTWindow(gtk.Window):
         return self._title
 
     def _add_to_main(self):
-        qt.mainwin.add_window(self)
+        winlist = self.get_named_list()
+        mainwin = winlist['main']
+        if mainwin is not None:
+            mainwin.add_window(self)
+
+    @staticmethod
+    def get_named_list():
+        return QTWindow._window_list
+

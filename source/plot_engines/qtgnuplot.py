@@ -20,13 +20,13 @@ import os
 import time
 import random
 import types
-
 import logging
 
-import gnuplotpipe
 import qt
-from namedlist import NamedList
+from lib.namedlist import NamedList
 import plot
+
+import gnuplotpipe
 
 class _GnuPlotList(NamedList):
 

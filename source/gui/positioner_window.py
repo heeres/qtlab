@@ -22,6 +22,7 @@ import qt
 
 from gettext import gettext as _L
 
+from lib.gui.qtwindow import QTWindow
 from lib.gui.qttable import QTTable
 from lib.gui.dropdowns import InstrumentDropdown
 
@@ -380,10 +381,10 @@ class PositionBookmarks(gtk.Frame):
             data.append((row[0], row[1], self._bookmark_data[index]))
         self._config.set('positioner_bookmarks', data)
 
-class QTPositioner(QTWindow):
+class PositionerWindow(QTWindow):
 
     def __init__(self):
-        QTWindow.__init__(self, 'Positioner')
+        QTWindow.__init__(self, 'positioner', 'Positioner')
         self.connect("delete-event", self._delete_event_cb)
 
         self._controls = PositionControls(None)
