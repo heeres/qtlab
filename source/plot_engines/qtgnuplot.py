@@ -53,12 +53,6 @@ class _GnuPlotList(NamedList):
 
         return item
 
-def sign_char(val):
-    if val < 0:
-        return '-'
-    else:
-        return '+'
-
 class _QTGnuPlot():
     """
     Base class for 2D/3D QT gnuplot classes.
@@ -609,6 +603,14 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         if self.get_property('style') != self.STYLE_IMAGE:
             self.update(force=False)
 
+    def _palette_func(self, func_id):
+        if func_id >= 0:
+            return self._PALETTE_FUNCTIONS[abs(func_id)] % \
+                    dict(x='(gray**gamma)')
+        else:
+            return self._PALETTE_FUNCTIONS[abs(func_id)] % \
+                    dict(x='((1-gray)**gamma)')
+
     def _create_palette_commands(self, **kwargs):
         name = kwargs.get('name', 'default')
         gamma = kwargs.get('gamma', 1.0)
@@ -621,15 +623,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         else:
             cmd += 'gamma = %f\n' % float(1/gamma)
 
-            func = self._PALETTE_FUNCTIONS[abs(map[0])] % \
-                    dict(x='(gray**gamma)')
-            cmd += 'rcol(gray) = %s(%s)\n' % (sign_char(map[0]), func)
-            func = self._PALETTE_FUNCTIONS[abs(map[1])] % \
-                    dict(x='(gray**gamma)')
-            cmd += 'gcol(gray) = %s(%s)\n' % (sign_char(map[1]), func)
-            func = self._PALETTE_FUNCTIONS[abs(map[2])] % \
-                    dict(x='(gray**gamma)')
-            cmd += 'bcol(gray) = %s(%s)\n' % (sign_char(map[2]), func)
+            cmd += 'rcol(gray) = %s\n' % (self._palette_func(map[0]))
+            cmd += 'gcol(gray) = %s\n' % (self._palette_func(map[1]))
+            cmd += 'bcol(gray) = %s\n' % (self._palette_func(map[2]))
             cmd += 'set palette model RGB functions rcol(gray), gcol(gray), bcol(gray)\n'
 
         return cmd
