@@ -44,10 +44,10 @@ class _GnuPlotList(NamedList):
             return None
 
         try:
-            item('')
+            item.cmd('print 0')
             time.sleep(0.1)
-            item('')
-        except:
+            item.cmd('print 0')
+        except IOError:
             del self[name]
             item = NamedList.get(self, name)
 
@@ -368,7 +368,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         },
         'image3d': {
             'style': [
-                'set pm3d map',
+                'set pm3d map corners2color c1',
             ],
             'splotopt': 'with pm3d',
         },
@@ -388,21 +388,21 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         },
         '3d': {
             'style': [
-                'set pm3d',
+                'set pm3d corners2color c1',
                 'set view 60,15',
             ],
             'splotopt': 'with pm3d',
         },
         '3dpoints' : {
             'style': [
-                'set pm3d',
+                'set pm3d corners2color c1',
                 'set view 60,15',
             ],
             'splotopt': 'with points',
         },
         '3dlines': {
             'style': [
-                'set pm3d',
+                'set pm3d corners2color c1',
                 'set view 60,15',
             ],
             'splotopt': 'with lines',
