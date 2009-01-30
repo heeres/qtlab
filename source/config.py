@@ -32,7 +32,7 @@ class QTConfig(gobject.GObject):
 
     def load_defaults(self):
         self._defaults['test'] = True
-        self._defaults['datadir'] = './data'
+        self._defaults['datadir'] = os.path.join(get_workdir(), 'data')
 
     def save_defaults(self):
         return
@@ -88,7 +88,9 @@ class QTConfig(gobject.GObject):
             self._config[key] = default
             return default
         elif key in self._defaults:
-            return self._defaults[key]
+            val = self._defaults[key]
+            self._config[key] = val
+            return val
         else:
             return None
 
