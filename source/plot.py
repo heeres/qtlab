@@ -435,15 +435,16 @@ def plot(*args, **kwargs):
 
         elif isinstance(args[i], numpy.ndarray):
             if len(args[i].shape) == 1:
-                y = args[i]
                 if globalx is not None:
+                    y = args[i]
                     data = numpy.column_stack((globalx, y))
                 elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
-                    x = args[i + 1]
+                    x = args[i]
+                    y = args[i + 1]
                     data = numpy.column_stack((x, y))
                     i += 1
                 else:
-                    data = y
+                    data = args[i]
 
             elif len(args[i].shape) == 2:
                 data = args[i]
