@@ -247,6 +247,9 @@ class _QTGnuPlot():
         if self._gnuplot is not None:
             self._gnuplot.cmd(cmdstr)
 
+    def live(self):
+        self._gnuplot.live()
+
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
     Class to create line plots.

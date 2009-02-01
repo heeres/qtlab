@@ -242,3 +242,15 @@ class GnuplotPipe():
         if output is None:
             return None
         return output.rstrip('\r\n')
+
+    def live(self):
+        print 'Entering gnuplot live mode, enter "q" or CTRL-d to quit'
+        while True:
+            try:
+                input = raw_input('>>>')
+            except EOFError:
+                return
+            if input == 'q':
+                return
+            reply = self.cmd(input, True)
+            print reply
