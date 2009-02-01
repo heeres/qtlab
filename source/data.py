@@ -149,11 +149,20 @@ class Data(gobject.GObject):
 
     def __init__(self, *args, **kwargs):
         '''
-        Create data object
+        Create data object. There are three different uses:
+        1) create an empty data object for use in a measurement
+        2) create a data object and fill immediately with a numpy array
+        3) create a data object from an existing data file
+
+        All inputs are optional.
+        The 'name' input is used in an internal list (accessable through
+        qt.data). If omitted, a name will be auto generated.
+        This 'name' will also be used later to auto generate a filename
+        when calling 'create_file()' (if that is called without options).
+        The input 'filename' here is only used for loading an existing file.
 
         args input:
-            filename (string), set the filename to use. If the file exists
-                it will be loaded directly.
+            filename (string), set the filename to load.
             data (numpy.array), array to construct data object for
 
         kwargs input:
@@ -735,9 +744,11 @@ class Data(gobject.GObject):
         for vals in self._data:
             self._write_data_line(vals)
 
-    def create_file(self, name=None, filepath=None):
+    def create_file(self, name=None, filepath=None, settings_file=True):
         '''
-        Create a new data file and leave it open.
+        Create a new data file and leave it open. In addition a
+        settings file is generated, unless settings_file=False is
+        specified.
 
         This function should be called after adding the comment and the
         coordinate and value metadata, because it writes the file header.
@@ -761,7 +772,8 @@ class Data(gobject.GObject):
 
         self._write_header()
 
-        self._write_settings_file()
+        if settings_file:
+            self._write_settings_file()
 
         return True
 
