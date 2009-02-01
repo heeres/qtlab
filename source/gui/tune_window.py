@@ -73,7 +73,7 @@ class TuneWindow(qtwindow.QTWindow):
             self._function_combo])
 
         self._vbox = gui.pack_vbox([h1, h2, param_getset, h3,
-                self._call_but, controls], False, False)
+                self._call_but], False, False)
 
         self._vbox.show_all()
         self.add(self._vbox)
