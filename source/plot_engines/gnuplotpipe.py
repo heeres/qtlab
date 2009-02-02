@@ -244,13 +244,14 @@ class GnuplotPipe():
         return output.rstrip('\r\n')
 
     def live(self):
-        print 'Entering gnuplot live mode, enter "q" or CTRL-d to quit'
+        print 'Entering gnuplot live mode, enter "q(uit)" or CTRL-d to quit'
+        exit_cmds = ('q', 'quit', 'exit')
         while True:
             try:
                 input = raw_input('>>>')
             except EOFError:
                 return
-            if input == 'q':
+            if input in exit_cmds:
                 return
             reply = self.cmd(input, True)
             print reply
