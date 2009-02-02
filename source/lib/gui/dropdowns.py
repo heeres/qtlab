@@ -40,6 +40,14 @@ class QTComboBox(gtk.ComboBox):
                 return True
         return False
 
+    def remove_item_from(self, item, items):
+        i = items.get_iter_root()
+        while i:
+            if items.get_value(i, 0) == item:
+                items.remove(i)
+                break
+            i = items.iter_next(i)
+
 class InstrumentDropdown(QTComboBox):
     '''
     Dropdown to select an instrument.
@@ -66,14 +74,7 @@ class InstrumentDropdown(QTComboBox):
 
     def _instrument_removed_cb(self, sender, insname):
         logging.debug('Instrument removed: %s', insname)
-
-        i = self._ins_list.get_iter_root()
-        while i:
-            if self._ins_list.get_value(i, 0) == insname:
-                self._ins_list.remove(i)
-                break
-            i = self._ins_list.iter_next(i)
-
+        self.remove_item_from(insname, self._ins_list)
 
     def _instrument_changed_cb(self, sender, instrument, changes):
         return
@@ -380,7 +381,7 @@ class NamedListDropdown(QTComboBox):
         self._items.append([item])
 
     def _item_removed_cb(self, sender, item):
-        pass
+        self.remove_item_from(item, self._items)
 
     def _item_changed_cb(self, sender, item):
         pass
