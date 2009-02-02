@@ -109,6 +109,8 @@ class NamedList(gobject.GObject):
 
     def add(self, name, item):
         '''Add an item to the list.'''
+        if name in self._list:
+            self.remove(name)
         self._list[name] = item
         self._last_item = item
         self.emit('item-added', name)
