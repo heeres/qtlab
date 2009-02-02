@@ -4,17 +4,23 @@ import time
 
 import qt
 
-def batch_start():
+qtlab_dir = qt.config['qtlabdir']
+todo_dir = os.path.join(qtlab_dir, 'batch','todo')
+done_dir = os.path.join(qtlab_dir, 'batch','done')
 
-    qtlab_dir = qt.config['qtlabdir']
-    todo_dir = os.path.join(qtlab_dir, 'batch_todo')
-    done_dir = os.path.join(qtlab_dir, 'batch_done')
+def batch_start():
 
     if not os.path.isdir(todo_dir):
         os.makedirs(todo_dir)
 
     if not os.path.isdir(done_dir):
         os.makedirs(done_dir)
+
+    print '\n==== Starting Batch Mode ====\n'
+    print 'todo dir: %s ' % todo_dir
+    print 'done dir: %s ' % done_dir
+    print 'to leave batch mode push "stop" button, or drop _stop_ file in "todo dir"'
+    print '\n=============================\n'
 
     reply = True
     while reply:
@@ -29,9 +35,6 @@ def batch_start():
                 return
 
 def _batch_run_single_file():
-    qtlab_dir = qt.config['qtlabdir']
-    todo_dir = os.path.join(qtlab_dir, 'batch_todo')
-    done_dir = os.path.join(qtlab_dir, 'batch_done')
 
     timestamp = time.strftime('%Y%m%d_%H%M%S_')
 
