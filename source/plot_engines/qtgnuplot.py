@@ -393,21 +393,21 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         },
         '3d': {
             'style': [
-                'set pm3d corners2color c1',
+                'set pm3d',
                 'set view 60,15',
             ],
             'splotopt': 'with pm3d',
         },
         '3dpoints' : {
             'style': [
-                'set pm3d corners2color c1',
+                'set pm3d',
                 'set view 60,15',
             ],
             'splotopt': 'with points',
         },
         '3dlines': {
             'style': [
-                'set pm3d corners2color c1',
+                'set pm3d',
                 'set view 60,15',
             ],
             'splotopt': 'with lines',
