@@ -368,7 +368,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                 'unset pm3d',
                 'set view map',
                 'set style data image',
-                'unset key'
             ],
             'splotopt': '',
         },
@@ -475,6 +474,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         style = kwargs.get('style', None)
 
         self.set_style(style)
+        _QTGnuPlot.cmd(self, 'unset key')
         self.set_labels()
         self.set_palette('default', gamma=1.0)
 
@@ -575,7 +575,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             if style == self.STYLE_IMAGE:
                 stopblock = data.get_nblocks_complete() - 1
                 if stopblock < 1:
-                    logging.warning('Unable to plot in style "image" with <=1 block')
+                    #logging.warning('Unable to plot in style "image" with <=1 block')
                     continue
                 everystr = 'every :::0::%s' % (stopblock)
             else:
@@ -591,7 +591,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         # gnuplot (version 4.3 november) has bug for placing keys (legends)
         # here we put ugly hack as a temporary fix
-        # also remove 'unset key' above __init__ when reverting this hack
+        # also remove 'unset key' in __init__ when reverting this hack
             s  = ('set label 1 "%s" at screen 0.1,0.9' % filepath) + '\n' + s
 
         if first:
