@@ -246,7 +246,7 @@ class Plot(gobject.GObject):
     def _queue_update(self, force=False, **kwargs):
         if self._update_hid is not None:
             return
-        self._update_hid = gobject.timeout_add(self._mintime * 1000.0,
+        self._update_hid = gobject.timeout_add(int(self._mintime * 1000),
                 self._delayed_update, force, **kwargs)
 
     def _delayed_update(self, force=True, **kwargs):

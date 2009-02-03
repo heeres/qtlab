@@ -221,7 +221,7 @@ class Instrument(gobject.GObject):
                     formatted (mostly GUI) representation
                 option_list (array/tuple): allowed options
                 persist (bool): if true load/save values in config file
-                probe_interval (float): interval in sec between automatic gets
+                probe_interval (int): interval in ms between automatic gets
 
         Output: None
         '''
@@ -334,7 +334,7 @@ class Instrument(gobject.GObject):
             options['value'] = None
 
         if 'probe_interval' in options:
-            interval = options['probe_interval']
+            interval = int(options['probe_interval'])
             self._probe_ids.append(gobject.timeout_add(interval,
                 lambda: self.get(name)))
 
