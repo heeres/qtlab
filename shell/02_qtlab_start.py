@@ -15,7 +15,7 @@ import qt
 
 import qtflow
 qt.flow = qtflow.get_flowcontrol()
-
+qt.sleep = qt.flow.measurement_idle
 import instruments
 qt.instruments = instruments.get_instruments()
 

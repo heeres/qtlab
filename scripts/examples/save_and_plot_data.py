@@ -52,7 +52,7 @@ for j in arange(0,size(y)-1):
     tic2 = time()
     for i in arange(0,size(x)-1):
         data.add_data_point(x[i],y[j],z(x[i],y[j]))
-        qt.flow.measurement_idle(0.01)
+        qt.sleep(0.01)
     data.new_block()
     toc2 = time()
     print toc2 - tic2
