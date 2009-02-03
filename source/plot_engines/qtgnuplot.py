@@ -473,10 +473,12 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         style = kwargs.get('style', None)
 
-        self.set_style(style)
+        self.set_style(style, update=False)
         _QTGnuPlot.cmd(self, 'unset key')
-        self.set_labels()
-        self.set_palette('default', gamma=1.0)
+        self.set_labels(update=False)
+        self.set_palette('default', gamma=1.0, update=False)
+
+        self.update()
 
     def set_property(self, *args, **kwargs):
         return _QTGnuPlot.set_property(self, *args, **kwargs)
@@ -575,7 +577,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             if style == self.STYLE_IMAGE:
                 stopblock = data.get_nblocks_complete() - 1
                 if stopblock < 1:
-                    #logging.warning('Unable to plot in style "image" with <=1 block')
+                    logging.warning('Unable to plot in style "image" with <=1 block')
                     continue
                 everystr = 'every :::0::%s' % (stopblock)
             else:

@@ -393,7 +393,7 @@ class Plot3D(Plot):
 
         Plot.add_data(self, data, coorddims=coorddims, valdim=valdim)
 
-    def set_labels(self, x='', y='', z=''):
+    def set_labels(self, x='', y='', z='', update=True):
         '''
         Set labels in the plot. Use x, y and z if specified, else let the data
         object create the proper format for each dimensions
@@ -409,11 +409,14 @@ class Plot3D(Plot):
                 z = data.format_label(datadict['valdim'])
 
         if x != '':
-            self.set_xlabel(x)
+            self.set_xlabel(x, update=False)
         if y != '':
-            self.set_ylabel(y)
+            self.set_ylabel(y, update=False)
         if z != '':
-            self.set_zlabel(z)
+            self.set_zlabel(z, update=False)
+
+        if update:
+            self.update()
 
 def _get_plot_options(i, *args):
     return ()
