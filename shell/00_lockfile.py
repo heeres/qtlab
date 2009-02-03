@@ -12,7 +12,10 @@ def get_lockfile():
 def qtlab_exit():
     print "\nClosing QTlab..."
 
-    qt.flow.exit_request()
+    try:
+        qt.flow.exit_request()
+    except:
+        pass
 
     # Remove temporary files
     temp.File.remove_all()
