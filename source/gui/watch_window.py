@@ -17,6 +17,7 @@
 
 import gtk
 import gobject
+import time
 import qt
 
 from gettext import gettext as _L
