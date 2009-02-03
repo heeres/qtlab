@@ -158,6 +158,13 @@ class GnuplotPipe():
             return self.get_output()
         return None
 
+    def is_responding(self, delay=0.01):
+        self.flush_output()
+        ret = self.cmd('print 0', True, delay)
+        if ret is None or len(ret) == 0:
+            return False
+        return True
+
     def get_terminal(self):
         '''Set terminal info as (type, options) tuple.'''
 

@@ -250,6 +250,9 @@ class _QTGnuPlot():
     def live(self):
         self._gnuplot.live()
 
+    def is_busy(self):
+        return not self._gnuplot.is_responding()
+
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
     Class to create line plots.
@@ -347,8 +350,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         s += self.create_plot_command(fullpath=False)
         self._write_gp(s)
 
-    def _get_temp_file(self):
-        return '/tmp/qtgnuplot.tmp.%d' % random.random()
+    def is_busy(self):
+        return _QTGnuPlot.is_busy(self)
 
 class Plot3D(plot.Plot3D, _QTGnuPlot):
     '''
@@ -632,3 +635,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             cmd += 'set palette model RGB functions rcol(gray), gcol(gray), bcol(gray)\n'
 
         return cmd
+
+    def is_busy(self):
+        return _QTGnuPlot.is_busy(self)

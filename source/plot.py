@@ -84,6 +84,7 @@ class Plot(gobject.GObject):
         self._needtempfile = needtempfile
 
         self._last_update = 0
+        self._update_hid = None
 
         for arg in args:
             if isinstance(arg, Data):
@@ -222,10 +223,36 @@ class Plot(gobject.GObject):
         if not force and self._autoupdate is not None and not self._autoupdate:
             return
 
+        if self._update_hid is not None:
+            if force:
+                gobject.source_remove(self._update_hid)
+                self._update_hid = None
+            else:
+                return
+
         cfgau = self._config.get('auto-update', True)
         if force or (cfgau and dt > self._mintime):
+            if self.is_busy():
+                self._queue_update(force=force, **kwargs)
+                return
+
             self._last_update = time.time()
             self._do_update(**kwargs)
+
+        # Auto-update later
+        elif cfgau:
+            self._queue_update(force=force, **kwargs)
+
+    def _queue_update(self, force=False, **kwargs):
+        if self._update_hid is not None:
+            return
+        self._update_hid = gobject.timeout_add(self._mintime * 1000.0,
+                self._delayed_update, force, **kwargs)
+
+    def _delayed_update(self, force=True, **kwargs):
+        self._update_hid = None
+        self.update(force=force, **kwargs)
+        return False
 
     def _new_data_point_cb(self, sender):
         try:
@@ -250,6 +277,10 @@ class Plot(gobject.GObject):
     def get_needtempfile(self):
         '''Return whether this plot type needs temporary files.'''
         return self._needtempfile
+
+    def is_busy(self):
+        '''Return whether the graph is being updated.'''
+        return False
 
 class Plot2D(Plot):
     '''
