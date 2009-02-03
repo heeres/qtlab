@@ -577,7 +577,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             if style == self.STYLE_IMAGE:
                 stopblock = data.get_nblocks_complete() - 1
                 if stopblock < 1:
-                    logging.warning('Unable to plot in style "image" with <=1 block')
+                    #logging.warning('Unable to plot in style "image" with <=1 block')
                     continue
                 everystr = 'every :::0::%s' % (stopblock)
             else:
