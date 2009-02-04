@@ -639,10 +639,11 @@ class Instrument(gobject.GObject):
             result = self._get_value(name, query, **kwargs)
             changed[name] = result
 
+        self._access_lock.release()
+
         if len(changed) > 0 and query:
             self.emit('changed', changed)
 
-        self._access_lock.release()
         return result
 
     def get_threaded(self, *args, **kwargs):
