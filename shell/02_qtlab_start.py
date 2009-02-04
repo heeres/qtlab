@@ -15,6 +15,7 @@ import qt
 from plot import plot
 Plot2D = qt.Plot2D
 Plot3D = qt.Plot3D
+Data = qt.Data
 
 # Set exception handler
 try:
