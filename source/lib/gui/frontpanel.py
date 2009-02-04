@@ -23,7 +23,7 @@ from instrument import Instrument
 import qtwindow
 import qt
 
-import misc
+from lib.misc import dict_to_ordered_tuples
 
 from gettext import gettext as _L
 
@@ -128,7 +128,7 @@ class ComboEntry(gtk.ComboBox):
         self._model = gtk.ListStore(gobject.TYPE_STRING)
         if 'format_map' in opts:
             self._map = opts['format_map']
-            for k, v in misc.dict_to_ordered_tuples(self._map):
+            for k, v in dict_to_ordered_tuples(self._map):
                 self._model.append([str(v)])
         elif 'option_list' in opts:
             self._map = opts['option_list']
@@ -188,7 +188,8 @@ class FrontPanel(qtwindow.QTWindow):
         else:
             name = 'Instrument undefined'
 
-        qtwindow.QTWindow.__init__(self, name, add_to_main=False)
+        title = _L('Instrument: %s') % name
+        qtwindow.QTWindow.__init__(self, name, title, add_to_main=False)
         self.connect('delete-event', self._delete_event_cb)
 
         self._param_info = {}
@@ -197,6 +198,7 @@ class FrontPanel(qtwindow.QTWindow):
         self.add(self._table)
 
         self._add_parameters()
+
         self.show_all()
 
     def _delete_event_cb(self, widget, event, data=None):
@@ -220,7 +222,7 @@ class FrontPanel(qtwindow.QTWindow):
     def _add_parameters(self):
         rows = 0
         parameters = self._instrument.get_parameters()
-        for name, opts in misc.dict_to_ordered_tuples(parameters):
+        for name, opts in dict_to_ordered_tuples(parameters):
             self._table.resize(rows + 1, 2)
 
             label = gtk.Label(name)
