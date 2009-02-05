@@ -23,12 +23,10 @@ import numpy
 import types
 import re
 import logging
-import random
 
 from gettext import gettext as _L
 
 import qt
-import config
 from lib import namedlist, temp
 from lib.misc import dict_to_ordered_tuples, get_arg_type
 
@@ -290,9 +288,11 @@ class Data(gobject.GObject):
         self._dimensions.append(kwargs)
 
     def add_comment(self, comment):
+        '''Add comment to the Data object.'''
         self._comment.append(comment)
 
     def get_comment(self):
+        '''Return the comment for the Data object.'''
         return self._comment
 
     def add_data_point(self, *args, **kwargs):
@@ -342,6 +342,8 @@ class Data(gobject.GObject):
             self.emit('new-data-point')
 
     def new_block(self):
+        '''Start a new data block.'''
+
         if self._infile:
             self._file.write('\n')
 

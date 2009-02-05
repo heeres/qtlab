@@ -37,22 +37,23 @@ def get_shell_files(path, ignore_list):
 
     return ret
 
+
 if __name__ == '__main__':
     print 'Starting QT Lab environment...'
 
     sys.path.append('%s/source/' % os.getcwd())
 
-    ignore_list = []
-    i = 1
-    while i < len(sys.argv):
-        if sys.argv[i] == '-i':
+    _vars = {}
+    _vars['ignorelist'] = []
+    _vars['i'] = 1
+    while _vars['i'] < len(sys.argv):
+        if sys.argv[_vars['i']] == '-i':
             i += 1
-            ignore_list.append(sys.argv[i])
-        i += 1
+            _vars['ignorelist'].append(sys.argv[_vars['i']])
+        _vars['i'] += 1
 
-    filelist = get_shell_files('shell', ignore_list)
-    for (dir, name) in filelist:
-        filename = '%s/%s' % (dir, name)
-        print 'Executing %s...' % (filename)
-        execfile(filename)
-
+    _vars['filelist'] = get_shell_files('shell', _vars['ignorelist'])
+    for (_vars['dir'], _vars['name']) in _vars['filelist']:
+        _vars['filename'] = '%s/%s' % (_vars['dir'], _vars['name'])
+        print 'Executing %s...' % (_vars['filename'])
+        execfile(_vars['filename'])

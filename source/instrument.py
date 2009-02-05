@@ -541,7 +541,7 @@ class Instrument(gobject.GObject):
             if 'stepdelay' in popts:
                 text += ' / %sms' % popts['stepdelay']
             else:
-                test += ' / 100ms'
+                text += ' / 100ms'
 
         return text
 
@@ -693,11 +693,11 @@ class Instrument(gobject.GObject):
         else:
             return None
 
-    def _val_from_option_dict(self, map, value):
-        for k, v in map.iteritems():
+    def _val_from_option_dict(self, opts, value):
+        for k, v in opts.iteritems():
             if v == value:
                 return k
-        return self._val_from_option_list(map.keys(), value)
+        return self._val_from_option_list(opts.keys(), value)
 
     def _set_value(self, name, value, **kwargs):
         '''

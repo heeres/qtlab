@@ -256,13 +256,13 @@ class QTInstrumentFrame(gtk.VBox):
         vlabel.show()
         self._table.attach(vlabel, 2, 3, nrows, nrows + 1)
 
-        self._add_range_info(param, popts, nrows)
-        self._add_rate_info(param, popts, nrows)
+        self._add_range_info(param, nrows)
+        self._add_rate_info(param, nrows)
 
         self._label_name[param] = plabel
         self._label_val[param] = vlabel
 
-    def _add_range_info(self, param, popts, rownum):
+    def _add_range_info(self, param, rownum):
         text = self._instrument.format_range(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
@@ -271,7 +271,7 @@ class QTInstrumentFrame(gtk.VBox):
 
         self._label_range[param] = rlabel
 
-    def _add_rate_info(self, param, popts, rownum):
+    def _add_rate_info(self, param, rownum):
         text = self._instrument.format_rate(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
@@ -337,6 +337,7 @@ class QTInstrumentFrame(gtk.VBox):
         self._label_rate[param].set_text(self._instrument.format_rate(param))
 
     def show_table(self, show):
+        '''Show or hide the parameter info table.'''
         if show:
             self._table.show()
             self._label.set_markup('<b>- %s</b> [?]' % \

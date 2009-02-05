@@ -58,53 +58,79 @@ class PositionControls(gtk.Frame):
 
         self._table = gtk.Table(3, 9)
         self._button_up = gtk.Button('/\\')
-        self._button_up.connect('pressed', lambda x: self._direction_clicked(True, 0, 1, 0))
-        self._button_up.connect('released', lambda x: self._direction_clicked(False, 0, 1, 0))
-        self._table.attach(self._button_up, 1, 2, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self._button_up.connect('pressed',
+                lambda x: self._direction_clicked(True, 0, 1, 0))
+        self._button_up.connect('released',
+                lambda x: self._direction_clicked(False, 0, 1, 0))
+        self._table.attach(self._button_up, 1, 2, 0, 1,
+                gtk.EXPAND | gtk.FILL, 0)
         self._button_down = gtk.Button('\\/')
-        self._button_down.connect('pressed', lambda x: self._direction_clicked(True, 0, -1, 0))
-        self._button_down.connect('released', lambda x: self._direction_clicked(False, 0, -1, 0))
-        self._table.attach(self._button_down, 1, 2, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self._button_down.connect('pressed',
+                lambda x: self._direction_clicked(True, 0, -1, 0))
+        self._button_down.connect('released',
+                lambda x: self._direction_clicked(False, 0, -1, 0))
+        self._table.attach(self._button_down, 1, 2, 2, 3,
+                gtk.EXPAND | gtk.FILL, 0)
 
         self._button_left = gtk.Button('<')
-        self._button_left.connect('pressed', lambda x: self._direction_clicked(True, -1, 0, 0))
-        self._button_left.connect('released', lambda x: self._direction_clicked(False, -1, 0, 0))
-        self._table.attach(self._button_left, 0, 1, 1, 2, gtk.EXPAND | gtk.FILL, 0)
+        self._button_left.connect('pressed',
+                lambda x: self._direction_clicked(True, -1, 0, 0))
+        self._button_left.connect('released',
+                lambda x: self._direction_clicked(False, -1, 0, 0))
+        self._table.attach(self._button_left, 0, 1, 1, 2,
+                gtk.EXPAND | gtk.FILL, 0)
         self._button_right = gtk.Button('>')
-        self._button_right.connect('pressed', lambda x: self._direction_clicked(True, 1, 0, 0))
-        self._button_right.connect('released', lambda x: self._direction_clicked(False, 1, 0, 0))
-        self._table.attach(self._button_right, 2, 3, 1, 2, gtk.EXPAND | gtk.FILL, 0)
+        self._button_right.connect('pressed',
+                lambda x: self._direction_clicked(True, 1, 0, 0))
+        self._button_right.connect('released',
+                lambda x: self._direction_clicked(False, 1, 0, 0))
+        self._table.attach(self._button_right, 2, 3, 1, 2,
+                gtk.EXPAND | gtk.FILL, 0)
 
         self._button_upleft = gtk.Button('\\')
-        self._button_upleft.connect('pressed', lambda x: self._direction_clicked(True, -1, 1, 0))
-        self._button_upleft.connect('released', lambda x: self._direction_clicked(False, -1, 1, 0))
-        self._table.attach(self._button_upleft, 0, 1, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self._button_upleft.connect('pressed',
+                lambda x: self._direction_clicked(True, -1, 1, 0))
+        self._button_upleft.connect('released',
+                lambda x: self._direction_clicked(False, -1, 1, 0))
+        self._table.attach(self._button_upleft, 0, 1, 0, 1,
+                gtk.EXPAND | gtk.FILL, 0)
         self._button_upright = gtk.Button('/')
-        self._button_upright.connect('pressed', lambda x: self._direction_clicked(True, 1, 1, 0))
-        self._button_upright.connect('released', lambda x: self._direction_clicked(False, 1, 1, 0))
-        self._table.attach(self._button_upright, 2, 3, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self._button_upright.connect('pressed',
+                lambda x: self._direction_clicked(True, 1, 1, 0))
+        self._button_upright.connect('released',
+                lambda x: self._direction_clicked(False, 1, 1, 0))
+        self._table.attach(self._button_upright, 2, 3, 0, 1,
+                gtk.EXPAND | gtk.FILL, 0)
 
         self._button_downleft = gtk.Button('/')
         self._button_downleft.connect('pressed',
             lambda x: self._direction_clicked(True, -1, -1, 0))
         self._button_downleft.connect('released',
             lambda x: self._direction_clicked(False, -1, -1, 0))
-        self._table.attach(self._button_downleft, 0, 1, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self._table.attach(self._button_downleft, 0, 1, 2, 3,
+                gtk.EXPAND | gtk.FILL, 0)
         self._button_downright = gtk.Button('\\')
         self._button_downright.connect('pressed',
             lambda x: self._direction_clicked(True, 1, -1, 0))
         self._button_downright.connect('released',
             lambda x: self._direction_clicked(False, 1, -1, 0))
-        self._table.attach(self._button_downright, 2, 3, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self._table.attach(self._button_downright, 2, 3, 2, 3,
+                gtk.EXPAND | gtk.FILL, 0)
 
         self._button_z_up = gtk.Button('/\\')
-        self._button_z_up.connect('pressed', lambda x: self._direction_clicked(True, 0, 0, 1))
-        self._button_z_up.connect('released', lambda x: self._direction_clicked(False, 0, 0, 1))
-        self._table.attach(self._button_z_up, 4, 5, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self._button_z_up.connect('pressed',
+                lambda x: self._direction_clicked(True, 0, 0, 1))
+        self._button_z_up.connect('released',
+                lambda x: self._direction_clicked(False, 0, 0, 1))
+        self._table.attach(self._button_z_up, 4, 5, 0, 1,
+                gtk.EXPAND | gtk.FILL, 0)
         self._button_z_down = gtk.Button('\/')
-        self._button_z_down.connect('pressed', lambda x: self._direction_clicked(True, 0, 0, -1))
-        self._button_z_down.connect('released', lambda x: self._direction_clicked(False, 0, 0, -1))
-        self._table.attach(self._button_z_down, 4, 5, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self._button_z_down.connect('pressed',
+                lambda x: self._direction_clicked(True, 0, 0, -1))
+        self._button_z_down.connect('released',
+                lambda x: self._direction_clicked(False, 0, 0, -1))
+        self._table.attach(self._button_z_down, 4, 5, 2, 3,
+                gtk.EXPAND | gtk.FILL, 0)
 
         self._max_speed = gtk.VScale()
         self._max_speed.set_size_request(100, 90)

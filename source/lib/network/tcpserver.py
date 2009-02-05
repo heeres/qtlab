@@ -17,14 +17,10 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 # Boston, MA 02111-1307, USA.
 
-import os
-
 import gobject
-import SimpleHTTPServer
 import SocketServer
 import socket
 import time
-import code
 
 class GlibTCPServer(SocketServer.TCPServer):
     """GlibTCPServer

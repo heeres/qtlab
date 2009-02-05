@@ -26,7 +26,6 @@ import lib.gui as gui
 from lib.gui.qttable import QTTable
 from lib.gui import dropdowns, qtwindow
 
-import gobject
 from lib.calltimer import GObjectThread
 
 class WatchThread(GObjectThread):

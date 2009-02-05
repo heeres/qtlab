@@ -1,7 +1,6 @@
 import math
 import StringIO
 import types
-import numpy
 
 def dict_to_ordered_tuples(dic):
     '''Convert a dictionary to a list of tuples, sorted by key.'''

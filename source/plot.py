@@ -26,7 +26,7 @@ import numpy
 import qt
 from data import Data
 from lib import namedlist
-from lib.misc import get_arg_type, get_dict_keys
+from lib.misc import get_dict_keys
 
 class _PlotList(namedlist.NamedList):
     def __init__(self):
