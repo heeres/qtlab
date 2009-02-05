@@ -845,10 +845,10 @@ class Instrument(gobject.GObject):
             if self._set_value(name, value, **kwargs) is not None:
                 changed[name] = value
 
+        self._access_lock.release()
+
         if not fast and len(changed) > 0:
             self.emit('changed', changed)
-
-        self._access_lock.release()
 
         return result
 
