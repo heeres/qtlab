@@ -47,7 +47,7 @@ class Instruments(gobject.GObject):
 
         self._instruments = {}
         self._instruments_info = {}
-        self._tags = ['All']
+        self._tags = []
 
     def __getitem__(self, key):
         return self.get(key)

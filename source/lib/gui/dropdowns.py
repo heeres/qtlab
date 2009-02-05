@@ -24,6 +24,9 @@ from instrument import Instrument
 import lib.misc as misc
 import qt
 
+TEXT_ALL = '<All>'
+TEXT_NONE = '<None>'
+
 class QTComboBox(gtk.ComboBox):
 
     def __init__(self, model):
@@ -127,6 +130,7 @@ class InstrumentParameterDropdown(QTComboBox):
         self._instrument = None
         self._insname = ''
         self.set_instrument(instrument)
+        self._param_list.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
         self._flags = flags
         self._types = types
@@ -206,6 +210,7 @@ class InstrumentFunctionDropdown(QTComboBox):
         self._instrument = None
         self._insname = ''
         self.set_instrument(instrument)
+        self._func_list.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
         self._instruments = qt.instruments
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
@@ -267,6 +272,7 @@ class AllParametersDropdown(QTComboBox):
         self._tags = tags
         self._parameter_added_hids = {}
         self.update_list()
+        self._param_list.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
         self._instruments = qt.instruments
         self._instruments.connect('instrument-added', self._instrument_added_cb)
@@ -356,8 +362,12 @@ class TagsDropdown(QTComboBox):
         self._instruments = qt.instruments
         self._instruments.connect('tags-added', self._tags_added_cb)
 
+        self._tags.append([TEXT_ALL])
+        self._tags.append([TEXT_NONE])
         for i in self._instruments.get_tags():
             self._tags.append([i])
+
+        self._tags.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
     def _tags_added_cb(self, sender, tags):
         for tag in tags:
