@@ -190,15 +190,28 @@ class QTManageInstrumentFrame(gtk.VBox):
         if ins is not None:
             return ins.remove()
 
-class QTInstrumentFrame(gtk.Frame):
+class QTInstrumentFrame(gtk.VBox):
 
     def __init__(self, ins, show_range, show_rate, **kwargs):
-        gtk.Frame.__init__(self, **kwargs)
-
-        self.set_label(ins.get_name())
+        gtk.VBox.__init__(self, **kwargs)
 
         self._tips = gtk.Tooltips()
         self._tips.enable()
+
+        self._label = gtk.Label()
+        self._tips.set_tip(self._label, _L('Click to expand / collapse info'))
+        self._label.set_alignment(0, 0)
+        self._eventbox = gtk.EventBox()
+        self._eventbox.add(self._label)
+        self._eventbox.connect('button-press-event', self._label_clicked_cb)
+        self._eventbox.show_all()
+        self.pack_start(self._eventbox, False, False)
+
+        self._table = gtk.Table(1, 5)
+        self._table.set_col_spacings(10)
+        self._table.set_col_spacing(0, 50)
+        self._table.show()
+        self.pack_start(self._table, False, False)
 
         self._instrument = ins
         self._label_name = {}
@@ -212,6 +225,7 @@ class QTInstrumentFrame(gtk.Frame):
         ins.connect('parameter-added', self._parameter_added_cb)
         ins.connect('parameter-changed', self._parameter_changed_cb)
 
+        self.show_table(True)
         self.show()
         self.show_range_column(show_range)
         self.show_rate_column(show_rate)
@@ -221,6 +235,8 @@ class QTInstrumentFrame(gtk.Frame):
 
     def _add_parameter_by_name(self, param):
         popts = self._instrument.get_parameter_options(param)
+        nrows = self._table.props.n_rows
+        self._table.resize(nrows + 1, 5)
 
         if 'doc' in popts:
             plabel = gtk.Label(param + ' [?]')
@@ -228,60 +244,47 @@ class QTInstrumentFrame(gtk.Frame):
         else:
             plabel = gtk.Label(param)
 
-        plabel.set_justify(gtk.JUSTIFY_RIGHT)
+        plabel.set_alignment(0, 0)
         plabel.show()
-        self._name_box.pack_start(plabel, False, False)
+        self._table.attach(plabel, 1, 2, nrows, nrows + 1)
 
-        vlabel = gtk.Label(self._instrument.format_parameter_value(param,
-            self._instrument.get(param, query=False)))
-        vlabel.set_justify(gtk.JUSTIFY_LEFT)
+        vlabel = gtk.Label()
+        vlabel.set_markup('<b>%s</b>' % \
+                self._instrument.format_parameter_value(param,
+                self._instrument.get(param, query=False)))
+        vlabel.set_alignment(0, 0)
         vlabel.show()
-        self._val_box.pack_start(vlabel, False, False)
+        self._table.attach(vlabel, 2, 3, nrows, nrows + 1)
 
-        self._add_range_info(param, popts)
-        self._add_rate_info(param, popts)
+        self._add_range_info(param, popts, nrows)
+        self._add_rate_info(param, popts, nrows)
 
         self._label_name[param] = plabel
         self._label_val[param] = vlabel
 
-    def _add_range_info(self, param, popts):
+    def _add_range_info(self, param, popts, rownum):
         text = self._instrument.format_range(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
         rlabel.show()
-        self._range_box.pack_start(rlabel, False, False)
+        self._table.attach(rlabel, 3, 4, rownum, rownum + 1)
 
         self._label_range[param] = rlabel
 
-    def _add_rate_info(self, param, popts):
+    def _add_rate_info(self, param, popts, rownum):
         text = self._instrument.format_rate(param)
         rlabel = gtk.Label(text)
         rlabel.set_justify(gtk.JUSTIFY_LEFT)
         rlabel.show()
-        self._rate_box.pack_start(rlabel, False, False)
+        self._table.attach(rlabel, 4, 5, rownum, rownum + 1)
 
         self._label_rate[param] = rlabel
 
     def _add_parameters(self):
-        self._name_box = gtk.VBox()
-        self._name_box.show()
-        self._val_box = gtk.VBox()
-        self._val_box.show()
-        self._range_box = gtk.VBox()
-        self._range_box.hide()
-        self._rate_box = gtk.VBox()
-        self._rate_box.hide()
-
         parameters = self._instrument.get_parameter_names()
         parameters.sort()
         for param in parameters:
             self._add_parameter_by_name(param)
-
-        hbox = gui.pack_hbox([self._name_box, self._val_box, self._range_box,
-            self._rate_box])
-        hbox.set_border_width(1)
-        hbox.show()
-        self.add(hbox)
 
         self.show()
 
@@ -293,7 +296,7 @@ class QTInstrumentFrame(gtk.Frame):
 
         for param, val in self._update_dict.iteritems():
             if param in self._label_val:
-                self._label_val[param].set_text(
+                self._label_val[param].set_markup('<b>%s</b>' % \
                     self._instrument.format_parameter_value(param, val))
 
         self._update_dict = {}
@@ -313,16 +316,18 @@ class QTInstrumentFrame(gtk.Frame):
         return self._instrument
 
     def show_range_column(self, show):
-        if not show:
-            self._range_box.hide()
-        else:
-            self._range_box.show()
+        for label in self._label_range.values():
+            if not show:
+                label.hide()
+            else:
+                label.show()
 
     def show_rate_column(self, show):
-        if not show:
-            self._rate_box.hide()
-        else:
-            self._rate_box.show()
+        for label in self._label_rate.values():
+            if not show:
+                label.hide()
+            else:
+                label.show()
 
     def _parameter_changed_cb(self, sender, param):
         if param not in self._label_range:
@@ -330,6 +335,19 @@ class QTInstrumentFrame(gtk.Frame):
 
         self._label_range[param].set_text(self._instrument.format_range(param))
         self._label_rate[param].set_text(self._instrument.format_rate(param))
+
+    def show_table(self, show):
+        if show:
+            self._table.show()
+            self._label.set_markup('<b>- %s</b> [?]' % \
+                    self._instrument.get_name())
+        else:
+            self._table.hide()
+            self._label.set_markup('<b>+ %s</b> [?]' % \
+                    self._instrument.get_name())
+
+    def _label_clicked_cb(self, sender, param):
+        self.show_table(not self._table.props.visible)
 
 class InstrumentWindow(qtwindow.QTWindow):
 
@@ -430,10 +448,10 @@ class InstrumentWindow(qtwindow.QTWindow):
         tag = self._tags_dropdown.get_active_text()
         for name, widget in self._ins_widgets.iteritems():
             ins = widget.get_instrument()
-            if tag == 'All' or tag in ins.get_tags():
-                widget.show()
+            if tag == dropdowns.TEXT_ALL or tag in ins.get_tags():
+                widget.show_table(True)
             else:
-                widget.hide()
+                widget.show_table(False)
 
     def _range_toggled_cb(self, sender):
         state = self._range_toggle.get_active()
