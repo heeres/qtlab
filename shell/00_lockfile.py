@@ -27,20 +27,23 @@ def qtlab_exit():
         except:
             pass
 
-if os.path.exists(get_lockfile()):
-    if '-f' not in sys.argv:
-        print "QTlab already running, start with '-f' to force start."
-        print "Press s<enter> to start anyway or just <enter> to quit."
+def _check_logfile():
+    if os.path.exists(get_lockfile()):
+        if '-f' not in sys.argv:
+            print "QTlab already running, start with '-f' to force start."
+            print "Press s<enter> to start anyway or just <enter> to quit."
 
-        line = sys.stdin.readline().strip()
-        if line != 's':
-            _remove_lock = False
-            sys.exit()
+            line = sys.stdin.readline().strip()
+            if line != 's':
+                _remove_lock = False
+                sys.exit()
 
-onkill = [qtlab_exit]
-for cb in __IP.on_kill:
-    onkill.append(cb)
-__IP.on_kill = onkill
+    onkill = [qtlab_exit]
+    for cb in __IP.on_kill:
+        onkill.append(cb)
+    __IP.on_kill = onkill
 
-f = file('qtlab.lock', 'w+')
-f.close()
+    f = file('qtlab.lock', 'w+')
+    f.close()
+
+_check_logfile()
