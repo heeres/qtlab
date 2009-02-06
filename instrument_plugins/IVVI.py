@@ -1,6 +1,6 @@
 # IVVI.py class, to perform the communication between the Wrapper and the device
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
-# Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Martijn Schaafsma <qtlab@mcschaafsma.nl>, 2008
 # Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify

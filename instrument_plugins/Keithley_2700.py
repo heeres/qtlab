@@ -1,6 +1,6 @@
 # Keithley_2700.py driver for Keithley 2700 DMM
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
-# Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Martijn Schaafsma <qtlab@mcschaafsma.nl>, 2008
 # Reinier Heeres <reinier@heeres.eu>, 2008
 #
 # This program is free software; you can redistribute it and/or modify

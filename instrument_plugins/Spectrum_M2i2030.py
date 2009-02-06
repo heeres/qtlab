@@ -1,6 +1,6 @@
 # M2I2030.py driver class, to perform the communication between the Wrapper and the card
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
-# Martijn Schaafsma <mcschaafsma@gmail.com>, 2008
+# Martijn Schaafsma <qtlab@mcschaafsma.nl>, 2008
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
