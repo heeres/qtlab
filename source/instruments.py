@@ -16,6 +16,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import code
+import inspect
 import gobject
 import types
 import os
@@ -24,6 +25,20 @@ import sys
 import instrument
 
 import config
+
+def _get_driver_module(modname):
+    name = 'instrument_plugins.%s' % modname
+    if name in sys.modules:
+        return sys.modules[name]
+
+    # Try to import
+    importstr = 'import %s' % name
+    code.compile_command(importstr)
+    exec importstr
+    if name in sys.modules:
+        return sys.modules[name]
+
+    return None
 
 class Instruments(gobject.GObject):
 
@@ -147,30 +162,23 @@ class Instruments(gobject.GObject):
             defaults: default values
         '''
 
-        importstr = """if True:
-                import instrument_plugins.%(type)s
-                import inspect
-                _info = inspect.getargspec(instrument_plugins.%(type)s.%(type)s.__init__)""" \
-            % {'type': typename}
-
-        try:
-            _info = None
-            code.compile_command(importstr)
-            exec importstr
-            return _info
-
-        except Exception, e:
+        module = _get_driver_module(typename)
+        insclass = getattr(module, typename, None)
+        if insclass is None:
             return None
 
-    def get_instrument_by_type(self, typename):
+        return inspect.getargspec(insclass.__init__)
+
+    def get_instruments_by_type(self, typename):
         '''
-        Return existing Instrument instance of type 'typename'.
+        Return all existing Instrument instances of type 'typename'.
         '''
 
+        ret = []
         for name, ins in self._instruments.items():
             if ins.get_type() == typename:
-                return ins
-        return None
+                ret.append(ins)
+        return ret
 
     def get_tags(self):
         '''
@@ -196,38 +204,22 @@ class Instruments(gobject.GObject):
             logging.error('Instrument type %s not supported', instype)
             return None
 
-        argstr = ''
-        for (kwname, kwval) in kwargs.iteritems():
-            if kwname in ('tags'):
-                continue
-            argstr += ',%s=%r' % (kwname, kwval)
-
-        importstr = """if True:
-                import instrument_plugins.%(type)s
-                _ins = instrument_plugins.%(type)s.%(type)s(%(name)r%(args)s)""" \
-            % {'type': instype, 'name': name, 'args': argstr}
-
-        _ins = None
-
-        code.compile_command(importstr)
-        exec importstr
-
-        if _ins is None:
-            logging.error('Unable to create instrument')
+        module = _get_driver_module(instype)
+        insclass = getattr(module, instype, None)
+        if insclass is None:
+            logging.error('Driver does not contain instrument class')
             return None
 
-        self.add(_ins, create_args=kwargs)
-
-        self.emit('instrument-added', _ins)
-        return _ins
+        ins = insclass(name, **kwargs)
+        self.add(ins, create_args=kwargs)
+        self.emit('instrument-added', ins)
+        return ins
 
     def reload_module(self, instype):
-        modname = 'instrument_plugins.%s' % instype
-        for mod in sys.modules:
-            if mod == modname:
-                logging.info('Reloading module %s', mod)
-                reload(sys.modules[mod])
-                break
+        module = _get_driver_module(instype)
+        if module is not None:
+            logging.info('Reloading module %s', mod)
+            reload(module)
 
     def reload(self, ins):
         '''
@@ -258,6 +250,33 @@ class Instruments(gobject.GObject):
         ins.remove()
 
         return self.create(insname, instype, **kwargs)
+
+    def auto_load(self, driver):
+        '''
+        Automatically load all instruments detected by 'driver' (an
+        instrument_plugin module). This works only if it is supported by the
+        driver by implementing a detect_instruments() function.
+        '''
+
+        module = _get_driver_module(driver)
+        if module is None:
+            logging.warning('Instrument driver not available')
+            return False
+        reload(module)
+
+        if not hasattr(module, 'detect_instruments'):
+            logging.warning('Driver does not support instrument detection')
+            return False
+
+        devs = self.get_instruments_by_type(driver)
+        for dev in devs:
+            dev.remove()
+
+        try:
+            module.detect_instruments()
+            return True
+        except:
+            return False
 
     def _instrument_removed_cb(self, sender, name):
         '''
