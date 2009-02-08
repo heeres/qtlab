@@ -2,7 +2,6 @@ import types
 from instrument import Instrument
 from lib.gui.qtwindow import QTWindow
 from lib.calltimer import qttime
-from lib.gui import pack_hbox, pack_vbox
 
 try:
     import psyco
@@ -12,7 +11,7 @@ except:
     logging.info('psyco acceleration not enabled')
         
 import qt
-from plot import plot
+from plot import plot, plot3
 Plot2D = qt.Plot2D
 Plot3D = qt.Plot3D
 Data = qt.Data
