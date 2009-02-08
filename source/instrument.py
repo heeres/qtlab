@@ -630,7 +630,7 @@ class Instrument(gobject.GObject):
         if type(name) in (types.ListType, types.TupleType):
             result = {}
             for key in name:
-                val = self._get_value(name, query, **kwargs)
+                val = self._get_value(key, query, **kwargs)
                 if val is not None:
                     result[key] = val
                     changed[key] = val
