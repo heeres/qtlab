@@ -94,6 +94,7 @@ class _QTGnuPlot():
         name = self.get_name()
         self._gnuplot = self._gnuplot_list[name]
         self.cmd('reset')
+        self.cmd('clear')
 
         term = self._gnuplot.get_default_terminal()
         if term is None:
