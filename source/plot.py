@@ -28,6 +28,13 @@ from data import Data
 from lib import namedlist
 from lib.misc import get_dict_keys
 
+def _convert_arrays(args):
+    args = list(args)
+    for i in range(len(args)):
+        if type(args[i]) in (types.ListType, types.TupleType):
+            args[i] = numpy.array(args[i])
+    return args
+
 class _PlotList(namedlist.NamedList):
     def __init__(self):
         namedlist.NamedList.__init__(self, base_name='plot')
@@ -86,13 +93,9 @@ class Plot(gobject.GObject):
         self._last_update = 0
         self._update_hid = None
 
-        for arg in args:
-            if isinstance(arg, Data):
-                data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim'))
-                self.add_data(arg, **data_args)
-            elif type(arg) is types.StringType and os.path.isfile(arg):
-                data = Data(arg)
-                self.add_data(data)
+        data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim'))
+        data_args['update'] = False
+        self.add(*args, **data_args)
 
         Plot._plot_list.add(self._name, self)
 
@@ -295,7 +298,7 @@ class Plot2D(Plot):
 
     def add_data(self, data, coorddim=None, valdim=None, **kwargs):
         '''
-        Add data to 2D plot.
+        Add Data object to 2D plot.
 
         Input:
             data (Data):
@@ -326,6 +329,64 @@ class Plot2D(Plot):
         kwargs['coorddims'] = coorddims
         kwargs['valdim'] = valdim
         Plot.add_data(self, data, **kwargs)
+
+    def add(self, *args, **kwargs):
+        '''
+        Add data object or list / numpy.array to the current plot.
+        '''
+
+        args = _convert_arrays(args)
+        coorddim = kwargs.get('coorddim', None)
+        valdim = kwargs.get('valdim', None)
+        globalx = kwargs.get('x', None)
+        update = kwargs.get('update', True)
+
+        # Clear plot if requested
+        clear = kwargs.get('clear', False)
+        if clear:
+            self.clear()
+
+        i = 0
+        while i < len(args):
+
+            # This is easy
+            if isinstance(args[i], Data):
+                opts = _get_plot_options(i + 1, *args)
+                self.add_data(args[i], coorddim=coorddim, valdim=valdim)
+                i += 1 + len(opts)
+
+            elif isinstance(args[i], numpy.ndarray):
+                if len(args[i].shape) == 1:
+                    if globalx is not None:
+                        y = args[i]
+                        data = numpy.column_stack((globalx, y))
+                    elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
+                        x = args[i]
+                        y = args[i + 1]
+                        data = numpy.column_stack((x, y))
+                        i += 1
+                    else:
+                        data = args[i]
+
+                elif len(args[i].shape) == 2 and args[i].shape[1] == 2:
+                    data = args[i]
+
+                else:
+                    print 'Unable to plot array of shape %r' % (args[i].shape)
+                    i += 1
+                    continue
+
+                tmp = self.get_needtempfile()
+                data = Data(data=data, tempfile=tmp)
+                self.add_data(data, coorddim=coorddim, valdim=valdim)
+                i += 1
+
+            else:
+                print 'Unhandled argument: %r' % args[i]
+                i += 1
+
+        if update:
+            self.update()
 
     def set_labels(self, left='', bottom='', right='', top='', update=True):
         for datadict in self._data:
@@ -393,6 +454,72 @@ class Plot3D(Plot):
 
         Plot.add_data(self, data, coorddims=coorddims, valdim=valdim)
 
+    def add(self, *args, **kwargs):
+        '''
+        Add data object or list / numpy.array to the current plot.
+        '''
+
+        args = _convert_arrays(args)
+        coorddims = kwargs.get('coorddims', None)
+        valdim = kwargs.get('valdim', None)
+        globalxy = kwargs.get('xy', None)
+        globalx = kwargs.get('x', None)
+        globaly = kwargs.get('y', None)
+        update = kwargs.get('update', True)
+
+        # Clear plot if requested
+        clear = kwargs.get('clear', False)
+        if clear:
+            self.clear()
+
+        i = 0
+        while i < len(args):
+
+            # This is easy
+            if isinstance(args[i], Data):
+                opts = _get_plot_options(i + 1, *args)
+                self.add_data(args[i], coorddims=coorddims, valdim=valdim)
+                i += 1 + len(opts)
+
+            elif isinstance(args[i], numpy.ndarray):
+                if len(args[i].shape) == 1:
+                    if globalx is not None and globaly is not None:
+                        z = args[i]
+                        data = numpy.column_stack((globalx, globaly, z))
+                    elif globalxy is not None:
+                        z = args[i]
+                        data = numpy.column_stack((globalxy, z))
+                    elif i + 2 < len(args) and \
+                            type(args[i+1]) is numpy.ndarray and \
+                            type(args[i+2]) is numpy.ndarray:
+                        x = args[i]
+                        y = args[i + 1]
+                        z = args[i + 2]
+                        data = numpy.column_stack((x, y, z))
+                        i += 1
+                    else:
+                        data = args[i]
+
+                elif len(args[i].shape) == 2 and args[i].shape[1] == 3:
+                    data = args[i]
+
+                else:
+                    print 'Unable to plot array of shape %r' % (args[i].shape)
+                    i += 1
+                    continue
+
+                tmp = self.get_needtempfile()
+                data = Data(data=data, tempfile=tmp)
+                self.add_data(data, coorddims=coorddims, valdim=valdim)
+                i += 1
+
+            else:
+                print 'Unhandled argument: %r' % args[i]
+                i += 1
+
+        if update:
+            self.update()
+
     def set_labels(self, x='', y='', z='', update=True):
         '''
         Set labels in the plot. Use x, y and z if specified, else let the data
@@ -427,7 +554,7 @@ def plot(*args, **kwargs):
 
     Variable argument input:
         Data object(s)
-        numpy array(s), size n x 1 (two n x 1 arrays to represent y and x),
+        numpy array(s), size n x 1 (two n x 1 arrays to represent x and y),
             or n x 2
         color string(s), such as 'r', 'g', 'b'
 
@@ -441,62 +568,33 @@ def plot(*args, **kwargs):
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
-    coorddim = kwargs.get('coorddim', None)
-    valdim = kwargs.get('valdim', None)
-    globalx = kwargs.get('x', None)
-    if type(globalx) in (types.ListType, types.TupleType):
-        globalx = numpy.array(globalx)
 
-    # Clear plot if requested
-    clear = kwargs.get('clear', False)
-    if clear:
-        graph.clear()
+    graph.add(*args, **kwargs)
 
-    # Convert all lists / tuples to numpy.arrays
-    args = list(args)
-    for i in range(len(args)):
-        if type(args[i]) in (types.ListType, types.TupleType):
-            args[i] = numpy.array(args[i])
+    return graph
 
-    i = 0
-    while i < len(args):
+def plot3(*args, **kwargs):
+    '''
+    Plot items.
 
-        # This is easy
-        if isinstance(args[i], Data):
-            opts = _get_plot_options(i + 1, *args)
-            graph.add_data(args[i], coorddim=coorddim, valdim=valdim)
-            i += 1 + len(opts)
+    Variable argument input:
+        Data object(s)
+        numpy array(s), size n x 1 (three n x 1 arrays to represent x, y and
+            z), or n x 3
+        color string(s), such as 'r', 'g', 'b'
 
-        elif isinstance(args[i], numpy.ndarray):
-            if len(args[i].shape) == 1:
-                if globalx is not None:
-                    y = args[i]
-                    data = numpy.column_stack((globalx, y))
-                elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
-                    x = args[i]
-                    y = args[i + 1]
-                    data = numpy.column_stack((x, y))
-                    i += 1
-                else:
-                    data = args[i]
+    Keyword argument input:
+        name (string): the plot name to use, defaults to 'plot'
+        coorddims, valdim: specify coordinate and value dimensions for Data
+            object.
+    '''
 
-            elif len(args[i].shape) == 2:
-                data = args[i]
+    plotname = kwargs.get('name', 'plot_3')
+    graph = qt.plots[plotname]
+    if graph is None:
+        graph = qt.Plot3D(name=plotname)
 
-            else:
-                print 'Unable to plot array of shape %r' % (args[i].shape)
-                i += 1
-                continue
+    graph.add(*args, **kwargs)
 
-            tmp = graph.get_needtempfile()
-            data = Data(data=data, tempfile=tmp)
-            graph.add_data(data, coorddim=coorddim, valdim=valdim)
-            i += 1
-
-        else:
-            print 'Unhandled argument: %r' % args[i]
-            i += 1
-
-    graph.update()
     return graph
 

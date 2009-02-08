@@ -738,13 +738,34 @@ class Data(gobject.GObject):
         self._file.write(line)
         self._file.flush()
 
+    def _get_block_columns(self):
+        blockcols = []
+        for i in range(self.get_ncoordinates()):
+            if len(self._data) > 1 and self._data[0][i] == self._data[1][i]:
+                blockcols.append(True)
+            else:
+                blockcols.append(False)
+        for i in range(self.get_nvalues()):
+            blockcols.append(False)
+
+        return blockcols
+
     def _write_data(self):
         if not self._inmem:
             logging.warning('Unable to _write_data() without having it memory')
             return False
 
+        blockcols = self._get_block_columns()
+
+        lastvals = None
         for vals in self._data:
+            if lastvals is not None:
+                for i in range(len(vals)):
+                    if blockcols[i] and vals[i] != lastvals[i]:
+                        self._file.write('\n')
+
             self._write_data_line(vals)
+            lastvals = vals
 
     def create_file(self, name=None, filepath=None, settings_file=True):
         '''
