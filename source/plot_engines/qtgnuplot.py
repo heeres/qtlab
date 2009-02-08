@@ -267,7 +267,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         self.cmd('set grid')
         self.cmd('set style data lines')
 
-        self.set_labels()
+        self.set_labels(update=False)
         self.update()
 
     def set_property(self, *args, **kwargs):

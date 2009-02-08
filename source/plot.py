@@ -95,6 +95,7 @@ class Plot(gobject.GObject):
 
         data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim'))
         data_args['update'] = False
+        data_args['setlabels'] = False
         self.add(*args, **data_args)
 
         Plot._plot_list.add(self._name, self)
@@ -340,6 +341,7 @@ class Plot2D(Plot):
         valdim = kwargs.get('valdim', None)
         globalx = kwargs.get('x', None)
         update = kwargs.get('update', True)
+        setlabels = kwargs.get('setlabels', True)
 
         # Clear plot if requested
         clear = kwargs.get('clear', False)
@@ -385,30 +387,35 @@ class Plot2D(Plot):
                 print 'Unhandled argument: %r' % args[i]
                 i += 1
 
+        if setlabels:
+            self.set_labels(update=False)
         if update:
             self.update()
 
     def set_labels(self, left='', bottom='', right='', top='', update=True):
         for datadict in self._data:
             data = datadict['data']
+            if len(datadict['coorddims']) > 0:
+                if 'top' in datadict and top == '':
+                    top = data.format_label(datadict['coorddims'][0])
+                elif bottom == '':
+                    bottom = data.format_label(datadict['coorddims'][0])
+
             if 'right' in datadict and right == '':
-                right = data.format_label(datadict['coorddims'][0])
+                right = data.format_label(datadict['valdim'])
             elif left == '':
-                left = data.format_label(datadict['coorddims'][0])
+                 left = data.format_label(datadict['valdim'])
 
-            if 'top' in datadict and top == '':
-                top = data.format_label(datadict['valdim'])
-            elif bottom == '':
-                bottom = data.format_label(datadict['valdim'])
-
-        if left != '':
-            self.set_xlabel(left, update=False)
+        if left == '':
+            left = 'Y'
+        self.set_ylabel(left, update=False)
         if right != '':
-            self.set_x2label(right, update=False)
-        if bottom != '':
-            self.set_ylabel(bottom, update=False)
+            self.set_y2label(right, update=False)
+        if bottom == '':
+            bottom = 'X'
+        self.set_xlabel(bottom, update=False)
         if top != '':
-            self.set_y2label(top, update=False)
+            self.set_x2label(top, update=False)
 
         if update:
             self.update()
@@ -528,18 +535,21 @@ class Plot3D(Plot):
 
         for datadict in self._data:
             data = datadict['data']
-            if x == '':
+            if x == '' and len(datadict['coorddims']) > 0:
                 x = data.format_label(datadict['coorddims'][0])
-            if y == '':
+            if y == '' and len(datadict['coorddims']) > 1:
                 y = data.format_label(datadict['coorddims'][1])
             if z == '':
                 z = data.format_label(datadict['valdim'])
 
-        if x != '':
-            self.set_xlabel(x, update=False)
-        if y != '':
-            self.set_ylabel(y, update=False)
-        if z != '':
+        if x == '':
+            x = 'X'
+        self.set_xlabel(x, update=False)
+        if y == '':
+            y = 'Y'
+        self.set_ylabel(y, update=False)
+        if z == '':
+            z = 'Z'
             self.set_zlabel(z, update=False)
 
         if update:
