@@ -759,7 +759,7 @@ class Data(gobject.GObject):
 
         lastvals = None
         for vals in self._data:
-            if lastvals is not None:
+            if type(vals) is numpy.ndarray and lastvals is not None:
                 for i in range(len(vals)):
                     if blockcols[i] and vals[i] != lastvals[i]:
                         self._file.write('\n')
