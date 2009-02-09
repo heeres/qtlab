@@ -25,6 +25,7 @@ from gettext import gettext as _L
 from lib.gui.qtwindow import QTWindow
 from lib.gui.qttable import QTTable
 from lib.gui.dropdowns import InstrumentDropdown
+from lib.gui.misc import pack_hbox, pack_vbox
 
 class PositionControls(gtk.Frame):
 
