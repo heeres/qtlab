@@ -14,7 +14,9 @@ instruments = get_instruments()
 windows = QTWindow.get_named_list()
 
 flow = get_flowcontrol()
-sleep = flow.measurement_idle
+msleep = flow.measurement_idle
+mstart = flow.measurement_start
+mend = flow.measurement_end
 
 if config.get('plot_type', 'gnuplot') == 'matplotlib':
     from plot_engines.qtmatplotlib import Plot2D, Plot3D
