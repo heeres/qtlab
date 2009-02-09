@@ -58,35 +58,34 @@ class USMC_State(Structure):
 
 class USMC_Mode(Structure):
     _fields_ = [
-        ('PMode', c_bool),			
-        ('PReg', c_bool),			
-        ('ResetD', c_bool),		
-        ('EMReset', c_bool),		
-        ('Tr1T', c_bool),			
-        ('Tr2T', c_bool),			
-        ('RotTrT', c_bool),		
-        ('TrSwap', c_bool),		
-        ('Tr1En', c_bool),			
-        ('Tr2En', c_bool),			
-        ('RotTeEn', c_bool),		
-        ('RotTrOp', c_bool),		
-        ('Butt1T', c_bool),		
-        ('Butt2T', c_bool),		
-        ('ResetRT', c_bool),		
-        ('SyncOUTEn', c_bool),		
-        ('SyncOUTR', c_bool),		
-        ('SyncINOp', c_bool),		
-						
-						
-	    ('SyncCount', c_long),	
-	    ('SyncInvert', c_bool),	
+        ('PMode', c_bool),
+        ('PReg', c_bool),
+        ('ResetD', c_bool),
+        ('EMReset', c_bool),
+        ('Tr1T', c_bool),
+        ('Tr2T', c_bool),
+        ('RotTrT', c_bool),
+        ('TrSwap', c_bool),
+        ('Tr1En', c_bool),
+        ('Tr2En', c_bool),
+        ('RotTeEn', c_bool),
+        ('RotTrOp', c_bool),
+        ('Butt1T', c_bool),
+        ('Butt2T', c_bool),
+        ('ResetRT', c_bool),
+        ('SyncOUTEn', c_bool),
+        ('SyncOUTR', c_bool),
+        ('SyncINOp', c_bool),
 
-	    ('EncoderEn', c_bool),		
-	    ('EncoderInv', c_bool),	
-	    ('ResBEnc', c_bool),		
-	    ('ResEnc', c_bool),		
+	    ('SyncCount', c_long),
+	    ('SyncInvert', c_bool),
 
-	    ('Reserved', c_char * 8),	
+	    ('EncoderEn', c_bool),
+	    ('EncoderInv', c_bool),
+	    ('ResBEnc', c_bool),
+	    ('ResEnc', c_bool),
+
+	    ('Reserved', c_char * 8),
     ]
 
 class USMC_Parameters(Structure):
