@@ -102,7 +102,7 @@ class GnuplotPipe():
             self._winpipe = WinPipe(self._popen.stderr)
 
         # Wait a bit for gnuplot to start
-        self.readline(0.5)
+        self.readline(2.0)
         self.flush_output()
 
         self._default_terminal = self.get_terminal()
