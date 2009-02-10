@@ -161,6 +161,9 @@ class FlowControl(gobject.GObject):
     def _set_status(self, val):
         self._status = val
 
+    def is_measuring(self):
+        return self.get_status() == 'running'
+
     def check_abort(self):
         '''Check whether an abort has been requested.'''
 
