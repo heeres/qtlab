@@ -20,7 +20,7 @@ from gettext import gettext as _L
 
 import qt
 import lib.gui as gui
-from lib.gui import qtwindow
+from lib.gui import qtwindow, stopbutton
 
 class MainWindow(qtwindow.QTWindow):
 
@@ -34,10 +34,6 @@ class MainWindow(qtwindow.QTWindow):
 
         qtwindow.QTWindow.__init__(self, 'main', 'QT Lab', add_to_main=False)
         self.connect("delete-event", self._delete_event_cb)
-
-        self._flow = qt.flow
-        self._flow.connect('measurement-start', self._measurement_start_cb)
-        self._flow.connect('measurement-end', self._measurement_end_cb)
 
         self.vbox = gtk.VBox()
 
@@ -59,9 +55,7 @@ class MainWindow(qtwindow.QTWindow):
         self._liveplot_but = gtk.ToggleButton(_L('Live Plotting'))
         self._liveplot_but.set_active(qt.config.get('auto-update', True))
         self._liveplot_but.connect('clicked', self._toggle_liveplot_cb)
-        self._stop_but = gtk.Button(_L('Stop'))
-        self._stop_but.set_sensitive(False)
-        self._stop_but.connect('clicked', self._toggle_stop_cb)
+        self._stop_but = stopbutton.StopButton()
 
         self._window_button_vbox = gtk.VBox()
         self._window_buttons = []
@@ -113,12 +107,6 @@ class MainWindow(qtwindow.QTWindow):
     def _exit_cb(self, widget):
         pass
 
-    def _measurement_start_cb(self, widget):
-        self._stop_but.set_sensitive(True)
-
-    def _measurement_end_cb(self, widget):
-        self._stop_but.set_sensitive(False)
-
     def _toggle_visibility_cb(self, button, window):
         if (window.flags() & gtk.VISIBLE):
             window.hide()
@@ -133,7 +121,4 @@ class MainWindow(qtwindow.QTWindow):
 
     def _toggle_liveplot_cb(self, widget):
         qt.config.set('auto-update', not qt.config.get('auto-update'))
-
-    def _toggle_stop_cb(self, widget):
-        qt.flow.set_abort()
 
