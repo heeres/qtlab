@@ -16,6 +16,9 @@ Plot2D = qt.Plot2D
 Plot3D = qt.Plot3D
 Data = qt.Data
 
+import numpy
+from numpy import linspace, arange, array, pi
+
 # Set exception handler
 try:
     import qtflow
