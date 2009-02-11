@@ -225,6 +225,11 @@ class Instrument(calltimer.ThreadSafeGObject):
 
         Output: None
         '''
+
+        if name in self._parameters:
+            logging.error('Parameter %s already exists.', name)
+            return
+
         options = kwargs
         if 'flags' not in options:
             options['flags'] = Instrument.FLAG_GETSET

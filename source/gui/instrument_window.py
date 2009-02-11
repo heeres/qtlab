@@ -234,6 +234,9 @@ class QTInstrumentFrame(gtk.VBox):
         gobject.timeout_add(500, self._do_update_parameters_timer)
 
     def _add_parameter_by_name(self, param):
+        if param in self._label_name:
+            return
+
         popts = self._instrument.get_parameter_options(param)
         nrows = self._table.props.n_rows
         self._table.resize(nrows + 1, 5)
