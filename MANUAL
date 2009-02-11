@@ -1,0 +1,225 @@
+QT Lab Manual
+
+Contents
+
+1. Introduction
+    1.1. Getting QTLab
+    1.2. Dependencies
+    1.3. Contributing
+    1.4. Supported instruments
+2. Components
+    2.1. Instruments
+    2.2. Data
+    2.3. Plots
+    2.4. Finding a Data, Plot or Window object
+3. Extensions to QTLab
+4. Measurement scripts
+5. Performance
+
+1. Introduction
+QTLab is a collection of python code to simplify computer-controlled
+measurements. It provides some basic GUI functionality and makes scripting
+quite easy. It relies on the IPython shell, with GTK providing the basics
+for the GUI.
+
+1.1. Getting QTLab
+You can get the latest version for QTLab from the git repository, which is
+currently located at http://qtwork.nano.tudelft.nl/cgi-bin/gitweb.cgi.
+
+1.2. Dependencies
+- IPython
+- Gtk
+- Pygtk
+- Gnuplot (4.3 on Windows)
+- simplejson
+- numpy
+
+1.3. Contributing
+Please send your contributions, such as new drivers and/or bugfixes to
+Reinier Heeres <reinier@heeres.eu>
+
+1.4. Supported instruments
+- ADwin gold (windows only)
+- Agilent E8257D
+- Attocube ANC150
+- Attocube ARC200
+- Cryocon 62
+- Cryomagnetics CS4
+- Picoquant Picoharp 300 (windows only)
+- HP 81110A
+- HP 8656B, 8657A, 8657B
+- HP 8753C
+- National Instruments DAQ devices (Windows only)
+- Quantum Transport IVVI, SMR40 and OptoDAC
+- Keithley 2100
+- Keithley 2700
+- R&S SMR40
+- R&S Step Attenuator
+- Spectrum M2i2030 (Windows only)
+- Standa stepper motors (Windows only)
+- Stanford Research 400
+- Tektronix AWG520
+- Thorlabs PM100
+
+2. Components
+
+2.1. Instruments
+2.1.1. Basics
+The 'Instrument' and 'Instruments' classes are at the core of QTLab. They
+are easy wrappers to create a sort of standardized python driver to talk
+to measurement instrumentation. 'Instrument' is a base class for specific
+drivers, 'Instruments' is a container class through which specific Instrument
+instances can be found and created.
+
+The instruments collection can be accessed easily by typing:
+
+    qt.instruments
+
+Create a new instrument is a simple matter:
+
+    qt.instruments.create('<name>', '<instrument type>', <parameters>)
+
+For example:
+
+    qt.instruments.create('dmm1', 'Keithley_2700', address='GPIB::12')
+
+2.1.2. Writing an instrument
+There are many instrument drivers available in the standard distribution. They
+are quite good examples of most features.
+
+2.1.3 Why use the wrapper?
+There are a few advantages of using the wrapper around the 'get' and 'set'
+functions for your instrument, although they are more obvious for the
+'set' parts. For the 'get' functions:
+
+    - Proper casting of return values
+    - Automatically create functions for different channels
+    - Inform other components about updated values (only if fast=False,
+    which is the default).
+    - Get multiple parameters in one go:
+        vals = ins.get(('val1', 'val2', 'val3'))
+
+For the 'set' functions:
+
+    - Automatically create functions for different channels
+    - Input type casting
+    - Checking of Minimum and maximum value
+    - Automatic rate limiting (e.g. 0.5mV / 50msec)
+    - 'Persistent' values are stored in the config file, which is useful in
+    the case an instrument cannot be read out.
+    - Inform other components about updated values (only if fast=False,
+    which is the default).
+
+2.1.4. Tags
+Instruments and instrument parameters can have tags which can be used to
+group them. Some special tags exist as well:
+
+Instruments:
+    - physical: a physical instrument.
+    - virtual: a virtual instrument.
+    - positioner: a motion control instrument, should support move_abs() or
+      move_rel().
+
+Parameters:
+    - measure: parameter that can be 'measured' in a loop.
+    - sweep: parameter that can be 'swept' in a loop.
+
+2.2. Data
+Measurement data can be stored in an instance of the Data class. This supports
+things such as loading / saving of data and adding meta-data. An example:
+
+    d = Data('test.dat')   # This will load the file if it exists
+    d.add_coordinate('x')  # Interpret data as data(x,y) = (v1, v2)
+    d.add_coordinate('y')
+    d.add_value('v1')
+    d.add_value('v2')
+
+Although the data is stored internally as a simple array of values, some more
+information about these values can be added: each value can be added as either
+a 'coordinate' or a 'value' dimension. This extra information will be used
+when adding the Data object to a plot.
+
+2.3. Plots
+To visualize data several plot classes are included. There is currently only
+one back-end: gnuplot.
+
+A plot can be created by constructing a new Plot2D (for line plot) or Plot3D
+(for surface / image plot) object. It simply takes one or more Data objects or
+filenames as arguments:
+
+    p = Plot3D('test.dat')
+
+or
+
+    d = Data('test.dat')
+    p = Plot3D(d)
+
+Of course more optional arguments are available, see the documentation that
+is generated from the sources for more info.
+
+It is also possible to plot arrays, use the plot() function for that:
+
+    plot([[1,1],[2,4],[3,9],[4,16]], name='myplot')
+
+or
+
+    plot([1,2,3,4], [1,4,9, 16], name='myplot')
+
+To plot x^2 in the plot named 'myplot'. If you don't specify a name the data
+will end up in a plot called 'plot'.
+
+2.4. Finding a Data, Plot or Window object
+The Data, Plot and QTWindow classes store a list of instances inside them.
+You can get the list with the <class>.get_named_list() function, but it is
+easier to access these lists directly in the qt module. You can see their
+contents easily by typing their name in the IPython shell:
+
+    qt.data
+    qt.plots
+    qt.windows
+
+Getting an item from the list works as follows:
+
+    p = qt.plots['plot1']
+
+A new item is created by instantiating the related class, so just entering
+
+    Plot3D()
+
+will create a new item, automatically called 'plot<n>'. If you would like to
+specify a different name, use
+
+    Plot3D(name='myplot')
+
+3. Extensions to QT Lab
+Extensions to QT lab are easy to write. This code should normally be placed
+in the 'source/lib/' directory. A few sub-directories are available there to
+organize the extensions:
+
+    lib/dll_support     - Communicating with DLLs (e.g. NI DAQ)
+    lib/file_support    - Reading file types (e.g. SPE files)
+    lib/gui             - Gui classes (e.g. dropdowns)
+    lib/math            - Mathimatical functionality (e.g. fitting)
+    lib/network         - Network functionality (e.g. tcpserver)
+    lib/                - More generic things (e.g. temporary file handler)
+
+4. Measurement scripts
+Your own measurement scripts should be placed under the 'scripts/' directory.
+This directory should also contain a sub-directory called 'examples', where
+you can find some simple demonstration scripts.
+
+5. Performance
+The overhead of the 'get' and 'set' functions are quite small, but depending
+on your needs they could be significant. The following numbers were acquired
+on a Inspiron 6400 laptop with a 1.73GHz Core Duo processor under Linux:
+
+Standard:
+    _do_get_<parameter> directly: ~5us
+    get('parameter', fast=True): ~13.5us
+    get_<parameter> or get('parameter'): ~155us
+
+With psyco (a python code accelerator):
+    _do_get_<parameter> directly: ~3us
+    get('parameter', fast=True): ~10us
+    get_<parameter> or get('parameter'): ~143us
+
