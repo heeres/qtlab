@@ -26,7 +26,7 @@ from lib import calltimer
 import logging
 import qt
 
-class Instrument(gobject.GObject):
+class Instrument(calltimer.ThreadSafeGObject):
     """
     Base class for instruments.
 
@@ -71,7 +71,7 @@ class Instrument(gobject.GObject):
                                 # try to read again for a new instance
 
     def __init__(self, name, **kwargs):
-        gobject.GObject.__init__(self)
+        calltimer.ThreadSafeGObject.__init__(self)
 
         self._name = name
         self._initialized = False

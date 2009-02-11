@@ -1,6 +1,8 @@
 import math
 import StringIO
 import types
+import sys
+import time
 
 def dict_to_ordered_tuples(dic):
     '''Convert a dictionary to a list of tuples, sorted by key.'''
@@ -94,3 +96,15 @@ def get_arg_type(args, kwargs, checktypes, name=None):
                 return arg
 
     return None
+
+_time_func = None
+def exact_time():
+    global _time_func
+    if _time_func is None:
+        if sys.platform in ['win32', 'cygwin']:
+            _time_func = time.clock
+        else:
+            _time_func = time.time
+
+    return _time_func()
+

@@ -29,6 +29,7 @@ from gettext import gettext as _L
 import qt
 from lib import namedlist, temp
 from lib.misc import dict_to_ordered_tuples, get_arg_type
+from lib.calltimer import ThreadSafeGObject
 
 def create_data_dir(datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
     '''
@@ -87,7 +88,7 @@ class _DataList(namedlist.NamedList):
         else:
             return name
 
-class Data(gobject.GObject):
+class Data(ThreadSafeGObject):
     '''
     Data class
     '''
@@ -171,7 +172,7 @@ class Data(gobject.GObject):
                 for the data.
         '''
 
-        gobject.GObject.__init__(self)
+        ThreadSafeGObject.__init__(self)
 
         name = kwargs.get('name', '')
         infile = kwargs.get('infile', True)

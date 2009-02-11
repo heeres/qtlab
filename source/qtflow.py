@@ -22,9 +22,10 @@ import types
 
 import time
 from gettext import gettext as _L
-from lib.calltimer import qttime
+from lib.calltimer import ThreadSafeGObject
+from lib.misc import exact_time
 
-class FlowControl(gobject.GObject):
+class FlowControl(ThreadSafeGObject):
     '''
     Class for flow control of the QT measurement environment.
     '''
@@ -46,7 +47,7 @@ class FlowControl(gobject.GObject):
     STATUS_RUNNING = 1
 
     def __init__(self):
-        gobject.GObject.__init__(self)
+        ThreadSafeGObject.__init__(self)
         self._status = 'stopped'
         self._measurements_running = 0
         self._abort = False
@@ -92,12 +93,12 @@ class FlowControl(gobject.GObject):
 
     def run_mainloop(self, delay):
         '''Run mainloop for a short time, sleep rest of the time.'''
-        start = qttime()
+        start = exact_time()
         dt = 0
         gtk.gdk.threads_enter()
         while gtk.events_pending() and dt < delay:
             gtk.main_iteration_do(False)
-            dt = qttime() - start
+            dt = exact_time() - start
         gtk.gdk.threads_leave()
 
         if delay > dt:
@@ -119,15 +120,15 @@ class FlowControl(gobject.GObject):
         a delay <= 1msec will result in NO gui interaction.
         '''
 
-        start = qttime()
+        start = exact_time()
 
         self.emit('measurement-idle')
-        lastemit = qttime()
+        lastemit = exact_time()
 
         while True:
             self.check_abort()
 
-            curtime = qttime()
+            curtime = exact_time()
             if curtime - lastemit > emit_interval:
                 self.emit('measurement-idle')
                 lastemit = curtime
@@ -137,7 +138,7 @@ class FlowControl(gobject.GObject):
             gtk.gdk.threads_enter()
             while gtk.events_pending() and (not exact or (dt + 0.001) < delay):
                 gtk.main_iteration_do(False)
-                dt = qttime() - start
+                dt = exact_time() - start
             gtk.gdk.threads_leave()
 
             if dt + 0.01 < delay:
@@ -299,7 +300,7 @@ class Scheduler():
     ### START CODE IDLE MODE
 
     def _measurement_idle_cb(self, widget):
-        now = qttime()
+        now = exact_time()
         if (now - self._idle_lasttime) > self._idle_mintime:
             self._idle_lasttime = now
             self._function()

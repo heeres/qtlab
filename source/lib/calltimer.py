@@ -15,10 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import time
-import sys
 import logging
-
 import gobject
 gobject.threads_init()
 
@@ -26,26 +23,13 @@ import gtk
 gtk.gdk.threads_init()
 
 import threading
+import time
+from misc import exact_time
 
-def qttime():
-    global _time_func
-    try:
-        _time_func
-    except:
-        if sys.platform in ['win32', 'cygwin']:
-            _time_func = time.clock
-        else:
-            _time_func = time.time
+class ThreadSafeGObject(gobject.GObject):
 
-    return _time_func()
-
-class GObjectThread(threading.Thread, gobject.GObject):
-
-    def __init__(self):
-        gobject.GObject.__init__(self)
-        threading.Thread.__init__(self)
-
-        self.stop = ThreadVariable(False)
+    def __init__(self, *args, **kwargs):
+        gobject.GObject.__init__(self, *args, **kwargs)
 
     def _idle_emit(self, signal, *args):
         try:
@@ -55,6 +39,14 @@ class GObjectThread(threading.Thread, gobject.GObject):
 
     def emit(self, signal, *args):
         gobject.idle_add(self._idle_emit, signal, *args)
+
+class GObjectThread(threading.Thread, ThreadSafeGObject):
+
+    def __init__(self, *args, **kwargs):
+        gobject.GObject.__init__(self, *args, **kwargs)
+        threading.Thread.__init__(self)
+
+        self.stop = ThreadVariable(False)
 
 class ThreadVariable():
     def __init__(self, value=None):
@@ -108,7 +100,7 @@ class CallTimerThread(GObjectThread):
         self._stop_requested = False
 
     def run(self):
-        tstart = qttime()
+        tstart = exact_time()
         extra_delay = 0
 
         i = 0
@@ -131,7 +123,7 @@ class CallTimerThread(GObjectThread):
                 break
 
             # delay
-            tn = qttime()
+            tn = exact_time()
             if 'time_exact' in self._kwargs:
                 req_delay = tstart + extra_delay / 1000.0 + float(i) * self._delay / 1000.0 - tn
                 if req_delay > 0:
@@ -180,7 +172,8 @@ class CallTimer:
         self._kwargs = kwargs
 
     def start(self):
-        tstart = qttime()
+        import qt
+        tstart = exact_time()
 
         i = 0
         while i < self._n:
@@ -191,10 +184,10 @@ class CallTimer:
                 break
 
             # delay
-            tn = qttime()
+            tn = exact_time()
             req_delay = tstart + float(i) * self._delay / 1000.0 - tn
             if req_delay > 0:
-                time.sleep(req_delay)
+                qt.msleep(req_delay)
 
 class ThreadCall(threading.Thread):
     '''
