@@ -97,7 +97,8 @@ for b in b_vec:
         data.add_data_point(f, b, result)
 
         # the next function is necessary to keep the gui responsive. It 
-        # checks for instance if the 'stop' button is pushed.
+        # checks for instance if the 'stop' button is pushed. It also checks
+        # if the plots need updating.
         qt.msleep(0.01)
 
     # the next line defines the end of a single 'block', which is when sweeping
