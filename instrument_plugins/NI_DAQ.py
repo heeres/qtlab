@@ -41,6 +41,7 @@ class NI_DAQ(Instrument):
                 flags=Instrument.FLAG_GET,
                 type=types.FloatType,
                 units='V',
+                tags=['measure'],
                 get_func=lambda: self._do_get_input(ch_in))
 
         for ch_out in self._get_output_channels():
@@ -49,6 +50,7 @@ class NI_DAQ(Instrument):
                 flags=Instrument.FLAG_SET,
                 type=types.FloatType,
                 units='V',
+                tags=['sweep'],
                 set_func=lambda val: self._do_set_input(val, ch_out))
 
         self.add_function('reset')
