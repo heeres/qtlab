@@ -29,8 +29,8 @@ from lib.calltimer import CallTimerThread
 from lib.gui.dropdowns import AllParametersDropdown
 import lib.gui as gui
 
-import lib.misc
-import lib.measurement
+import lib.misc as misc
+import lib.measurement as measurement
 
 class StepToggleButton(gtk.ToggleButton):
 
@@ -387,15 +387,15 @@ class MeasurementWindow(QTWindow):
         nmeas = self._measurement.get_nmeasurements()
         if ncoord == 1:
             if not self._hold:
-                self._plot = Plot2D()
+                self._plot = qt.Plot2D()
                 self._plot.add_data(data)
                 if nmeas > 1:
                     self._plot.add_data(data, valdim=2, right=True)
         elif ncoord == 2:
             if self._plot_type == self.PLOT_IMAGE:
-                self._plot = Plot3D(data)
+                self._plot = qt.Plot3D(data)
             else:
-                self._plot = Plot2D(data, coorddim=0, valdim=2)
+                self._plot = qt.Plot2D(data, coorddim=0, valdim=2)
         else:
             self._plot = None
             logging.warning('No plot available')
