@@ -218,7 +218,7 @@ class Instruments(gobject.GObject):
     def reload_module(self, instype):
         module = _get_driver_module(instype)
         if module is not None:
-            logging.info('Reloading module %s', mod)
+            logging.info('Reloading module %s', module)
             reload(module)
 
     def reload(self, ins):
