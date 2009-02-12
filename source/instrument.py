@@ -70,6 +70,8 @@ class Instrument(calltimer.ThreadSafeGObject):
     FLAG_PERSIST = 0x10         # Write parameter to config file if it is set,
                                 # try to read again for a new instance
 
+    USE_ACCESS_LOCK = False     # For now
+
     def __init__(self, name, **kwargs):
         calltimer.ThreadSafeGObject.__init__(self)
 
@@ -623,11 +625,13 @@ class Instrument(calltimer.ThreadSafeGObject):
                 Type is whatever the instrument driver returns.
         '''
 
-        self._access_lock.acquire()
+        if Instrument.USE_ACCESS_LOCK:
+            self._access_lock.acquire()
 
         if fast:
             ret = self._get_value(name, query, **kwargs)
-            self._access_lock.release()
+            if Instrument.USE_ACCESS_LOCK:
+                self._access_lock.release()
             return ret
 
         changed = {}
@@ -644,7 +648,8 @@ class Instrument(calltimer.ThreadSafeGObject):
             result = self._get_value(name, query, **kwargs)
             changed[name] = result
 
-        self._access_lock.release()
+        if Instrument.USE_ACCESS_LOCK:
+            self._access_lock.release()
 
         if len(changed) > 0 and query:
             self.emit('changed', changed)
@@ -837,7 +842,8 @@ class Instrument(calltimer.ThreadSafeGObject):
             print 'Trying to set value of locked instrument (%s)' % self.get_name()
             return False
 
-        self._access_lock.acquire()
+        if Instrument.USE_ACCESS_LOCK:
+            self._access_lock.acquire()
 
         result = True
         changed = {}
@@ -850,7 +856,8 @@ class Instrument(calltimer.ThreadSafeGObject):
             if self._set_value(name, value, **kwargs) is not None:
                 changed[name] = value
 
-        self._access_lock.release()
+        if Instrument.USE_ACCESS_LOCK:
+            self._access_lock.release()
 
         if not fast and len(changed) > 0:
             self.emit('changed', changed)
