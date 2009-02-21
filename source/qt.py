@@ -1,5 +1,6 @@
 # Global namespace
 
+import os
 from qtflow import get_flowcontrol
 from instruments import get_instruments
 import config as _config
@@ -24,3 +25,17 @@ else:
     from plot_engines.qtgnuplot import Plot2D, Plot3D
 
 plots = Plot.get_named_list()
+
+def version():
+    version_file = os.path.join(config['qtlabdir'], 'VERSION')
+    try:
+        f = file(version_file,'r')
+        str = f.readline()
+        str = str.rstrip('\n\r')
+        f.close()
+    except:
+        str = 'NO VERSION FILE'
+        
+    return str
+
+
