@@ -35,7 +35,7 @@ def version():
         f.close()
     except:
         str = 'NO VERSION FILE'
-        
+
     return str
 
 
