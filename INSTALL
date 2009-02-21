@@ -1,0 +1,132 @@
+################
+INSTALLING QTLAB
+################
+
+QTlab does not have an installer. It just needs to be copied to the local harddrive. It does have numerous dependencies on 3rd party software. For more information on the dependencies see below.
+
+#############
+RUNNING QTLAB
+#############
+
+win32:
+qtlab.bat
+
+linux:
+./qtlab
+
+############
+DEPENDENCIES
+############
+
+The dependencies are split into two groups:
+
+A) python and python libraries. 
+    These always need to be installed seperately by the user on the computer where QTlab will be running.
+
+B) other programs. 
+    (If you plan to only use the official releases of QTlab, you can skip this)
+    These programs generally do not need to be installed by the user, but are shipped together with QTlab in a folder '3rd_party'. The location of the executables needs to be added to the PATH variable so QTlab can find them. This will be done automatically when QTlab is run with 'QTlab.bat' file. 
+    The '3rd_party' folder does not exist in development 'git'-tree. It is only provided in official releases. When using the source from git, make sure to install this software yourself, or copy the '3rd_party' folder and 'QTlab.bat' file from a previous QTlab release. There is however a small chance this might not work if a newer version dependency is required. If you're not brave, stick to the releases.
+
+=group A=
+
+1) python (2.5.x)
+
+    NOTE: python is in transition to an new and incompattible version 3.x. Python 2.6 is mainly focussing on making the transition. We will stick with 2.5.x until all the dependencies have switched to 3.x. This will likely take a very long time, but this is not a problem since 2.5.x will remain available and supported. 
+    URL: python.org
+
+2) setuptools (0.6c9)
+
+    needed to install certain packages (nose & simplejson)
+    URL: pypi.python.org/pypi/setuptools
+
+3) numpy (1.2.1)
+4) scipy (0.7.0) (optional)
+5) nose (0.10.4) (optional)
+
+    numpy gives numerical-math functionality (similar to matlab)
+    scipy has many math routines (like fitting), based on numpy.
+    nose is needed by numpy and scipy for running tests. 
+    URL: scipy.org
+    URL: somethingaboutorange.com/mrl/projects/nose/
+    URL: pypi.python.org/pypi/nose 
+
+6) ipython (0.9.1)
+7) pyreadline (1.5)
+
+    enhanced interactive shell for python 
+    pyreadline is needed by ipython for 'tab'-completion
+    URL: ipython.scipy.org
+
+8) pygtk (2.12.1-2)
+9) pygobject (2.14.1-1)
+10) pycairo (2.12.1-2)
+
+    libraries used for creating graphical interfaces.
+    URL: pygtk.org
+
+11) pygtksourceview (2.2.0)
+
+    library for syntax highlighting of text files.
+    URL: ftp.gnome.org/pub/gnome/binaries/win32 
+
+12) simplejson (2.0.4)
+
+    library for creating human-readable text files from python-variables
+    URL: pypi.python.org/pypi/simplejson
+
+13) pyvisa (1.3)
+
+    library for communication with GPIB/USB/SERIAL instruments
+    URL: pyvisa.sourceforge.net/
+
+
+
+=Group B=
+
+1) gnuplot (4.3 development)
+    
+    plotting in QTlab is done using the gnuplot program. 
+    URL: gnuplot.info
+
+2) Console2 (2.00)
+
+    an enhanced interface for the windows 'cmd'-terminal
+    URL: sourceforge.net/projects/console 
+
+3) GTK (2.12.11)
+
+    Libraries to make graphical interfaces.
+    NOTE: For now we stick to 2.12.x, until pygtk is stable on 2.14
+    URL: http://ftp.gnome.org/pub/gnome/binaries/win32/gtk+/2.12/
+
+
+4) gtksourceview and gtksourceview-dev
+
+    library for syntax highlighting
+    URL: http://ftp.gnome.org/pub/gnome/binaries/win32/gtksourceview/
+
+5) libxml2 and iconv
+
+    gtksourceview depends on these 2
+    URL: xmlsoft.org -> downloads -> win32
+
+These can be installed anywhere you like, but as an example lets look at how
+the 3rd_party folder in the release is made:
+
+a) Both gnuplot and Console2 don't have an installer. They are just copied to the 3rd_party folder.
+
+b) GTK comes as a bundle, and is also just a collection of files and folders. Just put everything in a folder 'GTK'. Next copy the contents of gtksourceview, gtksourceview-dev, libxml2 and iconv into the GTK folder. They all have the same directory structure. 
+
+c) Lastly we have to make sure QTlab can find the executables. In stead of changing the PATH permanently (in system => advanced => system_variables), we prefer to add them on the commandline. Adjust the qtlab.bat file from the git-tree, by uncommenting the four 'SET' lines. This will add the following variables to the PATH:
+
+<path_to_gnuplot_folder>\binaries
+<path_to_console2_folder>\
+<path_to_gtk_folder>\bin
+<path_to_gtk_folder>\lib
+
+It is important to add them to the beginning of the list (of the PATH variable), so if any other versions exist, ours will be found before.
+
+Additionally the following variable is created (or overwritten):
+
+GTK_BASEPATH = <path_to_gtk_folder>
