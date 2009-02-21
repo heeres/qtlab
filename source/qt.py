@@ -1,6 +1,7 @@
 # Global namespace
 
 import os
+import sys
 from qtflow import get_flowcontrol
 from instruments import get_instruments
 import config as _config
@@ -10,6 +11,7 @@ from lib.gui.qtwindow import QTWindow
 
 config = _config.get_config()
 config['qtlabdir'] = _config.get_workdir()
+sys.path.append(config['qtlabdir'])
 data = Data.get_named_list()
 instruments = get_instruments()
 windows = QTWindow.get_named_list()
