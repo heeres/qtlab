@@ -21,6 +21,7 @@ import copy
 import time
 import math
 import threading
+from gettext import gettext as _L
 from lib import calltimer
 
 import logging
@@ -72,6 +73,8 @@ class Instrument(calltimer.ThreadSafeGObject):
 
     USE_ACCESS_LOCK = False     # For now
 
+    _lock_classes = {}
+
     def __init__(self, name, **kwargs):
         calltimer.ThreadSafeGObject.__init__(self)
 
@@ -90,7 +93,12 @@ class Instrument(calltimer.ThreadSafeGObject):
         self._default_read_var = None
         self._default_write_var = None
 
-        self._access_lock = threading.Lock()
+        self._lock_class = kwargs.get('lockclass', name)
+        if self._lock_class in Instrument._lock_classes:
+            self._access_lock = Instrument._lock_classes[self._lock_class]
+        else:
+            self._access_lock = calltimer.TimedLock(2.0)
+            self._lock_classes[self._lock_class] = self._access_lock
 
     def __str__(self):
         return "Instrument '%s'" % (self.get_name())
@@ -626,7 +634,9 @@ class Instrument(calltimer.ThreadSafeGObject):
         '''
 
         if Instrument.USE_ACCESS_LOCK:
-            self._access_lock.acquire()
+            if not self._access_lock.acquire():
+                logging.warning(_L('Failed to acquire lock!'))
+                return None
 
         if fast:
             ret = self._get_value(name, query, **kwargs)
@@ -839,11 +849,14 @@ class Instrument(calltimer.ThreadSafeGObject):
         '''
 
         if self._locked:
-            print 'Trying to set value of locked instrument (%s)' % self.get_name()
+            logging.warning('Trying to set value of locked instrument (%s)',
+                    self.get_name())
             return False
 
         if Instrument.USE_ACCESS_LOCK:
-            self._access_lock.acquire()
+            if not self._access_lock.acquire():
+                logging.warning(_L('Failed to acquire lock!'))
+                return None
 
         result = True
         changed = {}
@@ -987,3 +1000,8 @@ class Instrument(calltimer.ThreadSafeGObject):
     def _set_not_implemented(self, name):
         logging.warning('Set not implemented for %s.%s' % \
             (Instrument.get_type(self), name))
+
+class GPIBInstrument(Instrument):
+    def __init__(self, *args, **kwargs):
+        kwargs['lockclass'] = 'GPIB'
+        Instrument.__init__(self, *args, **kwargs)

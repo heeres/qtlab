@@ -48,6 +48,22 @@ class GObjectThread(threading.Thread, ThreadSafeGObject):
 
         self.stop = ThreadVariable(False)
 
+class TimedLock():
+    def __init__(self, delay=1.0):
+        self._lock = threading.Lock()
+        self._delay = delay
+
+    def acquire(self):
+        n = int(self._delay / 0.01)
+        for i in range(n):
+            if self._lock.acquire(False):
+                return True
+            time.sleep(0.01)
+        return False
+
+    def release(self):
+        self._lock.release()
+
 class ThreadVariable():
     def __init__(self, value=None):
         self._value = value
