@@ -102,8 +102,7 @@ class GnuplotPipe():
             self._winpipe = WinPipe(self._popen.stderr)
 
         # Wait a bit for gnuplot to start
-        self.readline(2.0)
-        self.flush_output()
+        self.is_responding(delay=2.0)
 
         self._default_terminal = self.get_terminal()
 
@@ -159,6 +158,7 @@ class GnuplotPipe():
         return None
 
     def is_responding(self, delay=0.01):
+        '''Check whether gnuplot is responding within <delay> seconds.'''
         self.flush_output()
         ret = self.cmd('print 0', True, delay)
         if ret is None or len(ret) == 0:
