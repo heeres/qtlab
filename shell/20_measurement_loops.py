@@ -4,7 +4,7 @@ import os
 import shutil
 import copy
 from lib import calltimer
-from measurement import Measurement
+from lib.measurement import Measurement
 
 def _get_steps(start, end, steps, stepsize):
     if steps == 0 and stepsize == 0:
