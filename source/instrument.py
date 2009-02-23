@@ -296,8 +296,10 @@ class Instrument(calltimer.ThreadSafeGObject):
             setattr(self, 'get_%s' % name,  func)
 
             # Set function to do_get_%s or _do_get_%s, whichever is available
-            options['get_func'] = getattr(self, 'do_get_%s' % base_name, \
-                getattr(self, '_do_get_%s' % base_name, None))
+            # (if no function specified)
+            if 'get_func' not in options:
+                options['get_func'] = getattr(self, 'do_get_%s' % base_name, \
+                    getattr(self, '_do_get_%s' % base_name, None))
             if options['get_func'] is not None:
                 if options['get_func'].__doc__ is not None:
                     func.__doc__ += '\n%s' % options['get_func'].__doc__
@@ -329,6 +331,10 @@ class Instrument(calltimer.ThreadSafeGObject):
             setattr(self, 'set_%s' % name, func)
 
             # Set function to do_set_%s or _do_set_%s, whichever is available
+            # (if no function specified)
+            if 'set_func' not in options:
+                options['set_func'] = getattr(self, 'do_set_%s' % base_name, \
+                    getattr(self, '_do_set_%s' % base_name, None))
             options['set_func'] = getattr(self, 'do_set_%s' % base_name, \
                 getattr(self, '_do_set_%s' % base_name, None))
             if options['set_func'] is not None:
