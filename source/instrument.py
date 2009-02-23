@@ -20,7 +20,6 @@ import gobject
 import copy
 import time
 import math
-import threading
 from gettext import gettext as _L
 from lib import calltimer
 

@@ -1,7 +1,7 @@
 import types
 from instrument import Instrument
 from lib.gui.qtwindow import QTWindow
-from lib.calltimer import exact_time
+from lib.misc import exact_time
 
 try:
     import psyco
