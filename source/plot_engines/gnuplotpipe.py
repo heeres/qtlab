@@ -22,6 +22,7 @@ import select
 import re
 import time
 import ctypes
+import logging
 
 class WinPipe():
     '''
@@ -52,13 +53,13 @@ class WinPipe():
             print 'Error: %s' % str(e)
             return False
 
-    def readline(self, delay=0):
+    def readline(self, timeout=0):
         '''Return a \n terminated line, if available.'''
 
         start = time.time()
         firsttime = True
 
-        while firsttime or (time.time() - start) < delay:
+        while firsttime or (time.time() - start) < timeout:
             self._get_buffer()
             index = self._buf.find('\n')
             if index != -1:
@@ -68,7 +69,7 @@ class WinPipe():
                 ret += '\n'
                 return ret
             firsttime = False
-            time.sleep(delay / 10.0)
+            time.sleep(timeout / 10.0)
 
         return None
 
@@ -101,8 +102,14 @@ class GnuplotPipe():
         if subprocess.mswindows:
             self._winpipe = WinPipe(self._popen.stderr)
 
-        # Wait a bit for gnuplot to start
-        self.is_responding(delay=2.0)
+        # Wait a bit for gnuplot to start (max 5 sec)
+        for i in range(200):
+            if self.is_alive():
+                break
+            elif i == 199:
+                logging.warning('Gnuplot start timed out!')
+            else:
+                time.sleep(0.025)
 
         self._default_terminal = self.get_terminal()
 
@@ -111,27 +118,27 @@ class GnuplotPipe():
         return self._popen.poll() == None
 
     if subprocess.mswindows:
-        def readline(self, delay=0):
-            line = self._winpipe.readline(delay)
+        def readline(self, timeout=0):
+            line = self._winpipe.readline(timeout)
             return line
 
     else:
-        def readline(self, delay=0):
+        def readline(self, timeout=0):
             rlist = [self._popen.stderr]
             elist = []
-            lists = select.select(rlist, elist, elist, delay)
+            lists = select.select(rlist, elist, elist, timeout)
             if len(lists[0]) == 0:
                 return None
             line = self._popen.stderr.readline()
             return line
 
-    def get_output(self, delay=0.05):
-        '''Read output from gnuplot, waiting at most <delay> seconds.'''
+    def get_output(self, timeout=0.05):
+        '''Read output from gnuplot, waiting at most <timeout> seconds.'''
 
         ret = ''
         i = 0
         while i < 1000:
-            line = self.readline(delay)
+            line = self.readline(timeout)
             if line is None:
                 break
             ret += line
@@ -139,11 +146,11 @@ class GnuplotPipe():
 
         return ret
 
-    def flush_output(self, delay=0):
+    def flush_output(self, timeout=0):
         '''Flush gnuplot stdout.'''
-        self.get_output(delay)
+        self.get_output(timeout)
 
-    def cmd(self, cmd, retoutput=False, delay=0.05):
+    def cmd(self, cmd, retoutput=False, timeout=0.05):
         '''Execute a gnuplot command, optionally returning output.'''
 
         # End with newline
@@ -152,15 +159,15 @@ class GnuplotPipe():
 
         if retoutput:
             self.flush_output()
-        self._popen.stdin.write(cmd)
+        ret = self._popen.stdin.write(cmd)
         if retoutput:
-            return self.get_output()
+            return self.get_output(timeout)
         return None
 
-    def is_responding(self, delay=0.01):
-        '''Check whether gnuplot is responding within <delay> seconds.'''
+    def is_responding(self, timeout=0.01):
+        '''Check whether gnuplot is responding within <timeout> seconds.'''
         self.flush_output()
-        ret = self.cmd('print 0', True, delay)
+        ret = self.cmd('print 0', True, timeout)
         if ret is None or len(ret) == 0:
             return False
         return True
