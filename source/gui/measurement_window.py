@@ -25,7 +25,6 @@ from gettext import gettext as _L
 import qt
 from instrument import Instrument
 from lib.gui.qtwindow import QTWindow
-from lib.calltimer import CallTimerThread
 from lib.gui.dropdowns import AllParametersDropdown
 import lib.gui as gui
 
