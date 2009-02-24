@@ -167,7 +167,7 @@ class Data(ThreadSafeGObject):
         kwargs input:
             name (string), default will be 'data<n>'
             infile (bool), default True
-            inmem (bool), default False
+            inmem (bool), default False if no file specified, True otherwise
             tempfile (bool), default False. If True create a temporary file
                 for the data.
         '''
@@ -220,7 +220,9 @@ class Data(ThreadSafeGObject):
         filepath = get_arg_type(args, kwargs, types.StringType, 'filepath')
         if self._tempfile:
             self.create_tempfile(filepath)
-        elif filepath is not None and filepath != '':
+        elif filepath != '':
+            if 'inmem' not in kwargs:
+                inmem = True
             self.set_filepath(filepath, inmem)
             self._infile = True
         else:
@@ -611,6 +613,18 @@ class Data(ThreadSafeGObject):
             self._ncoordinates = nfields - 1
             self._nvalues = 1
 
+    def _count_coord_val_dims(self):
+        self._ncoordinates = 0
+        self._nvalues = 0
+        for info in self._dimensions:
+            if info.get('type', 'coordinate') == 'coordinate':
+                self._ncoordinates += 1
+            else:
+                self._nvalues += 1
+        if self._nvalues == 0 and self._ncoordinates > 0:
+            self._nvalues = 1
+            self._ncoordinates -= 1
+
     def _load_file(self):
         """
         Load data from file and store internally.
@@ -661,6 +675,7 @@ class Data(ThreadSafeGObject):
                 blocksize += 1
 
         self._add_missing_dimensions(nfields)
+        self._count_coord_val_dims()
 
         self._data = numpy.array(data)
         self._npoints = len(self._data)
