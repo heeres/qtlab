@@ -834,7 +834,7 @@ class Instrument(calltimer.ThreadSafeGObject):
         p['value'] = value
         return value
 
-    def set(self, name, value, fast=False, **kwargs):
+    def set(self, name, value=None, fast=False, **kwargs):
         '''
         Set one or more Instrument parameter values.
 
