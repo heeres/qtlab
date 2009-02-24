@@ -83,12 +83,11 @@ class InstrumentDropdown(QTComboBox):
         return
 
     def get_instrument(self):
-        try:
-            item = self.get_active_iter()
-            ins_name = self._ins_list.get(item, 0)
-            return self._instruments[ins_name]
-        except:
+        item = self.get_active_iter()
+        if item is None:
             return None
+        ins_name = self._ins_list.get(item, 0)
+        return self._instruments[ins_name]
 
 class InstrumentTypeDropdown(QTComboBox):
     '''
@@ -104,16 +103,14 @@ class InstrumentTypeDropdown(QTComboBox):
             self._type_list.append([name])
 
     def get_typename(self):
-        try:
-            item = self.get_active_iter()
-            type_name = self._type_list.get(item, 0)
-            if type_name[0] == '<None>':
-                return None
-            else:
-                return type_name[0]
-
-        except:
+        item = self.get_active_iter()
+        if item is None:
             return None
+        type_name = self._type_list.get(item, 0)
+        if type_name[0] == '<None>':
+            return None
+        else:
+            return type_name[0]
 
     def select_none_type(self):
         self.set_active(0)
@@ -189,14 +186,11 @@ class InstrumentParameterDropdown(QTComboBox):
             self._param_list.clear()
 
     def get_parameter(self):
-        try:
-            item = self.get_active_iter()
-            param_name = self._param_list.get(item, 0)
-
-            # FIXME: What is going on here?!
-            return param_name[0]
-        except:
+        item = self.get_active_iter()
+        if item is None:
             return None
+        param_name = self._param_list.get(item, 0)
+        return param_name[0]
 
 class InstrumentFunctionDropdown(QTComboBox):
     '''
@@ -251,12 +245,11 @@ class InstrumentFunctionDropdown(QTComboBox):
             self._func_list.clear()
 
     def get_function(self):
-        try:
-            item = self.get_active_iter()
-            func_name = self._func_list.get(item, 0)
-            return func_name[0]
-        except:
+        item = self.get_active_iter()
+        if item is None:
             return None
+        func_name = self._func_list.get(item, 0)
+        return func_name[0]
 
 class AllParametersDropdown(QTComboBox):
     '''
@@ -397,12 +390,11 @@ class NamedListDropdown(QTComboBox):
         pass
 
     def get_item(self):
-        try:
-            item = self.get_active_iter()
-            name = self._items.get(item, 0)[0]
-            return self._namedlist[name]
-        except:
+        item = self.get_active_iter()
+        if item is None:
             return None
+        name = self._items.get(item, 0)[0]
+        return self._namedlist[name]
 
 class StringListDropdown(QTComboBox):
 
@@ -415,5 +407,7 @@ class StringListDropdown(QTComboBox):
 
     def get_item(self):
         item = self.get_active_iter()
+        if item is None:
+            return None
         name = self._items.get(item, 0)[0]
         return name
