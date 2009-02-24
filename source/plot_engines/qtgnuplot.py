@@ -43,11 +43,8 @@ class _GnuPlotList(NamedList):
         if item is None:
             return None
 
-        try:
-            item.cmd('print 0')
-            time.sleep(0.1)
-            item.cmd('print 0')
-        except IOError:
+        if not item.is_alive():
+            logging.warning('Gnuplot not alive, creating new instance')
             del self[name]
             item = NamedList.get(self, name)
 
@@ -125,6 +122,7 @@ class _QTGnuPlot():
 
     def set_property(self, name, val, update=False):
         '''Set a plot property value.'''
+
         cmd = self.create_command(name, val)
         if cmd is not None and cmd != '':
             self.cmd(cmd)

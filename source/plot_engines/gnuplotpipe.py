@@ -23,6 +23,7 @@ import re
 import time
 import ctypes
 import logging
+import sys
 
 class WinPipe():
     '''
@@ -102,16 +103,25 @@ class GnuplotPipe():
         if subprocess.mswindows:
             self._winpipe = WinPipe(self._popen.stderr)
 
-        # Wait a bit for gnuplot to start (max 5 sec)
-        for i in range(200):
-            if self.is_alive():
-                break
-            elif i == 199:
-                logging.warning('Gnuplot start timed out!')
-            else:
-                time.sleep(0.025)
+        self._wait_start()
 
         self._default_terminal = self.get_terminal()
+        if self._default_terminal is None:
+            if sys.platform in ['win32', 'cygwin']:
+                self._default_terminal = ('windows', '')
+            else:
+                self._default_terminal = ('x11', '')
+
+    def _wait_start(self):
+        for i in range(100):
+            if not self.is_alive():
+                time.sleep(0.025)
+            else:
+                if self.is_responding(timeout=0.025):
+                    return True
+
+        logging.warning('Gnuplot start timed out!')
+        return False
 
     def is_alive(self):
         '''Check whether the gnuplot instance is alive.'''
@@ -168,7 +178,7 @@ class GnuplotPipe():
         '''Check whether gnuplot is responding within <timeout> seconds.'''
         self.flush_output()
         ret = self.cmd('print 0', True, timeout)
-        if ret is None or len(ret) == 0:
+        if ret != '0\n':
             return False
         return True
 
