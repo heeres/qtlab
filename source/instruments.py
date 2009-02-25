@@ -34,10 +34,16 @@ def _get_driver_module(modname):
     # Try to import
     importstr = 'import %s' % name
     code.compile_command(importstr)
-    exec importstr
+    try:
+        exec importstr
+    except ImportError:
+        return None
+    except Exception, e:
+        logging.error('Error loading instrument driver: %s', e)
+        return None
+
     if name in sys.modules:
         return sys.modules[name]
-
     return None
 
 class Instruments(gobject.GObject):
@@ -210,7 +216,12 @@ class Instruments(gobject.GObject):
             logging.error('Driver does not contain instrument class')
             return None
 
-        ins = insclass(name, **kwargs)
+        try:
+            ins = insclass(name, **kwargs)
+        except Exception, e:
+            logging.error('Error creating instrument: %s', e)
+            return None
+
         self.add(ins, create_args=kwargs)
         self.emit('instrument-added', ins)
         return ins
