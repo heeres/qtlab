@@ -87,10 +87,11 @@ def get_physical_output_channels(dev):
     nidaq.DAQmxGetDevAOPhysicalChans(dev, ctypes.byref(buf), bufsize)
     return buf_to_list(buf)
 
-def read_dac(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
+def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
             timeout=10.0):
     '''
-    Read up to max_samples from a DAC. Seems to have trouble reading 1 sample!
+    Read up to max_samples from a channel. Seems to have trouble reading
+    1 sample!
 
     Input:
         devchan (string): device/channel specifier, such as Dev1/ai0
@@ -142,10 +143,10 @@ def read_dac(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
     else:
         return None
 
-def write_dac(devchan, data, freq=10000.0, minv=-10.0, maxv=10.0,
+def write(devchan, data, freq=10000.0, minv=-10.0, maxv=10.0,
                 timeout=10.0):
     '''
-    Write dac values
+    Write values to channel
 
     Input:
         devchan (string): device/channel specifier, such as Dev1/ao0

@@ -42,7 +42,8 @@ class NI_DAQ(Instrument):
                 type=types.FloatType,
                 units='V',
                 tags=['measure'],
-                get_func=lambda: self._do_get_input(ch_in))
+                get_func=self._do_get_input,
+                channel=ch_in)
 
         for ch_out in self._get_output_channels():
             ch_out = _get_channel(ch_out)
@@ -51,7 +52,8 @@ class NI_DAQ(Instrument):
                 type=types.FloatType,
                 units='V',
                 tags=['sweep'],
-                set_func=lambda val: self._do_set_input(val, ch_out))
+                set_func=self._do_set_output,
+                channel=ch_out)
 
         self.add_function('reset')
 
@@ -72,13 +74,13 @@ class NI_DAQ(Instrument):
     def _get_output_channels(self):
         return nidaq.get_physical_output_channels(self._id)
 
-    def _do_get_input(self, chan):
-        devchan = '%s/%s' % (self._id, chan)
-        return nidaq.read_dac(devchan)
+    def _do_get_input(self, channel):
+        devchan = '%s/%s' % (self._id, channel)
+        return nidaq.read(devchan)
 
-    def _do_set_output(self, val, chan):
-        devchan = '%s/%s' % (self._id, chan)
-        return nidaq.write_dac(devchan, val)
+    def _do_set_output(self, val, channel):
+        devchan = '%s/%s' % (self._id, channel)
+        return nidaq.write(devchan, val)
 
 def detect_instruments():
     '''Refresh NI DAQ instrument list.'''
