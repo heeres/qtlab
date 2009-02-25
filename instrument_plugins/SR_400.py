@@ -50,13 +50,7 @@ class SR_400(Instrument):
                 2: 'A + B for preset T',
                 3: 'A for preset B',
             },
-            doc="""
-            Get / set mode, modes:
-                0: A, B for preset T
-                1: A - B for preset T
-                2: A + B for preset T
-                3: A FOR preset B
-            """)
+            doc="""Get / set mode""")
 
         self.add_parameter('counter',
             flags=Instrument.FLAG_GET,
@@ -82,19 +76,14 @@ class SR_400(Instrument):
                 2: 'Input 2',
                 3: 'Trigger'
             },
-            doc="""
-            Get / set input for a channel, inputs:
-                0: 10MHz
-                1: Input 1
-                2: Input 2
-                3: Trigger
-            """)
+            doc="""Get / set input""")
 
         self.add_parameter('counter_preset',
-            flags=Instrument.FLAG_SET | Instrument.FLAG_SOFTGET,
+            flags=Instrument.FLAG_GETSET,
             type=types.IntType,
-            channels=('A', 'B', 'T'),
+            channels=('B', 'T'),
             minval=1, maxval=9e11,
+            format = '%1.1e',
             doc="""
             Get / set preset count for a channel, 1 <= n <= 9e11.
             If input is 10MHz the units are 100ns periods,
@@ -125,9 +114,7 @@ class SR_400(Instrument):
                 1: 'FALL',
             },
             minval=0, maxval=1,
-            doc="""
-            Get/set discriminator scope, 0=RISE, 1=FALL.
-            """)
+            doc="""Get/set discriminator scope""")
 
         self.add_parameter('disc_level',
             flags=Instrument.FLAG_GETSET,
@@ -148,23 +135,10 @@ class SR_400(Instrument):
         if type(counter) == types.IntType:
             return counter
         elif type(counter) == types.StringType:
-            if counter.upper() == 'A':
-                return 0
-            elif counter.upper() == 'B':
-                return 1
-            elif counter.upper() == 'T':
-                return 2
-            else:
-                return None
+            nummap = {'A': 0, 'B': 1, 'T': 2}
+            return nummap.get(counter.upper(), None)
         else:
             return None
-
-    def _format_counter_input(self, val):
-
-        if val in map:
-            return map[val]
-        else:
-            return ''
 
     def reset(self):
         self._visa.write('*RST')
@@ -175,9 +149,11 @@ class SR_400(Instrument):
         for chan in 'A', 'B':
             self.get('counter%s' % chan)
             self.get('counter_input%s' % chan)
-            self.get('counter_preset%s' % chan)
             self.get('disc_level%s' % chan)
             self.get('disc_slope%s' % chan)
+
+        self.get('counter_presetB')
+        self.get('counter_presetT')
 
     def _do_get_identification(self):
         return self._visa.ask('*IDN?')
@@ -207,6 +183,10 @@ class SR_400(Instrument):
 
     def _do_set_counter_input(self, val, channel):
         self._visa.write('CI %d,%d' % (self._counter_num(channel), val))
+
+    def _do_get_counter_preset(self, channel):
+        ret = self._visa.ask('CP %d' % self._counter_num(channel))
+        return float(ret)
 
     def _do_set_counter_preset(self, val, channel):
         self._visa.write('CP %d,%d' % (self._counter_num(channel), val))
