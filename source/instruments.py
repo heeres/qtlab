@@ -37,6 +37,7 @@ def _get_driver_module(modname):
     try:
         exec importstr
     except ImportError:
+        logging.warning('Instrument driver not available')
         return None
     except Exception, e:
         logging.error('Error loading instrument driver: %s', e)
@@ -211,6 +212,8 @@ class Instruments(gobject.GObject):
             return None
 
         module = _get_driver_module(instype)
+        if module is None:
+            return None
         insclass = getattr(module, instype, None)
         if insclass is None:
             logging.error('Driver does not contain instrument class')
@@ -271,7 +274,6 @@ class Instruments(gobject.GObject):
 
         module = _get_driver_module(driver)
         if module is None:
-            logging.warning('Instrument driver not available')
             return False
         reload(module)
 
