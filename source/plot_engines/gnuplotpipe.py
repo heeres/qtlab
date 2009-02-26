@@ -25,6 +25,8 @@ import ctypes
 import logging
 import sys
 
+DEFAULT_TIMEOUT = 0.1
+
 class WinPipe():
     '''
     Class to perform line-based, non-blocking reads from a win32 file.
@@ -113,11 +115,11 @@ class GnuplotPipe():
                 self._default_terminal = ('x11', '')
 
     def _wait_start(self):
-        for i in range(100):
+        for i in range(50):
             if not self.is_alive():
-                time.sleep(0.025)
+                time.sleep(DEFAULT_TIMEOUT)
             else:
-                if self.is_responding(timeout=0.025):
+                if self.is_responding(timeout=DEFAULT_TIMEOUT):
                     return True
 
         logging.warning('Gnuplot start timed out!')
@@ -142,7 +144,7 @@ class GnuplotPipe():
             line = self._popen.stderr.readline()
             return line
 
-    def get_output(self, timeout=0.05):
+    def get_output(self, timeout=DEFAULT_TIMEOUT):
         '''Read output from gnuplot, waiting at most <timeout> seconds.'''
 
         ret = ''
@@ -160,7 +162,7 @@ class GnuplotPipe():
         '''Flush gnuplot stdout.'''
         self.get_output(timeout)
 
-    def cmd(self, cmd, retoutput=False, timeout=0.05):
+    def cmd(self, cmd, retoutput=False, timeout=DEFAULT_TIMEOUT):
         '''Execute a gnuplot command, optionally returning output.'''
 
         # End with newline
@@ -174,7 +176,7 @@ class GnuplotPipe():
             return self.get_output(timeout)
         return None
 
-    def is_responding(self, timeout=0.01):
+    def is_responding(self, timeout=DEFAULT_TIMEOUT):
         '''Check whether gnuplot is responding within <timeout> seconds.'''
         self.flush_output()
         ret = self.cmd('print 0', True, timeout)
