@@ -220,7 +220,7 @@ class Data(ThreadSafeGObject):
         filepath = get_arg_type(args, kwargs, types.StringType, 'filepath')
         if self._tempfile:
             self.create_tempfile(filepath)
-        elif filepath != '':
+        elif filepath is not None and filepath != '':
             if 'inmem' not in kwargs:
                 inmem = True
             self.set_filepath(filepath, inmem)
