@@ -334,8 +334,6 @@ class Instrument(calltimer.ThreadSafeGObject):
             if 'set_func' not in options:
                 options['set_func'] = getattr(self, 'do_set_%s' % base_name, \
                     getattr(self, '_do_set_%s' % base_name, None))
-            options['set_func'] = getattr(self, 'do_set_%s' % base_name, \
-                getattr(self, '_do_set_%s' % base_name, None))
             if options['set_func'] is not None:
                 if options['set_func'].__doc__ is not None:
                     func.__doc__ += '\n%s' % options['set_func'].__doc__
