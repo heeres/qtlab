@@ -47,6 +47,8 @@ class dummy_signal_generator(Instrument):
                 Arbitrary units. (takes 1sec)
                 """)
 
+        self.add_function('reset')
+
         self.set_type('SIN')
         self.set_amplitude(1)
         self.set_frequency(0.2)
@@ -87,3 +89,7 @@ class dummy_signal_generator(Instrument):
     def _do_get_slow_wave(self):
         time.sleep(1)
         return self._do_get_wave()
+
+    def reset(self, arg):
+        print 'Resetting: %s' % arg
+        self._start_time = time.time()
