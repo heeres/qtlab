@@ -36,8 +36,8 @@ def _get_driver_module(modname):
     code.compile_command(importstr)
     try:
         exec importstr
-    except ImportError:
-        logging.warning('Instrument driver not available')
+    except ImportError, e:
+        logging.warning('Instrument driver not available (or import failed): %s', e)
         return None
     except Exception, e:
         logging.error('Error loading instrument driver: %s', e)
