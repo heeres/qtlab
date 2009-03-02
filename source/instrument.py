@@ -20,6 +20,7 @@ import gobject
 import copy
 import time
 import math
+import inspect
 from gettext import gettext as _L
 from lib import calltimer
 
@@ -888,10 +889,15 @@ class Instrument(calltimer.ThreadSafeGObject):
                 (2) dictionary of extra options
         Output: None
         '''
-        if hasattr(self, name):
-            f = getattr(self, name)
-            if hasattr(f, '__doc__'):
-                options['doc'] = getattr(f, '__doc__')
+
+        if not hasattr(self, name):
+            logging.warning('Instrument does not implement function %s', name)
+
+        f = getattr(self, name)
+        if hasattr(f, '__doc__'):
+            options['doc'] = getattr(f, '__doc__')
+
+        options['argspec'] = inspect.getargspec(f)
 
         self._functions[name] = options
 

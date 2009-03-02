@@ -22,9 +22,33 @@ class Remote_Instrument(Instrument):
 
         funcs = self._client.get_instrument_functions(remote_name)
         for name, info in funcs.iteritems():
-            setattr(self, name, lambda *args, **kwargs: \
-                    self._call(name, *args, **kwargs))
-            self.add_function(name, **info)
+            try:
+                func = self.create_lambda(name, info.get('argspec', None))
+                if 'doc' in info:
+                    func.__doc__ = info['doc']
+                setattr(self, name, func)
+                self.add_function(name, **info)
+            except Exception, e:
+                logging.warning('Failed to create function %s', name)
+
+    def create_lambda(self, funcname, argspec=None):
+        if argspec is None:
+            codestr = 'lambda *args, **kwargs: self._call("%s", *args, **kwargs)' % funcname
+        else:
+            if len(argspec[0]) < 2:
+                return None
+            args = ','.join(argspec[0][1:])
+            if argspec[1] is not None:
+                args = ','.join(args, '*%s' % argspec[1])
+            if argspec[2] is not None:
+                args = ','.join(args, '**%s' % argspec[2])
+
+            codestr = 'lambda %s: self._call("%s"' % (args, funcname)
+            if args != '':
+                codestr += ', %s' % args
+            codestr += ')'
+
+        return eval(codestr, {'self': self})
 
     def _get(self, channel):
         return self._client.ins_get(self._remote_name, channel)

@@ -91,5 +91,6 @@ class dummy_signal_generator(Instrument):
         return self._do_get_wave()
 
     def reset(self, arg):
+        '''Reset signal generator.'''
         print 'Resetting: %s' % arg
         self._start_time = time.time()
