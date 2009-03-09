@@ -93,7 +93,7 @@ class GnuplotPipe():
     _RE_LOG = re.compile('(\w+) \(base ([^\)]*)\)')
     _RE_LABEL = re.compile('.*label is "[\"]"')
 
-    def __init__(self, persist=False):
+    def __init__(self, termtitle='QTGnuplot', persist=False):
         args = ['gnuplot']
         if persist:
             args.append('-persist')
@@ -105,6 +105,8 @@ class GnuplotPipe():
         if subprocess.mswindows:
             self._winpipe = WinPipe(self._popen.stderr)
 
+        self._termtitle = termtitle
+
         self._wait_start()
 
         self._default_terminal = self.get_terminal()
@@ -113,6 +115,7 @@ class GnuplotPipe():
                 self._default_terminal = ('windows', '')
             else:
                 self._default_terminal = ('x11', '')
+        self.reset_default_terminal()
 
     def _wait_start(self):
         for i in range(50):
@@ -201,6 +204,11 @@ class GnuplotPipe():
     def get_default_terminal(self):
         '''Return default terminal info as (type, options) tuple.'''
         return self._default_terminal
+
+    def reset_default_terminal(self):
+        '''Reset to the default terminal'''
+        self.set_terminal(self._default_terminal[0],
+            'title "%s"' % self._termtitle)
 
     def get_palette_info(self):
         '''Return a dictionary with info about the current palette.'''

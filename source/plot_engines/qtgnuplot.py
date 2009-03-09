@@ -34,7 +34,7 @@ class _GnuPlotList(NamedList):
         NamedList.__init__(self, 'plot', type=NamedList.TYPE_ACTIVE)
 
     def create(self, name):
-        return gnuplotpipe.GnuplotPipe()
+        return gnuplotpipe.GnuplotPipe(termtitle=name)
 
     def get(self, name=''):
         '''Get Gnuplot instance from list and verify whether it's alive.'''
@@ -92,14 +92,6 @@ class _QTGnuPlot():
         self._gnuplot = self._gnuplot_list[name]
         self.cmd('reset')
         self.cmd('clear')
-
-        term = self._gnuplot.get_default_terminal()
-        if term is None:
-            self._default_terminal = 'x11'
-        else:
-            self._default_terminal = term[0]
-        self._gnuplot.set_terminal(self._default_terminal,
-            'title "%s"' % name)
 
         self._auto_suffix_counter = 0
         self._auto_suffix_gp_counter = 0
@@ -185,7 +177,7 @@ class _QTGnuPlot():
         self._gnuplot.cmd('set output "%s%s.%s"' % (fn, suffix, extension))
 
         self._gnuplot.cmd('replot')
-        self._gnuplot.set_terminal(self._default_terminal)
+        self._gnuplot.reset_default_terminal()
         self._gnuplot.cmd('set output')
         self._gnuplot.cmd('replot')
 
