@@ -22,7 +22,8 @@ from numpy import linspace, arange, array, pi
 # Set exception handler
 try:
     import qtflow
-    __IP.set_custom_exc((KeyboardInterrupt,), qtflow.exception_handler)
+    # Note: This does not seem to work for 'KeyboardInterrupt',
+    # likely it is already caught by ipython itself.
+    __IP.set_custom_exc((Exception, ), qtflow.exception_handler)
 except Exception, e:
     print 'Error: %s' % str(e)
-

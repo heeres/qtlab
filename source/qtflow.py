@@ -24,6 +24,7 @@ import time
 from gettext import gettext as _L
 from lib.calltimer import ThreadSafeGObject
 from lib.misc import exact_time
+from IPython import ultraTB
 
 class FlowControl(ThreadSafeGObject):
     '''
@@ -67,7 +68,7 @@ class FlowControl(ThreadSafeGObject):
         '''
 
         self._measurements_running += 1
-        if True: #self._measurements_running == 1:
+        if self._measurements_running == 1:
             self._set_status('running')
             self.emit('measurement-start')
 
@@ -87,7 +88,7 @@ class FlowControl(ThreadSafeGObject):
         else:
             self._measurements_running -= 1
 
-        if True: #self._measurements_running == 0:
+        if self._measurements_running == 0:
             self._set_status('stopped')
             self.emit('measurement-end')
 
@@ -179,8 +180,12 @@ class FlowControl(ThreadSafeGObject):
         self._abort = True
 
 def exception_handler(self, etype, value, tb):
-    get_flowcontrol().measurement_end()
-    raise etype, value, tb
+    InteractiveTB = ultraTB.AutoFormattedTB(mode='Context',
+                                            color_scheme='Linux',
+                                            tb_offset=1)
+
+    get_flowcontrol().measurement_end(abort=True)
+    InteractiveTB(etype, value, tb)
 
 class Scheduler():
     '''
