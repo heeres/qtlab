@@ -6,12 +6,13 @@ from qtflow import get_flowcontrol
 from instruments import get_instruments
 import config as _config
 from data import Data
-from plot import Plot
+from plot import Plot, plot, plot3
 from lib.gui.qtwindow import QTWindow
 
 config = _config.get_config()
 config['qtlabdir'] = _config.get_workdir()
 sys.path.append(config['qtlabdir'])
+
 data = Data.get_named_list()
 instruments = get_instruments()
 windows = QTWindow.get_named_list()
@@ -37,7 +38,5 @@ def version():
         f.close()
     except:
         str = 'NO VERSION FILE'
-
     return str
-
 

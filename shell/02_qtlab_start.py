@@ -11,10 +11,7 @@ except:
     logging.info('psyco acceleration not enabled')
         
 import qt
-from plot import plot, plot3
-Plot2D = qt.Plot2D
-Plot3D = qt.Plot3D
-Data = qt.Data
+from qt import plot, plot3, Plot2D, Plot3D, Data
 
 import numpy
 from numpy import linspace, arange, array, pi
