@@ -530,7 +530,7 @@ class Data(ThreadSafeGObject):
     def _write_data_line(self, args):
         '''
         Write a line of data.
-        Args can be a single value or an numpy.array / list / tuple.
+        Args can be a single value or a 1d numpy.array / list / tuple.
         '''
 
         if hasattr(args, '__len__'):
@@ -612,11 +612,26 @@ class Data(ThreadSafeGObject):
 
     def add_data_point(self, *args, **kwargs):
         '''
-        Add a new data point to the data set (in memory and/or on disk).
+
+        Add new data point(s) to the data set (in memory and/or on disk).
+        Note that one data point can consist of multiple coordinates and values.
+
+        provide 1 data point
+            - N numbers: d.add_data_points(1, 2, 3)
+
+        OR
+
+        provide >1 data points.
+            - a single MxN 2d array: d.add_data_point(arraydata)
+            - N 1d arrays of length M: d.add_data_points(a1, a2, a3)
+
+        Notes:
+        If providing >1 argument, all vectors should have same shape.
+        String data is not compatible with 'inmem'.
 
         Input:
             *args:
-                n column values
+                n column values or a 2d array
             **kwargs:
                 newblock (boolean): marks a new 'block' starts after this point
 
@@ -624,19 +639,67 @@ class Data(ThreadSafeGObject):
             None
         '''
 
+        # Check what type of data is being added
+        shapes = [numpy.shape(i) for i in args]
+        dims = numpy.array([len(i) for i in shapes])
+
+        if len(args) == 0:
+            logging.warning('add_data_point(): no data specified')
+            return
+        elif len(args) == 1:
+            if dims[0] == 2:
+                ncols = shapes[0][1]
+                npoints = shapes[0][0]
+                args = args[0]
+            elif dims[0] == 1:
+                ncols = 1
+                npoints = shapes[0][0]
+                args = args[0]
+            elif dims[0] == 0:
+                ncols = 1
+                npoints = 1
+            else:
+                loggin.warning('add_data_point(): adding >2d data not supported')
+                return
+        else:
+            # Check if all arguments have same shape
+            for i in range(1, len(args)):
+                if shapes[i] != shapes[i-1]:
+                    logging.warning('add_data_point(): not all provided data arguments have same shape')
+                    return
+
+            if sum(dims!=1) == 0:
+                ncols = len(args)
+                npoints = shapes[0][0]
+                # Transpose args to a single 2-d list
+                args = zip(*args)
+            elif sum(dims!=0) == 0:
+                ncols = len(args)
+                npoints = 1
+            else:
+                logging.warning('add_data_point(): addint >2d data not supported')
+                return
+
+        # Check if the number of columns is correct.
+        # If the number of columns is not yet specified, then it will be done
+        # (only the first time) according to the data
+
         if len(self._dimensions) == 0:
             logging.warning('add_data_point(): no dimensions specified, adding according to data')
-            self._add_missing_dimensions(len(args))
+            self._add_missing_dimensions(ncols)
 
-        if len(args) < len(self._dimensions):
+        if ncols < len(self._dimensions):
             logging.warning('add_data_point(): missing columns (%d < %d)' % \
-                (len(args), len(self._dimensions)))
+                (ncols, len(self._dimensions)))
             return
-        elif len(args) > len(self._dimensions):
+        elif ncols > len(self._dimensions):
             logging.warning('add_data_point(): too many columns (%d > %d)' % \
-                (len(args), len(self._dimensions)))
+                (ncols, len(self._dimensions)))
             return
 
+        # At this point 'args' is either:
+        #   - a 1d tuple of numbers, for adding a single data point
+        #   - a 2d tuple/list/array, for adding >1 data points
         if self._inmem:
             if len(self._data) == 0:
                 self._data = numpy.atleast_2d(args)
@@ -644,10 +707,14 @@ class Data(ThreadSafeGObject):
                 self._data = numpy.append(self._data, [args], axis=0)
 
         if self._infile:
-            self._write_data_line(args)
+            if npoints == 1:
+                self._write_data_line(args)
+            elif npoints > 1:
+                for i in range(npoints):
+                    self._write_data_line(args[i])
 
-        self._npoints += 1
-        self._npoints_last_block += 1
+        self._npoints += npoints
+        self._npoints_last_block += npoints
         if self._npoints_last_block > self._npoints_max_block:
             self._npoints_max_block = self._npoints_last_block
 
