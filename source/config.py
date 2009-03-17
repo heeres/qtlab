@@ -1,6 +1,6 @@
 import gobject
 import simplejson
-
+import sys
 import os
 
 import logging
@@ -129,9 +129,11 @@ def get_workdir():
 
 def get_tempdir():
     '''Get directory for temporary files.'''
-    dir = get_config().get('tempdir', None)
+    _config = get_config()
+    dir = _config.get('tempdir', None)
     if dir == None:
         dir = os.path.join(get_workdir(), 'tmp')
+        _config['tempdir'] = dir
     if not os.path.exists(dir):
         os.makedirs(dir)
     return dir
