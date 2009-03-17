@@ -1,6 +1,5 @@
 import gobject
 import simplejson
-import sys
 import os
 
 import logging
