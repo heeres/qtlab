@@ -4,7 +4,6 @@ import config
 from lib import temp
 
 _remove_lock = True
-temp.File.set_temp_dir(config.get_tempdir())
 
 def get_lockfile():
     return os.path.join(config.get_workdir(), 'qtlab.lock')

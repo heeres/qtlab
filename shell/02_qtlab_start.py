@@ -2,6 +2,7 @@ import types
 from instrument import Instrument
 from lib.gui.qtwindow import QTWindow
 from lib.misc import exact_time
+from lib import temp
 
 try:
     import psyco
@@ -15,6 +16,8 @@ from qt import plot, plot3, Plot2D, Plot3D, Data
 
 import numpy
 from numpy import linspace, arange, array, pi
+
+temp.File.set_temp_dir(qt.config.get_tempdir())
 
 # Set exception handler
 try:
