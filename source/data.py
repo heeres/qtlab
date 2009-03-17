@@ -247,155 +247,7 @@ class Data(ThreadSafeGObject):
     def __setitem__(self, index, val):
         self._data[index] = val
 
-    def add_coordinate(self, name, **kwargs):
-        '''
-        Add a coordinate dimension. Use add_value() to add a value dimension.
-
-        Input:
-            name (string): the name for this coordinate
-            kwargs: you can add any info here, but predefined are:
-                size (int): the size of this dimension
-                instrument (Instrument): instrument this coordinate belongs to
-                parameter (string): parameter of the instrument
-                units (string): units of this coordinate
-                precision (int): precision of stored data, default is
-                    'default_precision' from config, or 12 if not defined.
-                format (string): format of stored data, not used by default
-        '''
-
-        kwargs['name'] = name
-        kwargs['type'] = 'coordinate'
-        if 'size' not in kwargs:
-            kwargs['size'] = 0
-        self._ncoordinates += 1
-        self._dimensions.append(kwargs)
-
-    def add_value(self, name, **kwargs):
-        '''
-        Add a value dimension. Use add_dimension() to add a coordinate
-        dimension.
-
-        Input:
-            name (string): the name for this coordinate
-            kwargs: you can add any info here, but predefined are:
-                instrument (Instrument): instrument this coordinate belongs to
-                parameter (string): parameter of the instrument
-                units (string): units of this coordinate
-                precision (int): precision of stored data, default is
-                    'default_precision' from config, or 12 if not defined.
-                format (string): format of stored data, not used by default
-        '''
-        kwargs['name'] = name
-        kwargs['type'] = 'value'
-        self._nvalues += 1
-        self._dimensions.append(kwargs)
-
-    def add_comment(self, comment):
-        '''Add comment to the Data object.'''
-        self._comment.append(comment)
-
-    def get_comment(self):
-        '''Return the comment for the Data object.'''
-        return self._comment
-
-    def add_data_point(self, *args, **kwargs):
-        '''
-        Add a new data point to the data set (in memory and/or on disk).
-
-        Input:
-            *args:
-                n column values
-            **kwargs:
-                newblock (boolean): marks a new 'block' starts after this point
-
-        Output:
-            None
-        '''
-
-        if len(self._dimensions) == 0:
-            logging.warning('add_data_point(): no dimensions specified, adding according to data')
-            self._add_missing_dimensions(len(args))
-
-        if len(args) < len(self._dimensions):
-            logging.warning('add_data_point(): missing columns (%d < %d)' % \
-                (len(args), len(self._dimensions)))
-            return
-        elif len(args) > len(self._dimensions):
-            logging.warning('add_data_point(): too many columns (%d > %d)' % \
-                (len(args), len(self._dimensions)))
-            return
-
-        if self._inmem:
-            if len(self._data) == 0:
-                self._data = numpy.atleast_2d(args)
-            else:
-                self._data = numpy.append(self._data, [args], axis=0)
-
-        if self._infile:
-            self._write_data_line(args)
-
-        self._npoints += 1
-        self._npoints_last_block += 1
-        if self._npoints_last_block > self._npoints_max_block:
-            self._npoints_max_block = self._npoints_last_block
-
-        if 'newblock' in kwargs and kwargs['newblock']:
-            self.new_block()
-        else:
-            self.emit('new-data-point')
-
-    def new_block(self):
-        '''Start a new data block.'''
-
-        if self._infile:
-            self._file.write('\n')
-
-        self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
-        self._block_sizes.append(self._npoints_last_block)
-        self._npoints_last_block = 0
-
-        self.emit('new-data-block')
-
-    def get_data(self):
-        '''
-        Return data as a numpy.array.
-        '''
-
-        if not self._inmem and self._infile:
-            self._load_file()
-
-        if self._inmem:
-            return self._data
-        else:
-            return None
-
-    def set_data(self, data):
-        '''
-        Set data, can be a numpy.array or a list / tuple. The latter will be
-        converted to a numpy.array.
-        '''
-
-        if not isinstance(data, numpy.ndarray):
-            data = numpy.array(data)
-        self._data = data
-        self._inmem = True
-        self._infile = False
-        self._npoints = len(self._data)
-
-        # Add dimension information
-        if len(data.shape) == 1:
-            self.add_value('Y')
-        elif len(data.shape) == 2:
-            if data.shape[1] == 2:
-                self.add_coordinate('X')
-                self.add_value('Y')
-            elif data.shape[1] == 3:
-                self.add_coordinate('X')
-                self.add_coordinate('Y')
-                self.add_value('Z')
-            else:
-                for i in range(data.shape[1]):
-                    self.add_coordinate('col%d' % i)
+### Data info
 
     def get_dimensions(self):
         '''Return info for all dimensions.'''
@@ -487,6 +339,21 @@ class Data(ThreadSafeGObject):
 
         return label
 
+    def get_data(self):
+        '''
+        Return data as a numpy.array.
+        '''
+
+        if not self._inmem and self._infile:
+            self._load_file()
+
+        if self._inmem:
+            return self._data
+        else:
+            return None
+
+### File info
+
     def get_filename(self):
         return self._filename
 
@@ -509,183 +376,110 @@ class Data(ThreadSafeGObject):
         fn, ext = os.path.splitext(self.get_filepath())
         return fn + '.set'
 
-    def set_filepath(self, fp, inmem=True):
-        self._dir, self._filename = os.path.split(fp)
-        if inmem:
-            if self._load_file():
-                self._inmem = True
-            else:
-                self._inmem = False
+    def is_file_open(self):
+        '''Return whether a file is open or not.'''
 
-    def _type_added(self, name):
-        if name == 'coordinate':
-            self._ncoordinates += 1
-        elif name == 'values':
-            self._nvalues += 1
-
-    def _parse_meta_data(self, line):
-        m = self._META_STEPRE.match(line)
-        if m is not None:
-            self._dimensions.append(int(m.group(1)))
+        if self._file is not None:
             return True
-
-        m = self._META_COLRE.match(line)
-        if m is not None:
-            index = int(m.group(1))
-            if index > len(self._dimensions):
-                self._dimensions.append({})
-            return True
-
-        colnum = len(self._dimensions) - 1
-
-        for tagname, metainfo in self._METADATA_INFO.iteritems():
-            m = metainfo['re'].match(line)
-            if m is not None:
-                if metainfo['type'] == types.FloatType:
-                    self._dimensions[colnum][tagname] = float(m.group(1))
-                elif metainfo['type'] == types.IntType:
-                    self._dimensions[colnum][tagname] = int(m.group(1))
-                else:
-                    self._dimensions[colnum][tagname] = m.group(1)
-
-                if 'function' in metainfo:
-                    metainfo['function'](self, m.group(1))
-
-                return True
-
-        m = self._META_COMMENTRE.match(line)
-        if m is not None:
-            self._comment.append(m.group(1))
-
-    def _detect_dimensions_size(self):
-        ncoords = self.get_ncoordinates()
-        for colnum in range(ncoords):
-            if colnum >= len(self._dimensions):
-                return False
-
-            opt = self._dimensions[colnum]
-            if 'size' in opt and opt['size'] > 0:
-                dimsize = opt['size']
-            elif 'steps' in opt:
-                dimsize = opt['steps']
-            else:
-                vals = []
-                for i in xrange(len(self._data)):
-                    if self._data[i][colnum] not in vals:
-                        vals.append(self._data[i][colnum])
-                dimsize = len(vals)
-
-            logging.info('Column %d has size %d', colnum, dimsize)
-            opt['size'] = dimsize
-
-        if self._data is not None:
-            newshape = []
-            for colnum in range(ncoords):
-                opt = self._dimensions[colnum]
-                newshape.append(opt['size'])
-
-            newshape.append(self.get_ndimensions())
-            try:
-                self._data = self._data.reshape(newshape)
-                logging.warning('Data reshaped, but axis might be reversed.')
-            except Exception, e:
-                print 'Unable to reshape array: %s' % e
-
-        return True
-
-    def _add_missing_dimensions(self, nfields):
-        '''
-        Add extra dimensions so that the total equals nfields.
-        Only the last field will be tagged as a value, the rest will be
-        coordinates.
-        '''
-
-        # Add info for (assumed coordinate) columns that had no metadata
-        while self.get_ndimensions() < nfields - 1:
-            self.add_coordinate('col%d' % (self.get_ndimensions() + 1))
-
-        # Add info for (assumed value) column that had no metadata
-        if self.get_ndimensions() < nfields:
-            self.add_value('col%d' % (self.get_ndimensions() + 1))
-
-        # If types are not specified assume all except one are coordinates
-        if self.get_ncoordinates() == 0 and nfields > 1:
-            self._ncoordinates = nfields - 1
-            self._nvalues = 1
-
-    def _count_coord_val_dims(self):
-        self._ncoordinates = 0
-        self._nvalues = 0
-        for info in self._dimensions:
-            if info.get('type', 'coordinate') == 'coordinate':
-                self._ncoordinates += 1
-            else:
-                self._nvalues += 1
-        if self._nvalues == 0 and self._ncoordinates > 0:
-            self._nvalues = 1
-            self._ncoordinates -= 1
-
-    def _load_file(self):
-        """
-        Load data from file and store internally.
-        """
-
-        try:
-            f = file(self.get_filepath(), 'r')
-        except:
-            logging.warning('Unable to open file %s' % self.get_filepath())
+        else:
             return False
 
-        self._dimensions = []
-        self._values = []
-        self._comment = []
-        data = []
-        nfields = 0
+### Measurement info
 
-        self._block_sizes = []
-        self._npoints = 0
-        self._npoints_last_block = 0
-        self._npoints_max_block = 0
+    def add_coordinate(self, name, **kwargs):
+        '''
+        Add a coordinate dimension. Use add_value() to add a value dimension.
 
-        blocksize = 0
+        Input:
+            name (string): the name for this coordinate
+            kwargs: you can add any info here, but predefined are:
+                size (int): the size of this dimension
+                instrument (Instrument): instrument this coordinate belongs to
+                parameter (string): parameter of the instrument
+                units (string): units of this coordinate
+                precision (int): precision of stored data, default is
+                    'default_precision' from config, or 12 if not defined.
+                format (string): format of stored data, not used by default
+        '''
 
-        for line in f:
-            line = line.rstrip(' \n\t\r')
+        kwargs['name'] = name
+        kwargs['type'] = 'coordinate'
+        if 'size' not in kwargs:
+            kwargs['size'] = 0
+        self._ncoordinates += 1
+        self._dimensions.append(kwargs)
 
-            # Count blocks
-            if len(line) == 0 and len(data) > 0:
-                self._block_sizes.append(blocksize)
-                if blocksize > self._npoints_max_block:
-                    self._npoints_max_block = blocksize
-                blocksize = 0
+    def add_value(self, name, **kwargs):
+        '''
+        Add a value dimension. Use add_dimension() to add a coordinate
+        dimension.
 
-            # Strip comment
-            commentpos = line.find('#')
-            if commentpos != -1:
-                self._parse_meta_data(line)
-                line = line[:commentpos]
+        Input:
+            name (string): the name for this coordinate
+            kwargs: you can add any info here, but predefined are:
+                instrument (Instrument): instrument this coordinate belongs to
+                parameter (string): parameter of the instrument
+                units (string): units of this coordinate
+                precision (int): precision of stored data, default is
+                    'default_precision' from config, or 12 if not defined.
+                format (string): format of stored data, not used by default
+        '''
+        kwargs['name'] = name
+        kwargs['type'] = 'value'
+        self._nvalues += 1
+        self._dimensions.append(kwargs)
 
-            fields = line.split()
-            if len(fields) > nfields:
-                nfields = len(fields)
+    def add_comment(self, comment):
+        '''Add comment to the Data object.'''
+        self._comment.append(comment)
 
-            fields = [float(f) for f in fields]
-            if len(fields) > 0:
-                data.append(fields)
-                blocksize += 1
+    def get_comment(self):
+        '''Return the comment for the Data object.'''
+        return self._comment
 
-        self._add_missing_dimensions(nfields)
-        self._count_coord_val_dims()
+### File writing
 
-        self._data = numpy.array(data)
-        self._npoints = len(self._data)
-        self._inmem = True
+    def create_file(self, name=None, filepath=None, settings_file=True):
+        '''
+        Create a new data file and leave it open. In addition a
+        settings file is generated, unless settings_file=False is
+        specified.
 
-        self._npoints_last_block = blocksize
+        This function should be called after adding the comment and the
+        coordinate and value metadata, because it writes the file header.
+        '''
 
-        self._detect_dimensions_size()
+        if name is None and filepath is None:
+            name = self._name
+
+        if filepath is None:
+            self._dir = create_data_dir(qt.config['datadir'], \
+                name=name, ts=self._localtime)
+            self._filename = new_filename(name, ts=self._localtime)
+        else:
+            self._dir, self._filename = os.path.split(filepath)
+
+        try:
+            self._file = open(self.get_filepath(), 'w+')
+        except:
+            logging.error('Unable to open file')
+            return False
+
+        self._write_header()
+
+        if settings_file:
+            self._write_settings_file()
 
         return True
+
+    def close_file(self):
+        '''
+        Close open data file.
+        '''
+
+        if self._file is not None:
+            self._file.close()
+            self._file = None
 
     def _write_settings_file(self):
         fn = self.get_settings_filepath()
@@ -783,38 +577,18 @@ class Data(ThreadSafeGObject):
             self._write_data_line(vals)
             lastvals = vals
 
-    def create_file(self, name=None, filepath=None, settings_file=True):
-        '''
-        Create a new data file and leave it open. In addition a
-        settings file is generated, unless settings_file=False is
-        specified.
+### High-level file writing
 
-        This function should be called after adding the comment and the
-        coordinate and value metadata, because it writes the file header.
+    def write_file(self, name=None, filepath=None):
+        '''
+        Create and write a new data file.
         '''
 
-        if name is None and filepath is None:
-            name = self._name
+        if not self.create_file():
+            return
 
-        if filepath is None:
-            self._dir = create_data_dir(qt.config['datadir'], \
-                name=name, ts=self._localtime)
-            self._filename = new_filename(name, ts=self._localtime)
-        else:
-            self._dir, self._filename = os.path.split(filepath)
-
-        try:
-            self._file = open(self.get_filepath(), 'w+')
-        except:
-            logging.error('Unable to open file')
-            return False
-
-        self._write_header()
-
-        if settings_file:
-            self._write_settings_file()
-
-        return True
+        self._write_data()
+        self.close_file()
 
     def create_tempfile(self, path=None):
         '''
@@ -834,33 +608,277 @@ class Data(ThreadSafeGObject):
             self._filename = ''
             self._tempfile = False
 
-    def close_file(self):
+### Adding data
+
+    def add_data_point(self, *args, **kwargs):
         '''
-        Close open data file.
+        Add a new data point to the data set (in memory and/or on disk).
+
+        Input:
+            *args:
+                n column values
+            **kwargs:
+                newblock (boolean): marks a new 'block' starts after this point
+
+        Output:
+            None
         '''
 
-        if self._file is not None:
-            self._file.close()
-            self._file = None
+        if len(self._dimensions) == 0:
+            logging.warning('add_data_point(): no dimensions specified, adding according to data')
+            self._add_missing_dimensions(len(args))
 
-    def write_file(self, name=None, filepath=None):
-        '''
-        Create and write a new data file.
-        '''
-
-        if not self.create_file():
+        if len(args) < len(self._dimensions):
+            logging.warning('add_data_point(): missing columns (%d < %d)' % \
+                (len(args), len(self._dimensions)))
+            return
+        elif len(args) > len(self._dimensions):
+            logging.warning('add_data_point(): too many columns (%d > %d)' % \
+                (len(args), len(self._dimensions)))
             return
 
-        self._write_data()
-        self.close_file()
+        if self._inmem:
+            if len(self._data) == 0:
+                self._data = numpy.atleast_2d(args)
+            else:
+                self._data = numpy.append(self._data, [args], axis=0)
 
-    def is_file_open(self):
-        '''Return whether a file is open or not.'''
+        if self._infile:
+            self._write_data_line(args)
 
-        if self._file is not None:
-            return True
+        self._npoints += 1
+        self._npoints_last_block += 1
+        if self._npoints_last_block > self._npoints_max_block:
+            self._npoints_max_block = self._npoints_last_block
+
+        if 'newblock' in kwargs and kwargs['newblock']:
+            self.new_block()
         else:
+            self.emit('new-data-point')
+
+    def new_block(self):
+        '''Start a new data block.'''
+
+        if self._infile:
+            self._file.write('\n')
+
+        self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
+        self._block_sizes.append(self._npoints_last_block)
+        self._npoints_last_block = 0
+
+        self.emit('new-data-block')
+
+    def _add_missing_dimensions(self, nfields):
+        '''
+        Add extra dimensions so that the total equals nfields.
+        Only the last field will be tagged as a value, the rest will be
+        coordinates.
+        '''
+
+        # Add info for (assumed coordinate) columns that had no metadata
+        while self.get_ndimensions() < nfields - 1:
+            self.add_coordinate('col%d' % (self.get_ndimensions() + 1))
+
+        # Add info for (assumed value) column that had no metadata
+        if self.get_ndimensions() < nfields:
+            self.add_value('col%d' % (self.get_ndimensions() + 1))
+
+        # If types are not specified assume all except one are coordinates
+        if self.get_ncoordinates() == 0 and nfields > 1:
+            self._ncoordinates = nfields - 1
+            self._nvalues = 1
+
+### Set array data
+
+    def set_data(self, data):
+        '''
+        Set data, can be a numpy.array or a list / tuple. The latter will be
+        converted to a numpy.array.
+        '''
+
+        if not isinstance(data, numpy.ndarray):
+            data = numpy.array(data)
+        self._data = data
+        self._inmem = True
+        self._infile = False
+        self._npoints = len(self._data)
+
+        # Add dimension information
+        if len(data.shape) == 1:
+            self.add_value('Y')
+        elif len(data.shape) == 2:
+            if data.shape[1] == 2:
+                self.add_coordinate('X')
+                self.add_value('Y')
+            elif data.shape[1] == 3:
+                self.add_coordinate('X')
+                self.add_coordinate('Y')
+                self.add_value('Z')
+            else:
+                for i in range(data.shape[1]):
+                    self.add_coordinate('col%d' % i)
+
+### File reading
+
+    def _count_coord_val_dims(self):
+        self._ncoordinates = 0
+        self._nvalues = 0
+        for info in self._dimensions:
+            if info.get('type', 'coordinate') == 'coordinate':
+                self._ncoordinates += 1
+            else:
+                self._nvalues += 1
+        if self._nvalues == 0 and self._ncoordinates > 0:
+            self._nvalues = 1
+            self._ncoordinates -= 1
+
+    def _load_file(self):
+        """
+        Load data from file and store internally.
+        """
+
+        try:
+            f = file(self.get_filepath(), 'r')
+        except:
+            logging.warning('Unable to open file %s' % self.get_filepath())
             return False
+
+        self._dimensions = []
+        self._values = []
+        self._comment = []
+        data = []
+        nfields = 0
+
+        self._block_sizes = []
+        self._npoints = 0
+        self._npoints_last_block = 0
+        self._npoints_max_block = 0
+
+        blocksize = 0
+
+        for line in f:
+            line = line.rstrip(' \n\t\r')
+
+            # Count blocks
+            if len(line) == 0 and len(data) > 0:
+                self._block_sizes.append(blocksize)
+                if blocksize > self._npoints_max_block:
+                    self._npoints_max_block = blocksize
+                blocksize = 0
+
+            # Strip comment
+            commentpos = line.find('#')
+            if commentpos != -1:
+                self._parse_meta_data(line)
+                line = line[:commentpos]
+
+            fields = line.split()
+            if len(fields) > nfields:
+                nfields = len(fields)
+
+            fields = [float(f) for f in fields]
+            if len(fields) > 0:
+                data.append(fields)
+                blocksize += 1
+
+        self._add_missing_dimensions(nfields)
+        self._count_coord_val_dims()
+
+        self._data = numpy.array(data)
+        self._npoints = len(self._data)
+        self._inmem = True
+
+        self._npoints_last_block = blocksize
+
+        self._detect_dimensions_size()
+
+        return True
+
+    def _type_added(self, name):
+        if name == 'coordinate':
+            self._ncoordinates += 1
+        elif name == 'values':
+            self._nvalues += 1
+
+    def _parse_meta_data(self, line):
+        m = self._META_STEPRE.match(line)
+        if m is not None:
+            self._dimensions.append(int(m.group(1)))
+            return True
+
+        m = self._META_COLRE.match(line)
+        if m is not None:
+            index = int(m.group(1))
+            if index > len(self._dimensions):
+                self._dimensions.append({})
+            return True
+
+        colnum = len(self._dimensions) - 1
+
+        for tagname, metainfo in self._METADATA_INFO.iteritems():
+            m = metainfo['re'].match(line)
+            if m is not None:
+                if metainfo['type'] == types.FloatType:
+                    self._dimensions[colnum][tagname] = float(m.group(1))
+                elif metainfo['type'] == types.IntType:
+                    self._dimensions[colnum][tagname] = int(m.group(1))
+                else:
+                    self._dimensions[colnum][tagname] = m.group(1)
+
+                if 'function' in metainfo:
+                    metainfo['function'](self, m.group(1))
+
+                return True
+
+        m = self._META_COMMENTRE.match(line)
+        if m is not None:
+            self._comment.append(m.group(1))
+
+    def _detect_dimensions_size(self):
+        ncoords = self.get_ncoordinates()
+        for colnum in range(ncoords):
+            if colnum >= len(self._dimensions):
+                return False
+
+            opt = self._dimensions[colnum]
+            if 'size' in opt and opt['size'] > 0:
+                dimsize = opt['size']
+            elif 'steps' in opt:
+                dimsize = opt['steps']
+            else:
+                vals = []
+                for i in xrange(len(self._data)):
+                    if self._data[i][colnum] not in vals:
+                        vals.append(self._data[i][colnum])
+                dimsize = len(vals)
+
+            logging.info('Column %d has size %d', colnum, dimsize)
+            opt['size'] = dimsize
+
+        if self._data is not None:
+            newshape = []
+            for colnum in range(ncoords):
+                opt = self._dimensions[colnum]
+                newshape.append(opt['size'])
+
+            newshape.append(self.get_ndimensions())
+            try:
+                self._data = self._data.reshape(newshape)
+                logging.warning('Data reshaped, but axis might be reversed.')
+            except Exception, e:
+                print 'Unable to reshape array: %s' % e
+
+        return True
+
+    def set_filepath(self, fp, inmem=True):
+        self._dir, self._filename = os.path.split(fp)
+        if inmem:
+            if self._load_file():
+                self._inmem = True
+            else:
+                self._inmem = False
+
+### Misc
 
     def _stop_request_cb(self, sender):
         '''Called when qtflow emits a stop-request.'''
