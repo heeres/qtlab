@@ -133,8 +133,7 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._plot_dropdown = dropdowns.NamedListDropdown(qt.plots)
         self._plot_dropdown.connect('changed', self._plot_changed_cb)
 
-        list = qtgnuplot.Plot3D.get_styles()
-        self._styles_dropdown = dropdowns.StringListDropdown(list)
+        self._styles_dropdown = dropdowns.StringListDropdown([])
         self._styles_dropdown.connect('changed', self._style_changed_cb)
 
         list = qtgnuplot.Plot3D.get_palettes()
@@ -222,6 +221,7 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._ignore_changes = True
 
         self._current_plot = plot
+        self._styles_dropdown.set_items(plot.get_styles())
         info = plot.get_properties()
         if 'style' in info:
             self._styles_dropdown.set_item(info['style'])
@@ -238,7 +238,6 @@ class GnuplotWindow(qtwindow.QTWindow):
 
         self._axis_z.set_sensitive(zactive)
         self._axis_cb.set_sensitive(zactive)
-        self._styles_dropdown.set_sensitive(zactive)
         self._palette_dropdown.set_sensitive(zactive)
         self._gamma_spin.set_sensitive(zactive)
 

@@ -85,6 +85,9 @@ class _QTGnuPlot():
         'y2range': 'set y2range [%s:%s]\n',
         'zrange': 'set zrange [%s:%s]\n',
         'cbrange': 'set cbrange [%s:%s]\n',
+
+        'grid': 'set grid\n',
+        'datastyle': 'set style data %s\n',
     }
 
     def __init__(self):
@@ -104,9 +107,10 @@ class _QTGnuPlot():
 
         if type(val) is types.BooleanType:
             if val:
-                cmd = self._COMMAND_MAP[name] % ''
+                cmd = self._COMMAND_MAP[name]
             else:
-                cmd = 'un' + self._COMMAND_MAP[name] % ''
+                cmd = 'un' + self._COMMAND_MAP[name]
+            cmd = cmd.replace('%s', '')
         else:
             cmd = self._COMMAND_MAP[name] % val
 
@@ -191,7 +195,8 @@ class _QTGnuPlot():
 
     def save_png(self, **kwargs):
         '''Save png version of the plot'''
-        self.save_as_type('png size 1024,768', 'png', **kwargs)
+        font = kwargs.pop('font', '')
+        self.save_as_type('png %s size 1024,768' % font, 'png', **kwargs)
 
     def save_jpeg(self, **kwargs):
         '''Save jpeg version of the plot'''
@@ -244,24 +249,61 @@ class _QTGnuPlot():
     def is_busy(self):
         return not self._gnuplot.is_responding()
 
+    def set_grid(self, on=True, update=True):
+        self.set_property('grid', on, update=update)
+
+    def set_datastyle(self, style):
+        self.set_property('datastyle', style)
+
+    def get_styles(self):
+        styles = self._STYLES.keys()
+        styles.sort()
+        return styles
+
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
     Class to create line plots.
     '''
+
+    _STYLES = {
+        'lines': {'datastyle': 'lines'},
+        'points': {'datastyle': 'points'},
+        'linespoints': {'datastyle': 'linespoints'},
+    }
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
-        self.cmd('set grid')
-        self.cmd('set style data lines')
+        self.set_grid()
+        self.set_style('lines')
 
         self.set_labels(update=False)
         self.update()
 
     def set_property(self, *args, **kwargs):
         return _QTGnuPlot.set_property(self, *args, **kwargs)
+
+    def create_command(self, name, val):
+        if name == "style":
+            return ''
+        else:
+            return _QTGnuPlot.create_command(self, name, val)
+
+    def set_style(self, style, update=True):
+        '''Set plotting style.'''
+
+        if style is None:
+            style = qt.config.get('gnuplot2d_style', 'image3d')
+
+        if style not in self._STYLES:
+            logging.warning('Unknown style: %s', style)
+            return None
+
+        for k, v in self._STYLES[style].iteritems():
+            self.set_property(k, v, update=False)
+        self.set_property('style', style, update=update)
 
     def create_plot_command(self, fullpath=True, data_entry=None):
         '''
@@ -488,12 +530,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         else:
             return _QTGnuPlot.create_command(self, name, val)
-
-    @staticmethod
-    def get_styles():
-        styles = Plot3D._STYLES.keys()
-        styles.sort()
-        return styles
 
     def set_style(self, style, update=True):
         '''Set plotting style.'''
