@@ -40,8 +40,6 @@ class FlowControl(ThreadSafeGObject):
                 gobject.TYPE_NONE,()),
             'stop-request': (gobject.SIGNAL_RUN_FIRST,
                 gobject.TYPE_NONE,()),
-            'exit-request': (gobject.SIGNAL_RUN_FIRST,
-                gobject.TYPE_NONE,()),
     }
 
     STATUS_STOPPED = 0
