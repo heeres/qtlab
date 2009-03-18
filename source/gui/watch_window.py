@@ -26,7 +26,7 @@ import lib.gui as gui
 from lib.gui.qttable import QTTable
 from lib.gui import dropdowns, qtwindow
 
-from lib.calltimer import GObjectThread
+from lib.calltimer import GObjectThread, ThreadVariable
 
 class WatchThread(GObjectThread):
 
@@ -47,10 +47,16 @@ class WatchThread(GObjectThread):
         self._var = var
         self._delay = delay
 
+        self.paused = ThreadVariable(False)
+
     def run(self):
         avgtime = self._delay
 
         while not self.stop.get():
+            if self.paused.get():
+                time.sleep(delay)
+                continue
+
             start = time.time()
             val = self._ins.get(self._var)
             stop = time.time()
@@ -72,8 +78,11 @@ class WatchWindow(qtwindow.QTWindow):
     def __init__(self):
         qtwindow.QTWindow.__init__(self, 'watch', 'Watch')
         self.connect("delete-event", self._delete_event_cb)
+        qt.flow.connect('measurement-start', self._mstart_cb)
+        qt.flow.connect('measurement-end', self._mend_cb)
 
         self._watch = {}
+        self._paused = False
 
         self._frame = gtk.Frame()
         self._frame.set_label(_L('Add variable'))
@@ -94,9 +103,11 @@ class WatchWindow(qtwindow.QTWindow):
         self._add_button.connect('clicked', self._add_clicked_cb)
         self._remove_button = gtk.Button(_L('Remove'))
         self._remove_button.connect('clicked', self._remove_clicked_cb)
-
-        buttons = gui.pack_hbox([self._add_button, self._remove_button], \
-                False, False)
+        self._pause_button = gtk.ToggleButton(_L('Pause'))
+        self._pause_button.set_active(False)
+        self._pause_button.connect('clicked', self._toggle_pause_cb)
+        buttons = gui.pack_hbox([self._add_button, self._remove_button, \
+                self._pause_button], False, False)
 
         self._tree_model = gtk.ListStore(str, str, str)
         self._tree_view = QTTable([
@@ -122,11 +133,30 @@ class WatchWindow(qtwindow.QTWindow):
 
         vbox.show_all()
 
-        qt.flow.connect('exit-request', self._exit_request_cb)
+        qt.flow.register_exit_handler(self._exit_handler)
 
     def _delete_event_cb(self, widget, event, data=None):
         self.hide()
         return True
+
+    def set_paused(self, paused):
+        self._pause_button.set_active(paused)
+        self._paused = paused
+        for ins_param, info in self._watch.iteritems():
+            thread = info['thread']
+            thread.paused.set(paused)
+
+    def get_paused(self):
+        return self._paused
+
+    def _mstart_cb(self, sender):
+        self.set_paused(True)
+
+    def _mend_cb(self, sender):
+        self.set_paused(False)
+
+    def _toggle_pause_cb(self, sender):
+        self.set_paused(not self.get_paused())
 
     def _instrument_changed_cb(self, widget):
         ins = self._ins_combo.get_instrument()
@@ -187,7 +217,7 @@ class WatchWindow(qtwindow.QTWindow):
             thread.stop.set(True)
             del self._watch[ins_param]
 
-    def _exit_request_cb(self, sender):
+    def _exit_handler(self):
         print 'Closing watch threads...'
         for ins_param, info in self._watch.iteritems():
             thread = info['thread']

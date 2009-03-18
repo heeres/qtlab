@@ -52,6 +52,7 @@ class FlowControl(ThreadSafeGObject):
         self._status = 'stopped'
         self._measurements_running = 0
         self._abort = False
+        self._exit_handlers = []
 
     #########
     ### signals
@@ -148,9 +149,14 @@ class FlowControl(ThreadSafeGObject):
                 time.sleep(max(0, delay - dt))
                 return
 
+    def register_exit_handler(self, func):
+        if func not in self._exit_handlers:
+            self._exit_handlers.append(func)
+
     def exit_request(self):
-        '''Emit exit-request signal when exiting.'''
-        self.emit('exit-request')
+        '''Run all registered exit handlers.'''
+        for func in self._exit_handlers:
+            func()
 
     ############
     ### status
