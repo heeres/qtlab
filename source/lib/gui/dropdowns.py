@@ -401,7 +401,10 @@ class StringListDropdown(QTComboBox):
     def __init__(self, stringlist):
         self._items = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._items)
+        self.set_items(stringlist)
 
+    def set_items(self, stringlist):
+        self._items.clear()
         for item in stringlist:
             self._items.append([item])
 
