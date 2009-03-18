@@ -586,7 +586,7 @@ class Data(ThreadSafeGObject):
         Create and write a new data file.
         '''
 
-        if not self.create_file():
+        if not self.create_file(name=name, filepath=filepath):
             return
 
         self._write_data()
