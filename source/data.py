@@ -458,6 +458,8 @@ class Data(ThreadSafeGObject):
             self._filename = new_filename(name, ts=self._localtime)
         else:
             self._dir, self._filename = os.path.split(filepath)
+            if not os.path.isdir(self._dir):
+                os.makedirs(self._dir)
 
         try:
             self._file = open(self.get_filepath(), 'w+')
@@ -584,7 +586,7 @@ class Data(ThreadSafeGObject):
         Create and write a new data file.
         '''
 
-        if not self.create_file():
+        if not self.create_file(name=name, filepath=filepath):
             return
 
         self._write_data()
