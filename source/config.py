@@ -111,19 +111,15 @@ class QTConfig(gobject.GObject):
 
         self.emit('changed', {key: val})
 
-_config = None
-_work_dir = os.getcwd()
+    def get_all(self):
+        return self._config
 
 def get_config():
     '''Get configuration object.'''
-    global _config
-    if _config is None:
-        _config = QTConfig()
     return _config
 
 def get_workdir():
     '''Get work directory we started in.'''
-    global _work_dir
     return _work_dir
 
 def get_tempdir():
@@ -137,3 +133,7 @@ def get_tempdir():
         os.makedirs(dir)
     return dir
 
+_work_dir = os.getcwd()
+_config = QTConfig()
+_config['workdir'] = _work_dir
+get_tempdir()

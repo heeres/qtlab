@@ -17,7 +17,7 @@ from qt import plot, plot3, Plot2D, Plot3D, Data
 import numpy
 from numpy import linspace, arange, array, pi
 
-temp.File.set_temp_dir(qt.config.get_tempdir())
+temp.File.set_temp_dir(qt.config['tempdir'])
 
 # Set exception handler
 try:
