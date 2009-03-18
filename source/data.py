@@ -458,6 +458,8 @@ class Data(ThreadSafeGObject):
             self._filename = new_filename(name, ts=self._localtime)
         else:
             self._dir, self._filename = os.path.split(filepath)
+            if not os.path.isdir(self._dir):
+                os.makedirs(self._dir)
 
         try:
             self._file = open(self.get_filepath(), 'w+')
