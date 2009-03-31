@@ -1,6 +1,6 @@
 import numpy
-import Gnuplot
 import types
+from plot import plot as qtplot
 
 def plot(wfm, m=None):
     '''
@@ -14,15 +14,15 @@ def plot(wfm, m=None):
     else:
         raise ValueError("did not receive understandable waveform")
 
-    g = Gnuplot.Gnuplot()
-    #g('set style data linespoints')
-    g('set grid')
     if m is not None:
-        g.plot(Gnuplot.Data(wfm), Gnuplot.Data(m))
+        p = qtplot(wfm, name='AWG520',
+                xlabel='samle #', ylabel='amplitude (raw or volts)',
+                clear=True, update=False)
+        p = qtplot(m, name='AWG520')
     else:
-        g.plot(Gnuplot.Data(wfm))
-
-    raw_input('press return to exit')
+        p = qtplot(wfm, name='AWG520',
+                xlabel='samle #', ylabel='amplitude (raw or volts)',
+                clear=True)
 
 def create_edge(clock, risetime, risetype, from_level, to_level):
     '''
