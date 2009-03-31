@@ -22,6 +22,9 @@ import types
 import logging
 from time import sleep
 import struct
+import numpy
+
+import qt
 
 class HP_8753C(Instrument):
     '''
@@ -59,6 +62,7 @@ class HP_8753C(Instrument):
         # BEWARE! in case of low IFWB, it might be
         # necessary to add additional delay
         # ( ~ numpoints / IFBW ) yourself!
+        # see for example get_trace()
 
         self._visainstrument.send_end = False
         self._visainstrument.term_chars = ''
@@ -121,22 +125,6 @@ class HP_8753C(Instrument):
 
         print 'set trigger hold'
         self.set_trigger_hold()
-        sleep(sl)
-
-        print 'set correction off'
-        self.set_correction_off()
-        sleep(sl)
-        print 'set averaging off'
-        self.set_average_off()
-        sleep(sl)
-        print 'set smoothing off'
-        self.set_smooth_off()
-        sleep(sl)
-        print 'set conversion off'
-        self.set_conversion_off()
-        sleep(sl)
-        print 'set trigger exttoff'
-        self.set_trigger_exttoff()
         sleep(sl)
 
         print 'set format logm'
@@ -213,6 +201,88 @@ class HP_8753C(Instrument):
         data = self._visainstrument.ask('FORM2;DISPDATA;OUTPFORM;')
         d = [struct.unpack('>f', data[i:i+4])[0] for i in range(4, len(data),8)]
         return d
+
+### Functions for doing measurements
+
+    def get_trace(self):
+        '''
+        This function performs a full measurement.
+        First a trigger is sent to initiate a sweep.
+        An estimate is made of the time the sweep takes.
+        After the estimated time the data is queried from
+        the device. Usually the estimated time is a bit
+        lower then the actual time, the device will
+        respond as soon as it is finished.
+        It is assumed that the instrument is already on
+        'trigger hold'-mode.
+
+        Input:
+            None
+
+        Ouptput:
+            freqs (array of floats):    The frequencies at which the
+                                        reflection / transmission was
+                                        measured
+            reply (arrray of foats):    Measured data
+
+        '''
+        qt.mstart()
+
+        startfreq = self.get_start_freq(query=False)
+        stopfreq = self.get_stop_freq(query=False)
+        numpoints = self.get_numpoints(query=False)
+        IF_Bandwidth = self.get_IF_Bandwidth(query=False)
+
+        freqs = numpy.linspace(startfreq,stopfreq,numpoints)
+        sweep_time = numpoints / IF_Bandwidth
+
+        print 'sending trigger to network analyzer, and wait to finish'
+        print 'estimated waiting time: %.2f s' % sweep_time
+        self.send_trigger()
+        qt.msleep(sweep_time)
+
+        print 'reading out network analyzer'
+        reply = self.read()
+        reply = numpy.array(reply)
+
+        qt.mend()
+
+        return (freqs, reply)
+
+    def save_trace(self, filepath=None, plot=True):
+        '''
+        runs 'get_trace()' and saves the output to a file.
+
+        Input:
+            filepath (string):  Path to where the file should be saved.(optional)
+
+        Output:
+            filepath (string):  The filepath where the file has been created.
+        '''
+        #TODO: change value label 'S_ij' to represent actual measurement
+        freqs, reply = self.get_trace()
+        d = qt.Data(name='netan')
+        d.add_coordinate('freq [Hz]')
+        d.add_value('S_ij [dB]')
+        d.create_file(filepath=filepath)
+        d.add_data_point(zip(freqs, reply))
+        d.close_file()
+        if plot:
+            p = qt.plot(d, name='netan', clear=True)
+            p.save_png()
+            p.save_gp()
+        return d.get_filepath()
+
+    def plot_trace(self):
+        '''
+        performs a measurement and plots the data.
+        '''
+        freqs, reply = self.get_trace()
+        qt.plot(freqs, reply, name='netan',
+                xlabel='freq [Hz]', ylabel='S_ij [dB]',
+                clear=True)
+
+### Functions for changing measurement settings
 
     def set_freq_3GHz(self):
         '''
@@ -383,7 +453,7 @@ class HP_8753C(Instrument):
             None
         '''
         self._visainstrument.write('CORROFF;CORIOFF;')
- 
+
 
 ### parameters
 
