@@ -154,6 +154,10 @@ class Plot(gobject.GObject):
         '''Set label for z/color axis.'''
         self.set_property('zlabel', val, update=update)
 
+    def set_cblabel(self, val, update=True):
+        '''Set label for z/color axis.'''
+        self.set_property('cblabel', val, update=update)
+
     def set_xlog(self, val, update=True):
         '''Set log scale on left x axis.'''
         self.set_property('xlog', val, update=update)
@@ -342,6 +346,10 @@ class Plot2D(Plot):
         globalx = kwargs.get('x', None)
         update = kwargs.get('update', True)
         setlabels = kwargs.get('setlabels', True)
+        xlabel = kwargs.get('xlabel', '')
+        x2label = kwargs.get('x2label', '')
+        ylabel = kwargs.get('ylabel', '')
+        y2label = kwargs.get('y2label', '')
 
         # Clear plot if requested
         clear = kwargs.get('clear', False)
@@ -362,16 +370,19 @@ class Plot2D(Plot):
                     if globalx is not None:
                         y = args[i]
                         data = numpy.column_stack((globalx, y))
+                        i += 1
                     elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
                         x = args[i]
                         y = args[i + 1]
                         data = numpy.column_stack((x, y))
-                        i += 1
+                        i += 2
                     else:
                         data = args[i]
+                        i += 1
 
                 elif len(args[i].shape) == 2 and args[i].shape[1] == 2:
                     data = args[i]
+                    i += 1
 
                 else:
                     print 'Unable to plot array of shape %r' % (args[i].shape)
@@ -381,14 +392,13 @@ class Plot2D(Plot):
                 tmp = self.get_needtempfile()
                 data = Data(data=data, tempfile=tmp)
                 self.add_data(data, coorddim=coorddim, valdim=valdim)
-                i += 1
 
             else:
                 print 'Unhandled argument: %r' % args[i]
                 i += 1
 
         if setlabels:
-            self.set_labels(update=False)
+            self.set_labels(left=ylabel, bottom=xlabel, right=y2label, top=x2label, update=False)
         if update:
             self.update()
 
@@ -409,13 +419,11 @@ class Plot2D(Plot):
         if left == '':
             left = 'Y'
         self.set_ylabel(left, update=False)
-        if right != '':
-            self.set_y2label(right, update=False)
+        self.set_y2label(right, update=False)
         if bottom == '':
             bottom = 'X'
         self.set_xlabel(bottom, update=False)
-        if top != '':
-            self.set_x2label(top, update=False)
+        self.set_x2label(top, update=False)
 
         if update:
             self.update()
@@ -473,6 +481,10 @@ class Plot3D(Plot):
         globalx = kwargs.get('x', None)
         globaly = kwargs.get('y', None)
         update = kwargs.get('update', True)
+        setlabels = kwargs.get('setlabels', True)
+        xlabel = kwargs.get('xlabel', '')
+        ylabel = kwargs.get('ylabel', '')
+        zlabel = kwargs.get('zlabel', '')
 
         # Clear plot if requested
         clear = kwargs.get('clear', False)
@@ -493,9 +505,11 @@ class Plot3D(Plot):
                     if globalx is not None and globaly is not None:
                         z = args[i]
                         data = numpy.column_stack((globalx, globaly, z))
+                        i += 1
                     elif globalxy is not None:
                         z = args[i]
                         data = numpy.column_stack((globalxy, z))
+                        i += 1
                     elif i + 2 < len(args) and \
                             type(args[i+1]) is numpy.ndarray and \
                             type(args[i+2]) is numpy.ndarray:
@@ -503,12 +517,14 @@ class Plot3D(Plot):
                         y = args[i + 1]
                         z = args[i + 2]
                         data = numpy.column_stack((x, y, z))
-                        i += 1
+                        i += 3
                     else:
                         data = args[i]
+                        i += 1
 
                 elif len(args[i].shape) == 2 and args[i].shape[1] == 3:
                     data = args[i]
+                    i += 1
 
                 else:
                     print 'Unable to plot array of shape %r' % (args[i].shape)
@@ -518,12 +534,13 @@ class Plot3D(Plot):
                 tmp = self.get_needtempfile()
                 data = Data(data=data, tempfile=tmp)
                 self.add_data(data, coorddims=coorddims, valdim=valdim)
-                i += 1
 
             else:
                 print 'Unhandled argument: %r' % args[i]
                 i += 1
 
+        if setlabels:
+            self.set_labels(x=xlabel, y=ylabel, z=zlabel, update=False)
         if update:
             self.update()
 
@@ -550,13 +567,14 @@ class Plot3D(Plot):
         self.set_ylabel(y, update=False)
         if z == '':
             z = 'Z'
-            self.set_zlabel(z, update=False)
+        self.set_zlabel(z, update=False)
+        self.set_cblabel(z, update=False)
 
         if update:
             self.update()
 
 def _get_plot_options(i, *args):
-    return ()
+    return () # FIXME
 
 def plot(*args, **kwargs):
     '''
