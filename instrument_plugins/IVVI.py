@@ -22,6 +22,7 @@ import types
 import pyvisa.vpp43 as vpp43
 from time import sleep
 import logging
+import numpy
 
 class IVVI(Instrument):
     '''
@@ -36,8 +37,6 @@ class IVVI(Instrument):
     1) fix changing all polarities instead of only the first 8
     2) explain everything /rewrite init
     '''
-
-    #FIXME: self._askdacs stuff is messy!
 
     def __init__(self, name, address, reset=False, numdacs=8,
         polarity=['BIP', 'BIP', 'BIP', 'BIP']):
@@ -60,41 +59,38 @@ class IVVI(Instrument):
 
         # Set parameters
         self._address = address
-        self._numdacs = numdacs
+        if numdacs / 4 * 4 == numdacs and numdacs > 0:
+            self._numdacs = numdacs
+        else:
+            logging.error(__name__ + ' : specified number of dacs needs to be multiple of 4')
         self.pol_num = range(self._numdacs)
 
         # Add functions
         self.add_function('reset')
         self.add_function('get_all')
-        self._askdacs = False # what does this do?
+        self.add_function('set_dacs_zero')
 
         # Create functions to set the dacpolarity for each set of dacs, and add them to the wrapper
+        self.add_parameter('pol_dacrack',
+            type=types.StringType,
+            channels=(1, self._numdacs/4),
+            flags=Instrument.FLAG_SET)
+
+        self._setdacbounds = False
         for j in range(numdacs / 4):
-            tekst = "pol_dacs_%s_to_%s" % (str(4*j+1), str(4*j+4))
-            self.add_parameter(tekst, type=types.StringType,
-                flags=Instrument.FLAG_SET)
-            getattr(self, "set_" + tekst)(polarity[j])
+            self.set('pol_dacrack%d' % (j+1), polarity[j])
+        self._setdacbounds = True
 
         # Add the rest of the parameters
-        self.add_parameter('dac', type=types.FloatType,
+        self.add_parameter('dac',
+            type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             channels=(1, self._numdacs),
-            minval=self.pol_num[0] * 1000.0,
-            maxval=self.pol_num[0] * 1000.0 + 4000.0,
+            minval=self.pol_num[0],
+            maxval=self.pol_num[0] + 4000.0,
             maxstep=10, stepdelay=50,
             units='mV', format='%.02f',
             tags=['sweep'])
-
-        self._askdacs = True
-
-        self.add_parameter('pol_dac', type=types.StringType,
-            flags=Instrument.FLAG_GET, channels=(1, self._numdacs))
-
-        for j in range(numdacs/4):
-            tekst = "pol_dacs_%s_to_%s" % (str(4*j+1),str(4*j+4))
-            getattr(self, "set_" + tekst)(polarity[j])
-
-        self.add_function('set_dacs_zero')
 
         self._open_serial_connection()
 
@@ -166,8 +162,7 @@ class IVVI(Instrument):
             None
         '''
         logging.info(__name__ + ' : resetting instrument')
-        for i in range(1, self._numdacs + 1):
-            getattr(self, "set_dac" + str(i))(0.0)
+        self.set_dacs_zero()
         self.get_all()
 
     def get_all(self):
@@ -182,24 +177,27 @@ class IVVI(Instrument):
             None
         '''
         logging.info(__name__ + ' : get all')
-        for i in range(1, self._numdacs + 1):
-            getattr(self, "get_dac" + str(i))()
-            getattr(self, "get_pol_dac" + str(i))()
+        for i in range(self._numdacs):
+            self.get('dac%d' % (i+1))
+
+    def set_dacs_zero(self):
+        for i in range(self._numdacs):
+            self.set('dac%d' % (i+1), 0)
 
     # Conversion of data
-    def _voltage_to_bytes(self, voltage):
+    def _mvoltage_to_bytes(self, mvoltage):
         '''
-        Converts a voltage on a 0V-4V scale to a 16-bit integer equivalent
+        Converts a mvoltage on a 0mV-4000mV scale to a 16-bit integer equivalent
         output is a list of two bytes
 
         Input:
-            voltage (float) : a voltage in the 0V-4V range
+            mvoltage (float) : a mvoltage in the 0mV-4000mV range
 
         Output:
             (dataH, dataL) (int, int) : The high and low value byte equivalent
         '''
-        logging.debug(__name__ + ' : Converting %f Volts to bytes' % voltage)
-        bytevalue = int(round(voltage/4.0*65535))
+        logging.debug(__name__ + ' : Converting %f mVolts to bytes' % mvoltage)
+        bytevalue = int(round(mvoltage/4000.0*65535))
         dataH = int(bytevalue/256)
         dataL = bytevalue - dataH*256
         return (dataH, dataL)
@@ -207,12 +205,12 @@ class IVVI(Instrument):
     def _numbers_to_mvoltages(self, numbers):
         '''
         Converts a list of bytes to a list containing
-        the corresponding voltages
+        the corresponding mvoltages
         '''
-        logging.debug(__name__ + ' : Converting numbers to voltages')
+        logging.debug(__name__ + ' : Converting numbers to mvoltages')
         values = range(self._numdacs)
         for i in range(self._numdacs):
-            values[i] = ((numbers[2 + 2*i]*256 + numbers[3 + 2*i])/65535.0*4.0+self.pol_num[i]) * 1000.0
+            values[i] = ((numbers[2 + 2*i]*256 + numbers[3 + 2*i])/65535.0*4000.0) + self.pol_num[i]
         return values
 
     # Communication with device
@@ -227,7 +225,7 @@ class IVVI(Instrument):
             voltage (float) : dacvalue in mV
         '''
         logging.debug(__name__ + ' : reading voltage from dac%s' % channel)
-        mvoltages = self._get_dac()
+        mvoltages = self._get_dacs()
         return mvoltages[channel - 1]
 
     def _do_set_dac(self, mvoltage, channel):
@@ -243,12 +241,12 @@ class IVVI(Instrument):
         '''
         logging.debug(__name__ + ' : setting voltage of dac%s to %.01f mV' % \
             (channel, mvoltage))
-        (DataH, DataL) = self._voltage_to_bytes(mvoltage / 1000.0 - self.pol_num[channel-1])
+        (DataH, DataL) = self._mvoltage_to_bytes(mvoltage - self.pol_num[channel-1])
         message = "%c%c%c%c%c%c%c" % (7, 0, 2, 1, channel, DataH, DataL)
         reply = self._send_and_read(message)
         return reply
 
-    def _get_dac(self):
+    def _get_dacs(self):
         '''
         Reads from device and returns all dacvoltages in a list
 
@@ -259,7 +257,7 @@ class IVVI(Instrument):
             voltages (float[]) : list containing all dacvoltages (in mV)
         '''
         logging.debug(__name__ + ' : getting dac voltages from instrument')
-        message = "%c%c%c%c" % (4, 0, 18, 2)
+        message = "%c%c%c%c" % (4, 0, self._numdacs*2+2, 2)
         reply = self._send_and_read(message)
         mvoltages = self._numbers_to_mvoltages(reply)
         return mvoltages
@@ -288,81 +286,80 @@ class IVVI(Instrument):
 
         return data_out_numbers
 
- #    Base functions to handle the polarity
-    def _do_set_pol_dacs_1_to_4(self, flag): # MC fixme
-        '''
-        Sets the polarity of the first 4 dacs in the designated mode
-
-        Input:
-            flag (string) : 'BIP', 'POS' or 'NEG'
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : set polarity of dacs 1 to 4 to %s' % flag)
-        self._change_pol_dacrack(flag, 0)
-
-    def _do_set_pol_dacs_5_to_8(self, flag):
-        '''
-        Sets the polarity of the second 4 dacs in the designated mode
-
-        Input:
-            flag (string) : 'BIP', 'POS' or 'NEG'
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : set polarity of dacs 5 to 8 to %s' % flag)
-        self._change_pol_dacrack(flag, 1)
-
-    def _change_pol_dacrack(self, flag, rack):
+    def _do_set_pol_dacrack(self, flag, channel):
         '''
         Changes the polarity of the specified set of dacs
 
         Input:
             flag (string) : 'BIP', 'POS' or 'NEG'
-            rack (int) : 0 based index of the rack
+            channel (int) : 0 based index of the rack
 
         Output:
             None
         '''
-        logging.debug(__name__ + ' :  setting polarity of rack %d to %s' % (rack, flag))
-        for i in range(4*(rack),4*(rack+1)):
+        logging.debug(__name__ + ' :  setting polarity of rack %d to %s' % (channel, flag))
+        for i in range(4*(channel-1),4*(channel)):
             if (flag.upper() == 'NEG'):
-                self.pol_num[i] = -4
+                self.pol_num[i] = -4000
             elif (flag.upper() == 'BIP'):
-                self.pol_num[i] = -2
+                self.pol_num[i] = -2000
             elif (flag.upper() == 'POS'):
                 self.pol_num[i] = 0
             else:
                 logging.error(__name__ + ' : Try to set invalid dacpolarity')
 
-            if (self._askdacs):
-                self.set_parameter_bounds('dac' + str(i+1), self.pol_num[i] * 1000.0,
-                    4000.0 + self.pol_num[i] * 1000.0)
+            if self._setdacbounds:
+                self.set_parameter_bounds('dac' + str(i+1),
+                        self.pol_num[i], self.pol_num[i] + 4000.0)
 
-    def _do_get_pol_dac(self, channel):
+        if self._setdacbounds:
+            self.get_all()
+
+    def get_pol_dac(self, dacnr):
         '''
         Returns the polarity of the dac channel specified
 
         Input:
-            channel (int) : 1 based index of the dac
+            dacnr (int) : 1 based index of the dac
 
         Output:
             polarity (string) : 'BIP', 'POS' or 'NEG'
         '''
-        logging.debug(__name__ + ' : getting polarity of dac %d' % channel)
-        val = self.pol_num[channel-1]
+        logging.debug(__name__ + ' : getting polarity of dac %d' % dacnr)
+        val = self.pol_num[dacnr-1]
 
-        if (val == -4):
+        if (val == -4000):
             return 'NEG'
-        elif (val == -2):
+        elif (val == -2000):
             return 'BIP'
         elif (val == 0):
             return 'POS'
         else:
             return 'Invalid polarity in memory'
 
-    def set_dacs_zero(self):
-        for i in xrange(self._numdacs):
-            self.set('dac%d' % (i + 1), 0)
+    def byte_limited_arange(self, start, stop, step=1, pol=None, dacnr=None):
+        '''
+        Creates array of mvoltages, in integer steps of the dac resolution. Either
+        the dac polarity, or the dacnr needs to be specified.
+        '''
+        if pol is not None and dacnr is not None:
+            logging.error('byte_limited_arange: speficy "pol" OR "dacnr", NOT both!')
+        elif pol is None and dacnr is None:
+            logging.error('byte_limited_arange: need to specify "pol" or "dacnr"')
+        elif dacnr is not None:
+            pol = self.get_pol_dac(dacnr)
+
+        if (pol.upper() == 'NEG'):
+            polnum = -4000
+        elif (pol.upper() == 'BIP'):
+            polnum = -2000
+        elif (pol.upper() == 'POS'):
+            polnum = 0
+        else:
+            logging.error(__name__ + ' : Try to set invalid dacpolarity')
+
+        start_byte = int(round((start-polnum)/4000.0*65535))
+        stop_byte = int(round((stop-polnum)/4000.0*65535))
+        byte_vec = numpy.arange(start_byte, stop_byte+1, step)
+        mvolt_vec = byte_vec/65535.0 * 4000.0 + polnum
+        return mvolt_vec
