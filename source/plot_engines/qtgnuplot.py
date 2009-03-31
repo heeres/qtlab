@@ -233,7 +233,6 @@ class _QTGnuPlot():
         '''
         Perform an update of the plot.
         '''
-
         cmd = self.create_plot_command()
         self.cmd(cmd)
         return True
@@ -667,3 +666,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def is_busy(self):
         return _QTGnuPlot.is_busy(self)
+
+def get_gnuplot(name=None):
+    return _QTGnuPlot.get(name=name)
+
+def get_gnuplot_list():
+    return _QTGnuPlot.get_named_list()
