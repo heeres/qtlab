@@ -1,3 +1,3 @@
-#qt.config['datadir'] = 'd:/data/'
-#os.chdir('PATH')
+if qt.config['startdir'] is not None:
+    os.chdir(qt.config['startdir'])
 

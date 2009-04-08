@@ -124,7 +124,6 @@ def get_workdir():
 
 def get_tempdir():
     '''Get directory for temporary files.'''
-    _config = get_config()
     dir = _config.get('tempdir', None)
     if dir == None:
         dir = os.path.join(get_workdir(), 'tmp')
@@ -137,3 +136,7 @@ _work_dir = os.getcwd()
 _config = QTConfig()
 _config['workdir'] = _work_dir
 get_tempdir()
+
+# Load user defined configuration
+if os.path.exists('userconfig.py'):
+    execfile('userconfig.py', {'config': _config})
