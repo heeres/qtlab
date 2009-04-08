@@ -17,7 +17,7 @@
 
 import gtk
 import gobject
-
+import logging
 from gettext import gettext as _L
 
 import qt
