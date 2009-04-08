@@ -135,8 +135,9 @@ def get_tempdir():
 _work_dir = os.getcwd()
 _config = QTConfig()
 _config['workdir'] = _work_dir
-get_tempdir()
 
 # Load user defined configuration
 if os.path.exists('userconfig.py'):
     execfile('userconfig.py', {'config': _config})
+
+get_tempdir()
