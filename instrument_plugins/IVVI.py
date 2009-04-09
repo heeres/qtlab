@@ -77,22 +77,23 @@ class IVVI(Instrument):
             flags=Instrument.FLAG_SET)
 
         self._setdacbounds = False
-        for j in range(numdacs / 4):
-            self.set('pol_dacrack%d' % (j+1), polarity[j])
-        self._setdacbounds = True
 
         # Add the rest of the parameters
         self.add_parameter('dac',
             type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             channels=(1, self._numdacs),
-            minval=self.pol_num[0],
-            maxval=self.pol_num[0] + 4000.0,
+            minval=0,
+            maxval=0,
             maxstep=10, stepdelay=50,
             units='mV', format='%.02f',
             tags=['sweep'])
 
         self._open_serial_connection()
+
+        self._setdacbounds = True
+        for j in range(numdacs / 4):
+            self.set('pol_dacrack%d' % (j+1), polarity[j])
 
         if reset:
             self.reset()
