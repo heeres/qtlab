@@ -162,7 +162,7 @@ class HP_33120A(Instrument):
 
 # Shape
 
-    def set_funtion_shape(self, shape):
+    def set_function_shape(self, shape):
         '''
         shape : { SIN, SQU, TRI, RAMP, NOIS, DC, USER }
         '''
