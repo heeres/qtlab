@@ -294,7 +294,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         '''Set plotting style.'''
 
         if style is None:
-            style = qt.config.get('gnuplot2d_style', 'image3d')
+            style = qt.config.get('gnuplot2d_style', 'lines')
 
         if style not in self._STYLES:
             logging.warning('Unknown style: %s', style)
