@@ -23,3 +23,6 @@ gui.positioner_window.PositionerWindow()
 #import gui.source_window
 #gui.source_window.SourceWindow()
 
+import gui.data_window
+gui.data_window.DataWindow()
+
