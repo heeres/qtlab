@@ -25,6 +25,7 @@ import sys
 import instrument
 
 import config
+from insproxy import Proxy
 
 def _get_driver_module(modname):
     name = 'instrument_plugins.%s' % modname
@@ -90,7 +91,7 @@ class Instruments(gobject.GObject):
         info['changed_hid'] = ins.connect('changed', self._instrument_changed_cb)
         info['removed_hid'] = ins.connect('removed', self._instrument_removed_cb)
         info['reload_hid'] = ins.connect('reload', self._instrument_reload_cb)
-        self._instruments[ins.get_name()] = ins
+        self._instruments[ins.get_name()] = Proxy(ins)
         self._instruments_info[ins.get_name()] = info
 
         newtags = []
@@ -109,7 +110,7 @@ class Instruments(gobject.GObject):
         Output: Instrument object
         '''
 
-        if isinstance(name, instrument.Instrument):
+        if isinstance(name, instrument.Instrument) or isinstance(name, Proxy):
             return name
 
         if type(name) == types.TupleType:
