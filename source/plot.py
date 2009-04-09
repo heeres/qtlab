@@ -596,6 +596,8 @@ def plot(*args, **kwargs):
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
+    elif kwargs.pop('clear', False):
+        graph.clear()
 
     graph.add(*args, **kwargs)
 
@@ -621,6 +623,8 @@ def plot3(*args, **kwargs):
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot3D(name=plotname)
+    elif kwargs.pop('clear', False):
+        graph.clear()
 
     graph.add(*args, **kwargs)
 
