@@ -55,6 +55,8 @@ class MainWindow(qtwindow.QTWindow):
         self._liveplot_but = gtk.ToggleButton(_L('Live Plotting'))
         self._liveplot_but.set_active(qt.config.get('auto-update', True))
         self._liveplot_but.connect('clicked', self._toggle_liveplot_cb)
+        self._replot_but = gtk.Button(_L('Replot'))
+        self._replot_but.connect('clicked', self._toggle_replot_cb)
         self._stop_but = stopbutton.StopButton()
 
         self._window_button_vbox = gtk.VBox()
@@ -62,6 +64,7 @@ class MainWindow(qtwindow.QTWindow):
 
         v1 = gui.pack_vbox([
             self._liveplot_but,
+            self._replot_but,
             self._stop_but,
             self._window_button_vbox])
 
@@ -122,3 +125,5 @@ class MainWindow(qtwindow.QTWindow):
     def _toggle_liveplot_cb(self, widget):
         qt.config.set('auto-update', not qt.config.get('auto-update'))
 
+    def _toggle_replot_cb(self, widget):
+        qt.replot_all()

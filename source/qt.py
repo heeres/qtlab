@@ -6,7 +6,7 @@ from qtflow import get_flowcontrol
 from instruments import get_instruments
 import config as _config
 from data import Data
-from plot import Plot, plot, plot3
+from plot import Plot, plot, plot3, replot_all
 from lib.gui.qtwindow import QTWindow
 
 config = _config.get_config()
