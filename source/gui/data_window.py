@@ -50,6 +50,7 @@ class DataWindow(qtwindow.QTWindow):
         self._plot3d_button.connect('clicked', self._plot3d_clicked_cb)
         self._plot_name = gtk.Entry()
         self._plot_name.set_text('databrowser')
+        self._plot_style = gtk.Entry()
         self._clear_check = gtk.CheckButton()
         self._clear_check.set_active(True)
         self._clear_button = gtk.Button(_L('Clear'))
@@ -61,9 +62,12 @@ class DataWindow(qtwindow.QTWindow):
         hbox2 = gtk.HBox(spacing=10)
         hbox2.pack_start(gtk.Label(_L('Clear')), False, False)
         hbox2.pack_start(self._clear_check, False, True)
+        hbox3 = gtk.HBox(spacing=10)
+        hbox3.pack_start(gtk.Label(_L('Style')), False, False)
+        hbox3.pack_start(self._plot_style, False, True)
 
         self._plot_box = gui.pack_vbox([
-            hbox1, hbox2,
+            hbox1, hbox2, hbox3,
             gui.pack_hbox([self._plot2d_button, self._plot3d_button,
                 self._clear_button], True, True),
             ], True, True)
@@ -98,7 +102,8 @@ class DataWindow(qtwindow.QTWindow):
         vbox.pack_start(self._plot_frame, False, False)
         vbox.pack_start(self._views_hbox, True, True)
         self.add(vbox)
-        self.show_all()
+
+        vbox.show_all()
 
     def _delete_event_cb(self, widget, event, data=None):
         self.hide()
@@ -174,11 +179,13 @@ class DataWindow(qtwindow.QTWindow):
 
     def _plot2d_clicked_cb(self, sender):
         name = self._plot_name.get_text()
+        style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
         files = self._get_selected_files()
         for fn in files:
-            d = qt.Data(self._entry_map[fn].get_filename())
-            qt.plot(d, name=name, clear=clear)
+            fullfn = self._entry_map[fn].get_filename()
+            d = qt.Data(fullfn)
+            qt.plot(d, style, name=name, clear=clear)
 
     def _plot3d_clicked_cb(self, sender):
         name = self._plot_name.get_text()
