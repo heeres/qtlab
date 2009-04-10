@@ -23,12 +23,42 @@ import os
 import logging
 import sys
 import instrument
-
-import config
+from config import get_config
 from insproxy import Proxy
 
-def _get_driver_module(modname):
-    name = 'instrument_plugins.%s' % modname
+def _set_insdir():
+    dir = os.path.join(_config['workdir'], 'instrument_plugins')
+    sys.path.append(dir)
+    return dir
+
+def _set_user_insdir():
+    '''
+    Setting directory for user-specific instruments.
+    For this config['user_insdir'] needs to be defined.
+    '''
+
+    dir = _config['user_insdir']
+
+    if dir is None:
+        return None
+
+    if not os.path.isdir(dir):
+        _config['user_insdir'] = None
+        logging.warning(__name__ + ' : "%s" is not a valid path for user_insdir, setting to None' % dir)
+        return None
+
+    absdir = os.path.abspath(dir)
+    _config['user_insdir'] = absdir
+
+    if sys.path.count(absdir) != 0:
+        return absdir
+    else:
+        idx = sys.path.index(_insdir)
+        sys.path.insert(idx, absdir)
+        return absdir
+
+def _get_driver_module(name):
+
     if name in sys.modules:
         return sys.modules[name]
 
@@ -104,8 +134,8 @@ class Instruments(gobject.GObject):
 
     def get(self, name):
         '''
-        Return Instrument object with name 'name'. 
-        
+        Return Instrument object with name 'name'.
+
         Input:  name of instrument (string)
         Output: Instrument object
         '''
@@ -138,22 +168,32 @@ class Instruments(gobject.GObject):
         '''
         Return list of supported instrument types
         '''
-
         ret = []
-        pdir = os.path.join(config.get_workdir(), 'instrument_plugins')
-        filelist = os.listdir(pdir)
+        filelist = os.listdir(_insdir)
         for path_fn in filelist:
             path, fn = os.path.split(path_fn)
             name, ext = os.path.splitext(fn)
             if ext == '.py' and name != "__init__" and name[0] != '_':
                 ret.append(name)
 
+        if _user_insdir is not None:
+            filelist = os.listdir(_user_insdir)
+            for path_fn in filelist:
+                path, fn = os.path.split(path_fn)
+                name, ext = os.path.splitext(fn)
+                if ext == '.py' and name != "__init__" and name[0] != '_' and not ret.count(name) > 0:
+                    ret.append(name)
+
         ret.sort()
         return ret
 
     def type_exists(self, typename):
-        driverfn = os.path.join(config.get_workdir(), 'instrument_plugins')
-        driverfn = os.path.join(driverfn, '%s.py' % typename)
+        driverfn = os.path.join(_insdir, '%s.py' % typename)
+        if os.path.exists(driverfn):
+            return True
+        if _user_insdir is None:
+            return False
+        driverfn = os.path.join(_user_insdir, '%s.py' % typename)
         return os.path.exists(driverfn)
 
     def get_type_arguments(self, typename):
@@ -332,6 +372,10 @@ class Instruments(gobject.GObject):
         '''
 
         self.emit('instrument-changed', sender, changes)
+
+_config = get_config()
+_insdir = _set_insdir()
+_user_insdir = _set_user_insdir()
 
 _instruments = None
 def get_instruments():
