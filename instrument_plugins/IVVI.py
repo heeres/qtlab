@@ -59,8 +59,8 @@ class IVVI(Instrument):
 
         # Set parameters
         self._address = address
-        if numdacs / 4 * 4 == numdacs and numdacs > 0:
-            self._numdacs = numdacs
+        if numdacs % 4 == 0 and numdacs > 0:
+            self._numdacs = int(numdacs)
         else:
             logging.error(__name__ + ' : specified number of dacs needs to be multiple of 4')
         self.pol_num = range(self._numdacs)
