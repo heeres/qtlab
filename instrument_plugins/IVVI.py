@@ -59,8 +59,8 @@ class IVVI(Instrument):
 
         # Set parameters
         self._address = address
-        if numdacs / 4 * 4 == numdacs and numdacs > 0:
-            self._numdacs = numdacs
+        if numdacs % 4 == 0 and numdacs > 0:
+            self._numdacs = int(numdacs)
         else:
             logging.error(__name__ + ' : specified number of dacs needs to be multiple of 4')
         self.pol_num = range(self._numdacs)
@@ -70,28 +70,21 @@ class IVVI(Instrument):
         self.add_function('get_all')
         self.add_function('set_dacs_zero')
 
-        # Create functions to set the dacpolarity for each set of dacs, and add them to the wrapper
+        # Add parameters
         self.add_parameter('pol_dacrack',
             type=types.StringType,
             channels=(1, self._numdacs/4),
             flags=Instrument.FLAG_SET)
-
-        self._setdacbounds = False
-
-        # Add the rest of the parameters
         self.add_parameter('dac',
             type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
             channels=(1, self._numdacs),
-            minval=0,
-            maxval=0,
             maxstep=10, stepdelay=50,
             units='mV', format='%.02f',
             tags=['sweep'])
 
         self._open_serial_connection()
 
-        self._setdacbounds = True
         for j in range(numdacs / 4):
             self.set('pol_dacrack%d' % (j+1), polarity[j])
 
@@ -309,12 +302,10 @@ class IVVI(Instrument):
             else:
                 logging.error(__name__ + ' : Try to set invalid dacpolarity')
 
-            if self._setdacbounds:
-                self.set_parameter_bounds('dac' + str(i+1),
-                        self.pol_num[i], self.pol_num[i] + 4000.0)
+            self.set_parameter_bounds('dac' + str(i+1),
+                    self.pol_num[i], self.pol_num[i] + 4000.0)
 
-        if self._setdacbounds:
-            self.get_all()
+        self.get_all()
 
     def get_pol_dac(self, dacnr):
         '''

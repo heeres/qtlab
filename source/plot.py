@@ -643,3 +643,11 @@ def plot3(*args, **kwargs):
 
     return graph
 
+def replot_all():
+    '''
+    replot all plots in the plot-list
+    '''
+    plots = Plot.get_named_list()
+    for p in plots:
+        plots[p].update()
+
