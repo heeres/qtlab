@@ -259,6 +259,52 @@ class _QTGnuPlot():
         styles.sort()
         return styles
 
+_COLOR_MAP = {
+    'b': 'blue',
+    'g': 'green',
+    'k': 'black',
+    'm': 'magenta',
+    'r': 'red',
+    'y': 'yellow',
+    'w': 'white',
+}
+
+_MARKER_MAP = {
+    '+': 1,
+    'x': 2,
+    '*': 3,
+    'S': 4,     # Open squares
+    's': 5,     # Closed squares
+    'O': 6,     # Open circles
+    'o': 7,     # Closed circles
+#    '': 8,     # Open triangle up 
+    '^': 9,     # Closed triangle up
+#    '': 10,    # Open triangle down
+    'v': 11,    # Closed triangle down
+    'D': 12,    # Open diamond
+    'd': 13,    # Closed diamond
+}
+
+def _parse_style_string(spec):
+    if spec == '':
+        return {}
+
+    opts = {}
+    for ch in spec:
+        if ch in _COLOR_MAP:
+            opts['color'] = _COLOR_MAP[ch]
+        if ch in _MARKER_MAP:
+            opts['pointtype'] = _MARKER_MAP[ch]
+            opts['with'] = 'points'
+
+    if '-' in spec:
+        if 'with' in opts:
+            opts['with'] = 'linespoints'
+        else:
+            opts['with'] = 'lines'
+
+    return opts
+
 class Plot2D(plot.Plot2D, _QTGnuPlot):
     '''
     Class to create line plots.
@@ -304,6 +350,14 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             self.set_property(k, v, update=False)
         self.set_property('style', style, update=update)
 
+
+    def _check_style_options(self, datadict):
+        if 'style' in datadict:
+            opts = _parse_style_string(datadict['style'])
+            for key, val in opts.iteritems():
+                datadict[key] = val
+            del datadict['style']
+
     def create_plot_command(self, fullpath=True, data_entry=None):
         '''
         Create a gnuplot plot command.
@@ -323,6 +377,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
+            self._check_style_options(datadict)
 
             if fullpath:
                 filepath = data.get_filepath()
@@ -368,8 +423,23 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
                 s += ', '
             else:
                 first = False
+
             s += '"%s" using %s every %s axes %s' % \
                 (str(filepath), using, every, axes)
+            if 'with' in datadict:
+                s += ' with %s' % datadict['with']
+            if 'pointtype' in datadict:
+                s += ' pt %d' % datadict['pointtype']
+            if 'pointsize' in datadict:
+                s += ' ps %d' % datadict['pointsize']
+            if 'linetype' in datadict:
+                s += ' lt %d' % datadict['linetype']
+            if 'linewidth' in datadict:
+                s += ' lt %d' % datadict['linewidth']
+            if 'color' in datadict:
+                s += ' lc rgb "%s"' % datadict['color']
+            if 'title' in datadict:
+                s += ' title "%s"' % datadict['title']
 
         if first:
             return ''
@@ -617,10 +687,14 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             s += '"%s" using %s %s' % (str(filepath), using, everystr)
             s += self._STYLES[style]['splotopt']
 
+            if 'title' in datadict:
+                s += ' title "%s"' % datadict['title']
+
         # gnuplot (version 4.3 november) has bug for placing keys (legends)
         # here we put ugly hack as a temporary fix
         # also remove 'unset key' in __init__ when reverting this hack
-            s  = ('set label 1 "%s" at screen 0.1,0.9' % filepath) + '\n' + s
+            s  = ('set label 1 "%s" at screen 0.1,0.9' % \
+                    datadict.get('title', filepath)) + '\n' + s
 
         if first:
             return ''

@@ -112,6 +112,12 @@ class Plot(gobject.GObject):
                 data.connect('new-data-point', self._new_data_point_cb)
         kwargs['new-data-block-hid'] = \
                 data.connect('new-data-block', self._new_data_block_cb)
+
+        if 'title' not in kwargs:
+            coorddims = kwargs['coorddims']
+            valdim = kwargs['valdim']
+            kwargs['title'] = data.get_title(coorddims, valdim)
+
         self._data.append(kwargs)
 
     def set_property(self, prop, val, update=False):
@@ -290,6 +296,19 @@ class Plot(gobject.GObject):
         '''Return whether the graph is being updated.'''
         return False
 
+    def _process_plot_options(self, kwargs):
+        clear = kwargs.pop('clear', False)
+        if clear:
+            self.clear()
+
+        opts = ('xlabel', 'x2label', 'ylabel', 'y2label', 'zlabel', 'cblabel')
+        for key in opts:
+            if key in kwargs:
+                self.set_property(key, kwargs.pop(key), update=False)
+
+        if 'style' in kwargs:
+            self.set_style(kwargs.pop('style'), update=False)
+
 class Plot2D(Plot):
     '''
     Abstract base class for a 2D plot.
@@ -341,29 +360,19 @@ class Plot2D(Plot):
         '''
 
         args = _convert_arrays(args)
-        coorddim = kwargs.get('coorddim', None)
-        valdim = kwargs.get('valdim', None)
-        globalx = kwargs.get('x', None)
-        update = kwargs.get('update', True)
-        setlabels = kwargs.get('setlabels', True)
-        xlabel = kwargs.get('xlabel', '')
-        x2label = kwargs.get('x2label', '')
-        ylabel = kwargs.get('ylabel', '')
-        y2label = kwargs.get('y2label', '')
-
-        # Clear plot if requested
-        clear = kwargs.get('clear', False)
-        if clear:
-            self.clear()
+        coorddim = kwargs.pop('coorddim', None)
+        globalx = kwargs.pop('x', None)
+        valdim = kwargs.pop('valdim', None)
+        update = kwargs.pop('update', True)
+        self._process_plot_options(kwargs)
 
         i = 0
         while i < len(args):
 
             # This is easy
             if isinstance(args[i], Data):
-                opts = _get_plot_options(i + 1, *args)
-                self.add_data(args[i], coorddim=coorddim, valdim=valdim)
-                i += 1 + len(opts)
+                data = args[i]
+                i += 1
 
             elif isinstance(args[i], numpy.ndarray):
                 if len(args[i].shape) == 1:
@@ -385,20 +394,27 @@ class Plot2D(Plot):
                     i += 1
 
                 else:
-                    print 'Unable to plot array of shape %r' % (args[i].shape)
+                    logging.warngin('Unable to plot array of shape %r', \
+                            (args[i].shape))
                     i += 1
                     continue
 
                 tmp = self.get_needtempfile()
                 data = Data(data=data, tempfile=tmp)
-                self.add_data(data, coorddim=coorddim, valdim=valdim)
 
             else:
-                print 'Unhandled argument: %r' % args[i]
+                logging.warning('Unhandled argument: %r', args[i])
                 i += 1
+                continue
 
-        if setlabels:
-            self.set_labels(left=ylabel, bottom=xlabel, right=y2label, top=x2label, update=False)
+            # data contains a valid data object, add some options and plot it
+            opts = _get_plot_options(i, *args)
+            for key, val in opts.iteritems():
+                kwargs[key] = val
+            i += len(opts)
+
+            self.add_data(data, coorddim=coorddim, valdim=valdim, **kwargs)
+
         if update:
             self.update()
 
@@ -442,7 +458,7 @@ class Plot3D(Plot):
             kwargs['mintime'] = 2
         Plot.__init__(self, *args, **kwargs)
 
-    def add_data(self, data, coorddims=None, valdim=None):
+    def add_data(self, data, coorddims=None, valdim=None, **kwargs):
         '''
         Add data to 3D plot.
 
@@ -467,7 +483,7 @@ class Plot3D(Plot):
             if valdim < 2:
                 valdim = 2
 
-        Plot.add_data(self, data, coorddims=coorddims, valdim=valdim)
+        Plot.add_data(self, data, coorddims=coorddims, valdim=valdim, **kwargs)
 
     def add(self, *args, **kwargs):
         '''
@@ -475,30 +491,21 @@ class Plot3D(Plot):
         '''
 
         args = _convert_arrays(args)
-        coorddims = kwargs.get('coorddims', None)
-        valdim = kwargs.get('valdim', None)
-        globalxy = kwargs.get('xy', None)
-        globalx = kwargs.get('x', None)
-        globaly = kwargs.get('y', None)
-        update = kwargs.get('update', True)
-        setlabels = kwargs.get('setlabels', True)
-        xlabel = kwargs.get('xlabel', '')
-        ylabel = kwargs.get('ylabel', '')
-        zlabel = kwargs.get('zlabel', '')
-
-        # Clear plot if requested
-        clear = kwargs.get('clear', False)
-        if clear:
-            self.clear()
+        coorddims = kwargs.pop('coorddims', None)
+        valdim = kwargs.pop('valdim', None)
+        globalxy = kwargs.pop('xy', None)
+        globalx = kwargs.pop('x', None)
+        globaly = kwargs.pop('y', None)
+        update = kwargs.pop('update', True)
+        self._process_plot_options(kwargs)
 
         i = 0
         while i < len(args):
 
             # This is easy
             if isinstance(args[i], Data):
-                opts = _get_plot_options(i + 1, *args)
-                self.add_data(args[i], coorddims=coorddims, valdim=valdim)
-                i += 1 + len(opts)
+                data = args[i]
+                i += 1
 
             elif isinstance(args[i], numpy.ndarray):
                 if len(args[i].shape) == 1:
@@ -527,20 +534,27 @@ class Plot3D(Plot):
                     i += 1
 
                 else:
-                    print 'Unable to plot array of shape %r' % (args[i].shape)
+                    logging.warning('Unable to plot array of shape %r', \
+                            (args[i].shape))
                     i += 1
                     continue
 
                 tmp = self.get_needtempfile()
                 data = Data(data=data, tempfile=tmp)
-                self.add_data(data, coorddims=coorddims, valdim=valdim)
 
             else:
-                print 'Unhandled argument: %r' % args[i]
+                logging.warning('Unhandled argument: %r', args[i])
                 i += 1
+                continue
 
-        if setlabels:
-            self.set_labels(x=xlabel, y=ylabel, z=zlabel, update=False)
+            # data contains a valid data object, add some options and plot it
+            opts = _get_plot_options(i, *args)
+            for key, val in opts.iteritems():
+                kwargs[key] = val
+            i += len(opts)
+
+            self.add_data(data, coorddims=coorddims, valdim=valdim, **kwargs)
+
         if update:
             self.update()
 
@@ -574,7 +588,10 @@ class Plot3D(Plot):
             self.update()
 
 def _get_plot_options(i, *args):
-    return () # FIXME
+    if len(args) > i:
+        if type(args[i]) is types.StringType:
+            return {'style': args[i]}
+    return {}
 
 def plot(*args, **kwargs):
     '''
@@ -592,12 +609,10 @@ def plot(*args, **kwargs):
             object.
     '''
 
-    plotname = kwargs.get('name', 'plot')
+    plotname = kwargs.pop('name', 'plot')
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
-    elif kwargs.pop('clear', False):
-        graph.clear()
 
     graph.add(*args, **kwargs)
 
@@ -619,12 +634,10 @@ def plot3(*args, **kwargs):
             object.
     '''
 
-    plotname = kwargs.get('name', 'plot_3')
+    plotname = kwargs.pop('name', 'plot3d')
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot3D(name=plotname)
-    elif kwargs.pop('clear', False):
-        graph.clear()
 
     graph.add(*args, **kwargs)
 

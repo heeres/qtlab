@@ -264,6 +264,14 @@ class Data(ThreadSafeGObject):
         else:
             return 0
 
+    def get_dimension_name(self, dim):
+        '''Return the name of dimension dim'''
+
+        if dim >= len(self._dimensions):
+            return 'col%d' % dim
+        else:
+            return self._dimensions[dim].get('name', 'col%d' % dim)
+
     def get_ndimensions(self):
         '''Return number of dimensions.'''
         return len(self._dimensions)
@@ -351,6 +359,27 @@ class Data(ThreadSafeGObject):
             return self._data
         else:
             return None
+
+    def get_title(self, coorddims, valdim):
+        '''
+        Return a title that can be used in a plot, containing the filename
+        and the name of the coordinate and value dimensions.
+        '''
+
+        dir = self.get_dir().rstrip('/\\')
+        lastdir = os.path.split(dir)[-1]
+        dirfn = '%s/%s' % (lastdir, self.get_filename())
+
+        title = '%s, %s vs ' % (dirfn, self.get_dimension_name(valdim))
+
+        first = True
+        for coord in coorddims:
+            if not first:
+                title += ', '
+            first = False
+            title += '%s' % self.get_dimension_name(coord)
+
+        return title
 
 ### File info
 
