@@ -1,7 +1,5 @@
 import os
 
-# TODO how about string conversion in file=-writing (in write_meta_file())?
-
 class SpyView():
 
     def __init__(self, dataobject):
@@ -69,15 +67,24 @@ class SpyView():
         metafilename = name + '.meta.txt'
         f = file(metafilename, 'w')
 
-        KEYLIST = [ 'xsize', 'xstart', 'xend', 'xlabel',
-                    'ysize', 'ystart', 'yend', 'ylabel',
-                    'zsize', 'zstart', 'zend', 'zlabel' ]
+        KEYLIST = [ ('xsize',   '%d'),
+                    ('xstart',  '%e'),
+                    ('xend',    '%e'),
+                    ('xlabel',  '%s'),
+                    ('ysize',   '%d'),
+                    ('ystart',  '%e'),
+                    ('yend',    '%e'),
+                    ('ylabel',  '%s'),
+                    ('zsize',   '%d'),
+                    ('zstart',  '%e'),
+                    ('zend',    '%e'),
+                    ('zlabel',  '%s') ]
 
-        for key in KEYLIST:
-            f.write('%s\n' % self._meta_info[key])
+        for key, fmt in KEYLIST:
+            f.write( (fmt + '\n') % self._meta_info[key])
 
         for i in range(self._meta_info['nvals']):
-            f.write('%s\n' % self._meta_info['val%d_colnr' % i])
+            f.write('%d\n' % self._meta_info['val%d_colnr' % i])
             f.write('%s\n' % self._meta_info['val%d_label' % i])
 
         f.close()
