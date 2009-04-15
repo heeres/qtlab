@@ -939,19 +939,30 @@ class Data(ThreadSafeGObject):
                 return False
 
             opt = self._dimensions[colnum]
-            if 'size' in opt and opt['size'] > 0:
-                dimsize = opt['size']
-            elif 'steps' in opt:
-                dimsize = opt['steps']
-            else:
+            dimsize = opt.get('size', opt.get('steps', None))
+            if dimsize == 0:
+                dimsize = None
+            dimstart = opt.get('start', None)
+            dimend = opt.get('end', None)
+
+            if None in (dimsize, dimstart, dimend):
                 vals = []
                 for i in xrange(len(self._data)):
                     if self._data[i][colnum] not in vals:
                         vals.append(self._data[i][colnum])
-                dimsize = len(vals)
 
-            logging.info('Column %d has size %d', colnum, dimsize)
+                if dimsize is None:
+                    dimsize = len(vals)
+                if len(vals) > 0:
+                    if dimstart is None:
+                        dimstart = vals[0]
+                    if dimend is None:
+                        dimend = vals[-1]
+
+            logging.info('Column %d has size %d (start: %s, end: %s)', colnum, dimsize, dimstart, dimend)
             opt['size'] = dimsize
+            opt['start'] = dimstart
+            opt['end'] = dimend
 
         if self._data is not None:
             newshape = []
