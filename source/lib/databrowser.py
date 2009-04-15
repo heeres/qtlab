@@ -78,6 +78,7 @@ class Browser:
             fn = info.get_filename()
             if fn.count(match) > 0:
                 ret.append(fn)
+        ret.sort()
         return ret
 
     def get_entry(self, fn):
