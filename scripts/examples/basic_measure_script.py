@@ -43,13 +43,13 @@ def fake_readout_psw():
 f_vec = arange(0,10,0.01)
 b_vec = arange(-5,5,0.1)
 
-# you indicate that a measurement is about to start and other 
+# you indicate that a measurement is about to start and other
 # processes should stop (like batterycheckers, or temperature
 # monitors)
 qt.mstart()
 
 # Next a new data object is made.
-# The file will be placed in the folder:  
+# The file will be placed in the folder:
 # <datadir>/<datestamp>/<timestamp>_testmeasurement/
 # and will be called:
 # <timestamp>_testmeasurement.dat
@@ -58,8 +58,8 @@ data = qt.Data(name='testmeasurement')
 
 # Now you provide the information of what data will be saved in the
 # datafile. A distinction is made between 'coordinates', and 'values'.
-# Coordinates are the parameters that you sweep, values are the 
-# parameters that you readout (the result of an experiment). This 
+# Coordinates are the parameters that you sweep, values are the
+# parameters that you readout (the result of an experiment). This
 # information is used later for plotting purposes.
 # Adding coordinate and value info is optional, but recommended.
 # If you don't supply it, the data class will guess your data format.
@@ -72,7 +72,7 @@ data.add_value('Psw SQUID')
 # is created containing the current settings of all the instruments.
 data.create_file()
 
-# Next two plot-objects are created. First argument is the data object 
+# Next two plot-objects are created. First argument is the data object
 # that needs to be plotted. To prevent new windows from popping up each
 # measurement a 'name' can be provided so that window can be reused.
 # If the 'name' doesn't already exists, a new window with that name
@@ -80,7 +80,7 @@ data.create_file()
 plot2d = qt.Plot2D(data, name='measure2D')
 plot3d = qt.Plot3D(data, name='measure3D', style='image')
 
-# preparation is done, now start the measurement. 
+# preparation is done, now start the measurement.
 # It is actually a simple loop.
 for b in b_vec:
     # set the magnetic field
@@ -96,13 +96,13 @@ for b in b_vec:
         # the plot windows to update
         data.add_data_point(f, b, result)
 
-        # the next function is necessary to keep the gui responsive. It 
+        # the next function is necessary to keep the gui responsive. It
         # checks for instance if the 'stop' button is pushed. It also checks
         # if the plots need updating.
         qt.msleep(0.01)
 
     # the next line defines the end of a single 'block', which is when sweeping
-    # the most inner loop finishes. An empty line is put in the datafile, and 
+    # the most inner loop finishes. An empty line is put in the datafile, and
     # the 3d plot is updated.
     data.new_block()
 
