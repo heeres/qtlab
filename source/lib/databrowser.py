@@ -67,6 +67,19 @@ class Browser:
     def get_entries(self):
         return self._entries
 
+    def get_filenames(self, match=''):
+        '''
+        Return filenames of entries matching 'match'. If match is an empty
+        string it returns all filenames.
+        '''
+
+        ret = []
+        for info in self._entries:
+            fn = info.get_filename()
+            if fn.count(match) > 0:
+                ret.append(fn)
+        return ret
+
     def get_entry(self, fn):
         for i in self._entries:
             if i.get_filename() == fn:
