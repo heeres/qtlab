@@ -171,10 +171,16 @@ class _QTGnuPlot():
     def save_as_type(self, terminal, extension, **kwargs):
         '''Save a different version of the plot.'''
 
+        filepath = kwargs.get('filepath', None)
+        if filepath is None:
+            filepath = self.get_first_filepath()
+        filepath = os.path.abspath(filepath)
+
         self.update()
 
         self._gnuplot.set_terminal(terminal)
-        fn, ext = os.path.splitext(self.get_first_filepath())
+
+        fn, ext = os.path.splitext(filepath)
         # Fix GnuPlot on windows issue
         fn = fn.replace('\\', '/')
         suffix = self._generate_suffix(**kwargs)
