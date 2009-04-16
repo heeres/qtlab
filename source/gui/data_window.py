@@ -76,6 +76,7 @@ class DataWindow(qtwindow.QTWindow):
         self._plot_frame.add(self._plot_box)
 
         self._entries_model = gtk.ListStore(str)
+        self._entries_model.set_sort_column_id(0, gtk.SORT_ASCENDING)
         self._entry_map = {}
         self._entries_view = qttable.QTTable([(_L('Filename'), {})], \
                 self._entries_model)
