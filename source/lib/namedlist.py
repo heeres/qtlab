@@ -17,6 +17,15 @@
 
 import gobject
 
+def _clear_ipython():
+    try:
+        import qt
+        qt._IP.ipmagic('clear out')
+        import gc
+        gc.collect()
+    except:
+        pass
+
 class NamedList(gobject.GObject):
 
     __gsignals__ = {
@@ -121,6 +130,7 @@ class NamedList(gobject.GObject):
             if self._last_item is self._list[name]:
                 self._last_item = None
             del self._list[name]
+            _clear_ipython()
         self.emit('item-removed', name)
 
     def clear(self):

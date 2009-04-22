@@ -4,15 +4,16 @@ from lib.gui.qtwindow import QTWindow
 from lib.misc import exact_time
 from lib import temp
 
-try:
+if False:
     import psyco
     psyco.full()
     logging.info('psyco acceleration enabled')
-except:
+else:
     logging.info('psyco acceleration not enabled')
         
 import qt
 from qt import plot, plot3, Plot2D, Plot3D, Data
+qt._IP = __IP
 
 import numpy
 from numpy import linspace, arange, array, pi
