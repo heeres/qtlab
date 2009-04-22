@@ -118,6 +118,8 @@ class NamedList(gobject.GObject):
     def remove(self, name):
         '''Remove an item from the list.'''
         if name in self._list:
+            if self._last_item is self._list[name]:
+                self._last_item = None
             del self._list[name]
         self.emit('item-removed', name)
 

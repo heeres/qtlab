@@ -39,6 +39,12 @@ class _PlotList(namedlist.NamedList):
     def __init__(self):
         namedlist.NamedList.__init__(self, base_name='plot')
 
+    def remove(self, name):
+        '''Remove a plot (should be cleared and closed).'''
+        if name in self:
+            self[name].clear()
+        namedlist.NamedList.remove(self, name)
+
 class Plot(gobject.GObject):
     '''
     Base class / interface for plot implementations.
