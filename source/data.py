@@ -23,6 +23,7 @@ import numpy
 import types
 import re
 import logging
+import copy
 
 from gettext import gettext as _L
 
@@ -182,10 +183,15 @@ class Data(ThreadSafeGObject):
         self._tempfile = kwargs.get('tempfile', False)
         self._options = kwargs
         self._file = None
+        self._stop_req_hid = None
 
         # Dimension info
         self._dimensions = []
         self._block_sizes = []
+        self._loopdims = None
+        self._loopshape = None
+        self._complete = False
+        self._reshaped_data = None
 
         # Number of coordinate dimensions
         self._ncoordinates = 0
@@ -230,12 +236,9 @@ class Data(ThreadSafeGObject):
             self._filename = ''
             self._infile = infile
 
-        Data._data_list.add(name, self)
-
-        try:
-            qt.flow.connect('stop-request', self._stop_request_cb)
-        except:
-            pass
+        # Don't hold references to temporary data files
+        if not self._tempfile:
+            Data._data_list.add(name, self)
 
     def __repr__(self):
         ret = "Data '%s', filename '%s'" % (self._name, self._filename)
@@ -347,18 +350,29 @@ class Data(ThreadSafeGObject):
 
         return label
 
-    def get_data(self):
+    def get_data(self, reshape=False):
         '''
         Return data as a numpy.array.
+
+        Normally the data is just a 2D array, with a set of values on each
+        'line'. However, if reshape is True, the data will be reshaped into
+        the detected dimension sizes.
         '''
 
         if not self._inmem and self._infile:
             self._load_file()
 
         if self._inmem:
-            return self._data
+            if reshape:
+                return self._reshape_data()
+            else:
+                return self._data
         else:
             return None
+
+    def get_reshaped_data(self):
+        ''''Return data reshaped with the proper dimensions.'''
+        return self.get_data(reshape=True)
 
     def get_title(self, coorddims, valdim):
         '''
@@ -501,6 +515,12 @@ class Data(ThreadSafeGObject):
         if settings_file:
             self._write_settings_file()
 
+        try:
+            self._stop_req_hid = \
+                    qt.flow.connect('stop-request', self._stop_request_cb)
+        except:
+            pass
+
         return True
 
     def close_file(self):
@@ -511,6 +531,10 @@ class Data(ThreadSafeGObject):
         if self._file is not None:
             self._file.close()
             self._file = None
+
+        if self._stop_req_hid is not None:
+            qt.flow.disconnect(self._stop_req_hid)
+            self._stop_req_hid = None
 
     def _write_settings_file(self):
         fn = self.get_settings_filepath()
@@ -901,7 +925,7 @@ class Data(ThreadSafeGObject):
     def _parse_meta_data(self, line):
         m = self._META_STEPRE.match(line)
         if m is not None:
-            self._dimensions.append(int(m.group(1)))
+            self._dimensions.append({'size': int(m.group(1))})
             return True
 
         m = self._META_COLRE.match(line)
@@ -921,7 +945,10 @@ class Data(ThreadSafeGObject):
                 elif metainfo['type'] == types.IntType:
                     self._dimensions[colnum][tagname] = int(m.group(1))
                 else:
-                    self._dimensions[colnum][tagname] = m.group(1)
+                    try:
+                        self._dimensions[colnum][tagname] = eval(m.group(1))
+                    except:
+                        self._dimensions[colnum][tagname] = m.group(1)
 
                 if 'function' in metainfo:
                     metainfo['function'](self, m.group(1))
@@ -932,52 +959,82 @@ class Data(ThreadSafeGObject):
         if m is not None:
             self._comment.append(m.group(1))
 
+    def _reshape_data(self):
+        '''
+        Return a reshaped version of the data. This is not guaranteed to be
+        a view to the same data object.
+        '''
+
+        if self._reshaped_data is not None:
+            return self._reshaped_data
+
+        loopdims = copy.copy(self._loopdims)
+        newshape = copy.copy(self._loopshape)
+        if not self._complete or None in (loopdims, newshape):
+            return None
+
+        data = self._data
+
+        cshape_ok, fshape_ok = True, True
+        for i in range(len(loopdims)):
+            if loopdims[i] != i:
+                fshape_ok = False
+            if loopdims[i] != len(loopdims) - i -1:
+                cshape_ok = False
+
+        if not cshape_ok and not fshape_ok:
+            logging.warning('Unable to do simple data reshape')
+        else:
+            newshape.reverse()
+            newshape.append(-1)
+            data = data.reshape(newshape)
+
+            # Swap axes if necessary
+            if fshape_ok:
+                for i in range(self.get_ncoordinates() - 1):
+                    data = data.swapaxes(i, i + 1)
+
+        self._reshaped_data = data
+        return self._reshaped_data
+
     def _detect_dimensions_size(self):
+        data = self._data
         ncoords = self.get_ncoordinates()
-        for colnum in range(ncoords):
-            if colnum >= len(self._dimensions):
-                return False
-
-            opt = self._dimensions[colnum]
-            dimsize = opt.get('size', opt.get('steps', None))
-            if dimsize == 0:
-                dimsize = None
-            dimstart = opt.get('start', None)
-            dimend = opt.get('end', None)
-
-            if None in (dimsize, dimstart, dimend):
-                vals = []
-                for i in xrange(len(self._data)):
-                    if self._data[i][colnum] not in vals:
-                        vals.append(self._data[i][colnum])
-
-                if dimsize is None:
-                    dimsize = len(vals)
-                if len(vals) > 0:
-                    if dimstart is None:
-                        dimstart = vals[0]
-                    if dimend is None:
-                        dimend = vals[-1]
-
-            logging.info('Column %d has size %d (start: %s, end: %s)', colnum, dimsize, dimstart, dimend)
-            opt['size'] = dimsize
-            opt['start'] = dimstart
-            opt['end'] = dimend
-
-        if self._data is not None:
-            newshape = []
+        if len(data) < 2:
             for colnum in range(ncoords):
-                opt = self._dimensions[colnum]
-                newshape.append(opt['size'])
+                self._dimensions['size'] = len(data)
+            return
 
-            newshape.append(self.get_ndimensions())
-            try:
-                self._data = self._data.reshape(newshape)
-                logging.warning('Data reshaped, but axis might be reversed.')
-            except Exception, e:
-                print 'Unable to reshape array: %s' % e
+        loopdims = []
+        newshape = []
+        mulsize = 1
+        for iter in range(ncoords):
+            loopdim = None
+            for colnum in range(ncoords):
+                if data[0, colnum] != data[mulsize, colnum]:
+                    loopdim = colnum
+                    loopdims.append(loopdim)
+                    opt = self._dimensions[loopdim]
+                    opt['start'] = data[0, loopdim]
 
-        return True
+            i = 1
+            while i * mulsize < len(data):
+                if data[i * mulsize, loopdim] == opt['start']:
+                    break
+                i += 1
+
+            opt['size'] = i
+            opt['end'] = data[mulsize * (i - 1), loopdim]
+            newshape.append(i)
+
+            mulsize *= i
+
+        complete = len(self._data) == mulsize
+        self._loopdims = loopdims
+        self._loopshape = newshape
+        self._complete = complete
+
+        return complete
 
     def set_filepath(self, fp, inmem=True):
         self._dir, self._filename = os.path.split(fp)
