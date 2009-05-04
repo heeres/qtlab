@@ -86,8 +86,17 @@ class _QTGnuPlot():
         'zrange': 'set zrange [%s:%s]\n',
         'cbrange': 'set cbrange [%s:%s]\n',
 
+        'xtics': 'set xtics\n',
+        'x2tics': 'set x2tics\n',
+        'ytics': 'set ytics\n',
+        'y2tics': 'set y2tics\n',
+        'ztics': 'set ztics\n',
+
         'grid': 'set grid\n',
         'datastyle': 'set style data %s\n',
+        'legend': 'set key\n',
+
+        'plottitle': 'set title "%s"\n',
     }
 
     def __init__(self):
@@ -257,6 +266,12 @@ class _QTGnuPlot():
     def set_grid(self, on=True, update=True):
         self.set_property('grid', on, update=update)
 
+    def set_legend(self, on=True, update=True):
+        self.set_property('legend', on, update=update)
+
+    def set_plottitle(self, text, update=True):
+        self.set_property('plottitle', text)
+
     def set_datastyle(self, style):
         self.set_property('datastyle', style)
 
@@ -264,6 +279,38 @@ class _QTGnuPlot():
         styles = self._STYLES.keys()
         styles.sort()
         return styles
+
+    def _check_style_options(self, datadict):
+        if 'style' not in datadict:
+            return
+        opts = _parse_style_string(datadict['style'])
+        for key, val in opts.iteritems():
+            datadict[key] = val
+        del datadict['style']
+
+    def _get_trace_options(self, datadict, defaults={}):
+        datadict = datadict.copy()
+        for key, val in defaults:
+            if key not in datadict:
+                datadict[key] = val
+
+        s = ''
+        if 'with' in datadict:
+            s += ' with %s' % datadict['with']
+        if 'pointtype' in datadict:
+            s += ' pt %d' % datadict['pointtype']
+        if 'pointsize' in datadict:
+            s += ' ps %d' % datadict['pointsize']
+        if 'linetype' in datadict:
+            s += ' lt %d' % datadict['linetype']
+        if 'linewidth' in datadict:
+            s += ' lt %d' % datadict['linewidth']
+        if 'color' in datadict:
+            s += ' lc rgb "%s"' % datadict['color']
+        if 'title' in datadict:
+            s += ' title "%s"' % datadict['title']
+
+        return s
 
 _COLOR_MAP = {
     'b': 'blue',
@@ -356,14 +403,6 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             self.set_property(k, v, update=False)
         self.set_property('style', style, update=update)
 
-
-    def _check_style_options(self, datadict):
-        if 'style' in datadict:
-            opts = _parse_style_string(datadict['style'])
-            for key, val in opts.iteritems():
-                datadict[key] = val
-            del datadict['style']
-
     def create_plot_command(self, fullpath=True, data_entry=None):
         '''
         Create a gnuplot plot command.
@@ -432,20 +471,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
             s += '"%s" using %s every %s axes %s' % \
                 (str(filepath), using, every, axes)
-            if 'with' in datadict:
-                s += ' with %s' % datadict['with']
-            if 'pointtype' in datadict:
-                s += ' pt %d' % datadict['pointtype']
-            if 'pointsize' in datadict:
-                s += ' ps %d' % datadict['pointsize']
-            if 'linetype' in datadict:
-                s += ' lt %d' % datadict['linetype']
-            if 'linewidth' in datadict:
-                s += ' lt %d' % datadict['linewidth']
-            if 'color' in datadict:
-                s += ' lc rgb "%s"' % datadict['color']
-            if 'title' in datadict:
-                s += ' title "%s"' % datadict['title']
+            s += self._get_trace_options(datadict)
 
         if first:
             return ''
@@ -588,8 +614,14 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         self.update()
 
-    def set_property(self, *args, **kwargs):
-        return _QTGnuPlot.set_property(self, *args, **kwargs)
+    def set_property(self, prop, val, **kwargs):
+        if prop == 'style':
+            try:
+                self._default_with = self._STYLES[val]['splotopt'].split(' ')[1]
+            except:
+                self._default_with = ''
+
+        return _QTGnuPlot.set_property(self, prop, val, **kwargs)
 
     def create_command(self, name, val):
         if name == 'style':
@@ -662,7 +694,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
-            style = self.get_property('style')
+            self._check_style_options(datadict)
 
             if len(coorddims) != 2:
                 logging.error('Unable to plot without two coordinate columns')
@@ -676,6 +708,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
             using = '%d:%d:%d' % (coorddims[0] + 1, coorddims[1] + 1, valdim + 1)
 
+            style = self.get_property('style')
             if style == self.STYLE_IMAGE:
                 stopblock = data.get_nblocks_complete() - 1
                 if stopblock < 1:
@@ -691,10 +724,11 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             else:
                 first = False
             s += '"%s" using %s %s' % (str(filepath), using, everystr)
-            s += self._STYLES[style]['splotopt']
 
-            if 'title' in datadict:
-                s += ' title "%s"' % datadict['title']
+            defaults = {
+                'with': self._default_with
+            }
+            s += self._get_trace_options(datadict)
 
         # gnuplot (version 4.3 november) has bug for placing keys (legends)
         # here we put ugly hack as a temporary fix

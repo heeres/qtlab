@@ -124,6 +124,11 @@ class Plot(gobject.GObject):
             valdim = kwargs['valdim']
             kwargs['title'] = data.get_title(coorddims, valdim)
 
+        # Enable y2tics if plotting or right axis and not explicitly disabled
+        if kwargs.get('right', False):
+            if self.get_property('y2tics', None) is None:
+                self.set_property('y2tics', True)
+
         self._data.append(kwargs)
 
     def set_property(self, prop, val, update=False):
@@ -185,6 +190,26 @@ class Plot(gobject.GObject):
     def set_y2log(self, val, update=True):
         '''Set log scale on top y axis.'''
         self.set_property('y2log', val, update=update)
+
+    def set_xtics(self, val, update=True):
+        '''Enable/disable tics on left x axis.'''
+        self.set_property('xtics', val, update=update)
+
+    def set_x2tics(self, val, update=True):
+        '''Enable/disable tics on right x axis.'''
+        self.set_property('x2tics', val, update=update)
+
+    def set_ytics(self, val, update=True):
+        '''Enable/disable tics on bottom y axis.'''
+        self.set_property('ytics', val, update=update)
+
+    def set_y2tics(self, val, update=True):
+        '''Enable/disable tics on top y axis.'''
+        self.set_property('y2tics', val, update=update)
+
+    def set_ztics(self, val, update=True):
+        '''Enable/disable tics on z axis.'''
+        self.set_property('ztics', val, update=update)
 
     # Implementation classes need to implement set_range()
 
@@ -307,7 +332,10 @@ class Plot(gobject.GObject):
         if clear:
             self.clear()
 
-        opts = ('xlabel', 'x2label', 'ylabel', 'y2label', 'zlabel', 'cblabel')
+        opts = ('xlabel', 'x2label', 'ylabel', 'y2label', 'zlabel', \
+                'xtics', 'x2tics', 'ytics', 'y2tics', 'ztics', \
+                'cblabel', 'legend', 'plottitle')
+
         for key in opts:
             if key in kwargs:
                 self.set_property(key, kwargs.pop(key), update=False)
