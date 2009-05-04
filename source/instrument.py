@@ -357,6 +357,15 @@ class Instrument(calltimer.ThreadSafeGObject):
             self._probe_ids.append(gobject.timeout_add(interval,
                 lambda: self.get(name)))
 
+        if 'listen_to' in options:
+            insset = set([])
+            inshids = []
+            for (ins, param) in options['listen_to']:
+                inshids.append(ins.connect('changed', \
+                        self._listen_parameter_changed_cb,
+                        param, options['get_func']))
+            options['listed_hids'] = inshids
+
         self.emit('parameter-added', name)
 
     def has_parameter(self, name):
@@ -1032,6 +1041,14 @@ class Instrument(calltimer.ThreadSafeGObject):
     def _set_not_implemented(self, name):
         logging.warning('Set not implemented for %s.%s' % \
             (Instrument.get_type(self), name))
+
+    def _listen_parameter_changed_cb(self, sender, changed, \
+            listen_param, update_func):
+
+        if listen_param not in changed:
+            return
+
+        update_func()
 
 class GPIBInstrument(Instrument):
     def __init__(self, *args, **kwargs):
