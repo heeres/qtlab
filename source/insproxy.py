@@ -30,11 +30,17 @@ class Proxy():
         qt.instruments.connect('instrument-added', self._ins_added_cb)
         qt.instruments.connect('instrument-removed', self._ins_removed_cb)
 
+    _FUNCTION_TYPES = (
+            types.MethodType,
+            types.BuiltinMethodType,
+            types.FunctionType,
+    )
+
     def _setup_proxy(self):
         ins = qt.instruments[self._name]
         members = inspect.getmembers(ins)
         for (name, item) in members:
-            if type(item) in (types.MethodType, types.BuiltinMethodType) \
+            if type(item) in self._FUNCTION_TYPES \
                     and not name.startswith('_'):
                 self._proxy_names.append(name)
                 setattr(self, name, item)
