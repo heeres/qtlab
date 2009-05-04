@@ -8,6 +8,7 @@ p = plot(x, y, 'ks',                    # x vs y with black squares
         plottitle='Plotting example',   # Plot title
         name='Functions',               # Plot window name
         clear=True,                     # Clear plot before adding trace
+        grid=True,                      # Show grid (enabled by default)
         xlabel='X value [radians]',     # X label
         ylabel='f(x) [AU]'              # Y label
 )
