@@ -723,6 +723,34 @@ class Instrument(calltimer.ThreadSafeGObject):
                 return k
         return self._val_from_option_list(opts.keys(), value)
 
+    _CONVERT_MAP = {
+            types.IntType: int,
+            types.FloatType: float,
+            types.StringType: str,
+            types.BooleanType: bool,
+    }
+
+    def _convert_value(self, value, ttype):
+        if type(value) is types.BooleanType and \
+                ttype is not types.BooleanType:
+            logging.warning('Setting a boolean, but that is not the expected type')
+            raise ValueError()
+
+        if ttype not in self._CONVERT_MAP:
+            logging.warning('Unsupported type %s for parameter %s',
+                ttype, name)
+            raise ValueError()
+
+        try:
+            func = self._CONVERT_MAP[ttype]
+            value = func(value)
+        except:
+            logging.warning('Conversion of %r to type %s failed',
+                    value, ttype)
+            raise ValueError()
+
+        return value
+
     def _set_value(self, name, value, **kwargs):
         '''
         Private wrapper function to set a value.
@@ -765,19 +793,10 @@ class Instrument(calltimer.ThreadSafeGObject):
             value = newval
 
         if 'type' in p:
-            if p['type'] == types.IntType:
-                value = int(value)
-            elif p['type'] == types.FloatType:
-                value = float(value)
-            elif p['type'] == types.StringType:
-                value = str(value)
-            elif p['type'] == types.BooleanType:
-                value = bool(value)
-            elif p['type'] == types.NoneType:
-                pass
-            else:
-                logging.warning('Unsupported type %s for parameter %s',
-                    p['type'], name)
+            try:
+                value = self._convert_value(value, p['type'])
+            except:
+                return None
 
         if 'minval' in p and value < p['minval']:
             print 'Trying to set too small value: %s' % value
@@ -868,10 +887,14 @@ class Instrument(calltimer.ThreadSafeGObject):
             for key, val in name.iteritems():
                 if self._set_value(key, val, **kwargs) is not None:
                     changed[key] = val
+                else:
+                    result = False
 
         else:
             if self._set_value(name, value, **kwargs) is not None:
                 changed[name] = value
+            else:
+                result = False
 
         if Instrument.USE_ACCESS_LOCK:
             self._access_lock.release()
