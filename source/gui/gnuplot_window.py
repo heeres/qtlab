@@ -270,8 +270,9 @@ class GnuplotWindow(qtwindow.QTWindow):
         if self._current_plot is not None:
             format = self._save_as_dropdown.get_item()
             func = getattr(self._current_plot, 'save_%s' % format, None)
+            filepath = self._filename_entry.get_text()
             if func is not None:
-                func()
+                func(filepath=filepath)
 
     def _save_gp_clicked_cb(self, widget):
         if self._current_plot is not None:
