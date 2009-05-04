@@ -13,10 +13,11 @@ p = plot(x, y, 'ks',                    # x vs y with black squares
         ylabel='f(x) [AU]'              # Y label
 )
 
-# Add another curve to the plot
+# Add another curve to the plot, on the right axis
 x2 = np.arange(-10, 10, 0.1)
-y2 = np.cos(x) / 4 + 0.4
-p.add(x, y2, 'r-', title='cos(x)')
+y2 = np.cos(x) *10
+p.add(x, y2, 'r-', title='cos(x)', right=True)
+p.set_y2range(-25, 15)
 
 # Adjust x and y range
 p.set_xrange(-11, 11)
