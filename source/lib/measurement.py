@@ -82,11 +82,6 @@ class Measurement(gobject.GObject):
 
         self._coords.append(coord)
 
-        if 'func' in coord:
-            to_sweep = coord['func'].__name__
-        else:
-            to_sweep = '%s.%s' % (coord['ins'].get_name(), coord['var'])
-
     def add_coordinate(self, ins, var, start, end, **kwargs):
         '''
         Add a loop coordinate to the internal list. The first coordinate is
@@ -114,7 +109,7 @@ class Measurement(gobject.GObject):
         kwargs['instrument'] = ins.get_name()
         kwargs['parameter'] = var
         kwargs['size'] = kwargs['steps']
-        self._data.add_coordinate('%s.%s' % (ins, var), **kwargs)
+        self._data.add_coordinate(var, **kwargs)
 
     def add_coordinate_func(self, func, start, end, **kwargs):
         '''
@@ -161,7 +156,7 @@ class Measurement(gobject.GObject):
 
         kwargs['instrument'] = ins
         kwargs['parameter'] = var
-        self._data.add_value('%s.%s' % (ins, var), **kwargs)
+        self._data.add_value(var, **kwargs)
 
     def add_measurement_func(self, func, **kwargs):
         meas = {'func': func}
