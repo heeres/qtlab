@@ -178,7 +178,16 @@ class _QTGnuPlot():
         return suffix
 
     def save_as_type(self, terminal, extension, **kwargs):
-        '''Save a different version of the plot.'''
+        '''
+        Save a different version of the plot.
+
+        kwargs:
+            filepath (path)   :       filepath to save to
+            gp (bool)         :       ?
+            suffix (string)   :       filename suffix
+            autosuffix (bool) :       auto increment suffix
+            append_graphname  :       add graphname to filename
+        '''
 
         filepath = kwargs.get('filepath', None)
         if filepath is None:
@@ -330,7 +339,7 @@ _MARKER_MAP = {
     's': 5,     # Closed squares
     'O': 6,     # Open circles
     'o': 7,     # Closed circles
-#    '': 8,     # Open triangle up 
+#    '': 8,     # Open triangle up
     '^': 9,     # Closed triangle up
 #    '': 10,    # Open triangle down
     'v': 11,    # Closed triangle down
