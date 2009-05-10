@@ -10,7 +10,7 @@ if False:
     logging.info('psyco acceleration enabled')
 else:
     logging.info('psyco acceleration not enabled')
-        
+
 import qt
 from qt import plot, plot3, Plot2D, Plot3D, Data
 qt._IP = __IP
