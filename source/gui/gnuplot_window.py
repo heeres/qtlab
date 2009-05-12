@@ -272,7 +272,9 @@ class GnuplotWindow(qtwindow.QTWindow):
             func = getattr(self._current_plot, 'save_%s' % format, None)
             filepath = self._filename_entry.get_text()
             if func is not None:
-                func(filepath=filepath)
+                func(filepath=filepath,
+                        append_graphname=False,
+                        autosuffix=False)
 
     def _save_gp_clicked_cb(self, widget):
         if self._current_plot is not None:
