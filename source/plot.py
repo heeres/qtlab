@@ -334,7 +334,7 @@ class Plot(gobject.GObject):
 
         opts = ('xlabel', 'x2label', 'ylabel', 'y2label', 'zlabel', \
                 'xtics', 'x2tics', 'ytics', 'y2tics', 'ztics', \
-                'cblabel', 'legend', 'plottitle')
+                'cblabel', 'legend', 'plottitle', 'grid')
 
         for key in opts:
             if key in kwargs:
