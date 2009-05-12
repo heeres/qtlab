@@ -215,7 +215,10 @@ class _QTGnuPlot():
 
     def save_ps(self, **kwargs):
         '''Save postscript version of the plot'''
-        self.save_as_type('postscript color', 'ps', **kwargs)
+        font = kwargs.pop('font', 'Helvetica')
+        fontsize = kwargs.pop('fontsize', 14)
+        fontstring = '"%s, %s"' % (font, fontsize)
+        self.save_as_type('postscript color enhanced', 'ps', **kwargs)
 
     def save_png(self, **kwargs):
         '''Save png version of the plot'''

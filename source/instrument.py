@@ -469,7 +469,7 @@ class Instrument(calltimer.ThreadSafeGObject):
         Output:
             None
         '''
-        self.set_parameter_options(name, stepsize=stepsize, stepdelay=stepdelay)
+        self.set_parameter_options(name, maxstep=stepsize, stepdelay=stepdelay)
 
     def get_parameter_names(self):
         '''

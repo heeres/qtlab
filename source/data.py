@@ -1015,6 +1015,9 @@ class Data(ThreadSafeGObject):
         for iter in range(ncoords):
             loopdim = None
             for colnum in range(ncoords):
+                if mulsize >= len(data):
+                    continue
+
                 if data[0, colnum] != data[mulsize, colnum]:
                     loopdim = colnum
                     loopdims.append(loopdim)
