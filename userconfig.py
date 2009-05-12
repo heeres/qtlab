@@ -4,8 +4,11 @@
 ## This sets a default location for data-storage
 #config['datadir'] = 'd:/data/'
 
-## This sets a default directory for qtlab to start
+## This sets a default directory for qtlab to start in
 #config['startdir'] = 'd:/scripts'
+
+## This sets a default script to run after qtlab started
+#config['startscript'] = 'initscript.py'
 
 ## This sets a user instrument directory
 ## Any instrument drivers placed here will take
