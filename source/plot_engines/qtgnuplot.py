@@ -316,7 +316,7 @@ class _QTGnuPlot():
         if 'linetype' in datadict:
             s += ' lt %d' % datadict['linetype']
         if 'linewidth' in datadict:
-            s += ' lt %d' % datadict['linewidth']
+            s += ' lw %d' % datadict['linewidth']
         if 'color' in datadict:
             s += ' lc rgb "%s"' % datadict['color']
         if 'title' in datadict:
