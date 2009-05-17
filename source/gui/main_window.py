@@ -50,7 +50,7 @@ class MainWindow(qtwindow.QTWindow):
                 ]
             }
         ]
-        self.menu = gui.build_menu(menu)
+#        self.menu = gui.build_menu(menu)
 
         self._liveplot_but = gtk.ToggleButton(_L('Live Plotting'))
         self._liveplot_but.set_active(qt.config.get('auto-update', True))
@@ -68,7 +68,7 @@ class MainWindow(qtwindow.QTWindow):
             self._stop_but,
             self._window_button_vbox])
 
-        self.vbox.pack_start(self.menu, False, False)
+#        self.vbox.pack_start(self.menu, False, False)
         self.vbox.pack_start(v1, False, False)
         self.add(self.vbox)
 
