@@ -66,7 +66,7 @@ class QTManageInstrumentFrame(gtk.VBox):
 
         self._ins_dropdown = dropdowns.InstrumentDropdown()
 
-        self._frontpanel_button = gtk.Button(_L('Make Frontpanel'))
+        self._frontpanel_button = gtk.Button(_L('Frontpanel'))
         self._frontpanel_button.connect('clicked', self._fp_clicked_cb)
 
         self._reload_button = gtk.Button(_L('Reload'))
@@ -179,6 +179,7 @@ class QTManageInstrumentFrame(gtk.VBox):
             if name not in self._frontpanels:
                 self._frontpanels[name] = frontpanel.FrontPanel(ins)
             self._frontpanels[name].show()
+            self._frontpanels[name].present()
 
     def _reload_clicked_cb(self, sender):
         ins = self._ins_dropdown.get_instrument()
