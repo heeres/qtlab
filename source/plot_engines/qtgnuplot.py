@@ -451,7 +451,11 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
                 continue
 
             npoints = data.get_npoints()
-            if npoints < 2:
+            if datadict.get('with', None) in ['lines']:
+                min_npoints = 2
+            else:
+                min_npoints = 1
+            if npoints < min_npoints:
                 continue
 
             nblocks = data.get_nblocks()
