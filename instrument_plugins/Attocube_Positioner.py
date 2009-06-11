@@ -30,14 +30,8 @@ class Attocube_Positioner(Instrument):
     def __init__(self, name, anc=None, arc=None, channels=3):
         Instrument.__init__(self, name, tags=['positioner'])
 
-        if type(anc) is types.StringType:
-            self._anc = qt.instruments[anc]
-        else:
-            self._anc = anc
-        if type(arc) is types.StringType:
-            self._arc = qt.instruments[arc]
-        else:
-            self._arc = arc
+        self._anc = qt.instruments[anc]
+        self._arc = qt.instruments[arc]
 
         # Instrument parameters
         self.add_parameter('position',
@@ -55,7 +49,10 @@ class Attocube_Positioner(Instrument):
         self.add_function('move_abs')
 
     def _do_get_position(self, query=True):
-        return self._arc.get_position(query=query)
+        if self._arc:
+            return self._arc.get_position(query=query)
+        else:
+            return [0, 0, 0]
 
     def _do_get_channels(self, query=True):
         return self._channels
@@ -90,6 +87,10 @@ class Attocube_Positioner(Instrument):
             minstep: minimum steps for fine position
         '''
 
+        if self._arc is None:
+            logging.warning('ARC read-out not available, not moving')
+            return False
+
         self._anc.set_mode1('stp')
         self._anc.set_frequency1(200)
         self._anc.set_mode2('stp')
@@ -99,6 +100,4 @@ class Attocube_Positioner(Instrument):
         positioning.move_abs(self._arc, self._anc, pos,
             startstep=4, maxstep=512, minstep=1,
             channel_ofs=1)
-#        self._anc.set_mode1('gnd')
-#        self._anc.set_mode2('gnd')
-#        self._anc.set_mode3('gnd')
+
