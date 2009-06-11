@@ -15,8 +15,11 @@ import qt
 from qt import plot, plot3, Plot2D, Plot3D, Data
 qt._IP = __IP
 
-import numpy
-from numpy import linspace, arange, array, pi
+from numpy import *
+try:
+    from scipy import constants as const
+except:
+    pass
 
 temp.File.set_temp_dir(qt.config['tempdir'])
 
