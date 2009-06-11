@@ -218,7 +218,8 @@ class _QTGnuPlot():
         font = kwargs.pop('font', 'Helvetica')
         fontsize = kwargs.pop('fontsize', 14)
         fontstring = '"%s, %s"' % (font, fontsize)
-        self.save_as_type('postscript color enhanced', 'ps', **kwargs)
+        term = 'postscript color enhanced %s' % (fontstring)
+        self.save_as_type(term, 'ps', **kwargs)
 
     def save_png(self, **kwargs):
         '''Save png version of the plot'''
@@ -569,6 +570,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         'bw': (7, 7, 7),
         'redwhiteblue': (-34, 13, 34),
         'bluewhitered': (34, 13, -34),
+        'jet': (30, -13, -23),
     }
 
     # Palette functions in gnuplot, so we can use them with custom gamma
@@ -603,8 +605,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         27: '1.5*%(x)s-1',
         28: 'abs(1.5*%(x)s-0.5)',
         29: 'abs(1.5*%(x)s-1)',
-        30: '0',
-        31: '0',
+        30: '%(x)s/0.32-0.78125',
+        31: '2*%(x)s-0.84',
         32: '0',
         33: 'abs(2*%(x)s-0.5)',
         34: '2*%(x)s',
