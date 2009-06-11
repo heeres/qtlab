@@ -50,6 +50,7 @@ class FlowControl(ThreadSafeGObject):
         self._status = 'stopped'
         self._measurements_running = 0
         self._abort = False
+        self._pause = False
         self._exit_handlers = []
 
     #########
@@ -125,6 +126,10 @@ class FlowControl(ThreadSafeGObject):
         self.emit('measurement-idle')
         lastemit = exact_time()
 
+        while self._pause:
+            self.check_abort()
+            self.run_mainloop(0.01)
+
         while True:
             self.check_abort()
 
@@ -182,6 +187,10 @@ class FlowControl(ThreadSafeGObject):
     def set_abort(self):
         '''Request an abort.'''
         self._abort = True
+
+    def set_pause(self, pause):
+        '''Set / unset pause state.'''
+        self._pause = pause
 
 def exception_handler(self, etype, value, tb):
     InteractiveTB = ultraTB.AutoFormattedTB(mode='Context',

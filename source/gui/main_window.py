@@ -58,6 +58,7 @@ class MainWindow(qtwindow.QTWindow):
         self._replot_but = gtk.Button(_L('Replot'))
         self._replot_but.connect('clicked', self._toggle_replot_cb)
         self._stop_but = stopbutton.StopButton()
+        self._pause_but = stopbutton.PauseButton()
 
         self._window_button_vbox = gtk.VBox()
         self._window_buttons = []
@@ -66,6 +67,7 @@ class MainWindow(qtwindow.QTWindow):
             self._liveplot_but,
             self._replot_but,
             self._stop_but,
+            self._pause_but,
             self._window_button_vbox])
 
 #        self.vbox.pack_start(self.menu, False, False)
