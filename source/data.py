@@ -205,8 +205,8 @@ class Data(ThreadSafeGObject):
         self._npoints_max_block = 0
 
         self._comment = []
-        self._timestamp = time.asctime()
         self._localtime = time.localtime()
+        self._timestamp = time.asctime(self._localtime)
         self._timemark = time.strftime('%H%M%S', self._localtime)
         self._datemark = time.strftime('%Y%m%d', self._localtime)
 
