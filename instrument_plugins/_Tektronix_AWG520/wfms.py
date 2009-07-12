@@ -49,12 +49,29 @@ def Marker_Single_Pulse(clock, period, start, width):
     bla
     '''
 
-    numpoints = int(period*clock)
-    numstart = int(start*clock)
-    numstop = int((start+width)*clock)
+    numpoints = int(round(period*clock))
+    numstart = int(round(start*clock))
+    numstop = int(round((start+width)*clock))
 
     wfm = numpy.zeros(numpoints, int)
     wfm[numstart:numstop]=1
+
+    return wfm.tolist()
+
+def Marker_Double_Pulse(clock, period, start1, width1, start2, width2):
+    '''
+    bla
+    '''
+
+    numpoints = int(round(period*clock))
+    numstart1 = int(round(start1*clock))
+    numstop1 = int(round((start1+width1)*clock))
+    numstart2 = int(round(start2*clock))
+    numstop2 = int(round((start2+width2)*clock))
+
+    wfm = numpy.zeros(numpoints, int)
+    wfm[numstart1:numstop1]=1
+    wfm[numstart2:numstop2]=1
 
     return wfm.tolist()
 
@@ -85,7 +102,7 @@ def Channel_Triangle(clock, period):
     '''
     bla
     '''
-    numpoints = int(period*clock)
+    numpoints = int(round(period*clock))
 
     x1 = numpy.arange(0,1,2.0/numpoints)
     x2 = numpy.arange(1,0,-2.0/numpoints)
@@ -96,7 +113,7 @@ def Channel_DC_Offset(clock, period):
     '''
     bla
     '''
-    numpoints = int(period*clock)
+    numpoints = int(round(period*clock))
     wfm = numpy.ones(numpoints)
     return wfm
 
@@ -118,9 +135,9 @@ def Channel_Single_Pulse(clock, period, start, width, low, high, amplitude=None,
     else:
         raise ValueError("amplitude and offset must both be defined, or both not")
 
-    numpoints = int(period*clock)
-    numstart = int(start*clock)
-    numstop = int((start+width)*clock)
+    numpoints = int(round(period*clock))
+    numstart = int(round(start*clock))
+    numstop = int(round((start+width)*clock))
 
     wfm = b_low * numpy.ones(numpoints)
     wfm[numstart:numstop] = b_high
@@ -170,9 +187,9 @@ def Channel_MultiLevel_Pulse(clock, period, pulsedef, amplitude=None, offset=Non
     if numpy.max(numpy.abs(b_level_list)) > 1+1e-12:
         raise ValueError("one of the levels is out of range for chosen amplitude and offset")
 
-    numpoints = int(period*clock)
+    numpoints = int(round(period*clock))
     base_level = b_level_list[0]
-    wfm = base_level * numpy.ones(pulsedef[0][3]*clock)
+    wfm = base_level * numpy.ones(round(pulsedef[0][3]*clock))
 
     for i in range(1,nr_of_plateaus +1):
         from_level = b_level_list[i-1]
@@ -181,8 +198,8 @@ def Channel_MultiLevel_Pulse(clock, period, pulsedef, amplitude=None, offset=Non
         risetype = pulsedef[i][2]
         width = pulsedef[i][3]
 
-        numrisetime=int(risetime*clock)
-        numwidth=int(width*clock)
+        numrisetime=int(round(risetime*clock))
+        numwidth=int(round(width*clock))
 
         edge = create_edge(clock, risetime, risetype, from_level, to_level)
         plateau = to_level * numpy.ones(numwidth)
