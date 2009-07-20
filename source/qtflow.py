@@ -197,7 +197,19 @@ def exception_handler(self, etype, value, tb):
                                             color_scheme='Linux',
                                             tb_offset=1)
 
-    get_flowcontrol().measurement_end(abort=True)
+    fc = get_flowcontrol()
+
+    # for the unlikely event that an error occured after pushing the
+    # stop button
+    fc._abort = False
+
+    if fc.is_measuring():
+        # make sure that open objects get closed properly (like files)
+        fc.emit('stop-request')
+
+        # put qtlab back in 'stopped' state
+        fc.measurement_end(abort=True)
+
     InteractiveTB(etype, value, tb)
 
 class Scheduler():
@@ -231,9 +243,11 @@ class Scheduler():
 
     def _measurement_connect(self):
         if self._mstart_hid is None:
-            self._mstart_hid = self._flow.connect("measurement-start", self._measurement_start_cb)
+            self._mstart_hid = self._flow.connect("measurement-start",
+                    self._measurement_start_cb)
         if self._mend_hid is None:
-            self._mend_hid = self._flow.connect("measurement-end", self._measurement_end_cb)
+            self._mend_hid = self._flow.connect("measurement-end",
+                    self._measurement_end_cb)
 
     def _measurement_disconnect(self):
         if self._mstart_hid is not None:
@@ -255,7 +269,8 @@ class Scheduler():
 
     def _start_timeout(self):
         if self._timer_hid is None:
-            self._timer_hid = gobject.timeout_add(int(self._timeout*1000), self._timeout_cb)
+            self._timer_hid = gobject.timeout_add(int(self._timeout*1000),
+                    self._timeout_cb)
         else:
             print 'timer already started'
 
@@ -325,7 +340,8 @@ class Scheduler():
 
     def _start_idle(self):
         if self._idle_hid is None:
-            self._idle_hid = self._flow.connect("measurement-idle", self._measurement_idle_cb)
+            self._idle_hid = self._flow.connect("measurement-idle",
+                    self._measurement_idle_cb)
         else:
             print 'already waiting for idle'
 
@@ -372,7 +388,9 @@ class Scheduler():
 
     def start(self):
         '''
-        Start the task in either idle mode, timeout mode or both, depending on which are set to True.
+        Start the task in either idle mode, timeout mode or both, depending
+        on which are set to True.
+
         See: set_idle_mode & set_timeout_mode
         '''
         if self._idle_mode:
@@ -382,7 +400,8 @@ class Scheduler():
 
     def stop(self):
         '''
-        Stop the scheduled task. If running both in 'timeout' and 'idle' mode, then both will be stopped.
+        Stop the scheduled task. If running both in 'timeout' and 'idle' mode,
+        then both will be stopped.
         '''
         if self._timer_hid is not None:
             self._stop_timeout_and_disconnect()
