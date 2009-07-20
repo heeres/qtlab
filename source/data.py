@@ -1021,15 +1021,20 @@ class Data(ThreadSafeGObject):
                 if data[0, colnum] != data[mulsize, colnum]:
                     loopdim = colnum
                     loopdims.append(loopdim)
-                    opt = self._dimensions[loopdim]
-                    opt['start'] = data[0, loopdim]
+                    loopstart = data[0, loopdim]
+                    break
+
+            if loopdim is None:
+                break
 
             i = 1
             while i * mulsize < len(data):
-                if data[i * mulsize, loopdim] == opt['start']:
+                if data[i * mulsize, loopdim] == loopstart:
                     break
                 i += 1
 
+            opt = self._dimensions[loopdim]
+            opt['start'] = loopstart
             opt['size'] = i
             opt['end'] = data[mulsize * (i - 1), loopdim]
             newshape.append(i)
