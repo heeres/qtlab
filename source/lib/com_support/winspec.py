@@ -36,13 +36,14 @@ def get_spectrum(wlen=True, max_sleeps=MAX_SLEEPS):
     doc = dispatch('WinX32.DocFile.3')
     _exp.Start(doc)
     i = 0
-    while < MAX_SLEEPS:
+    while i < max_sleeps:
         status, ret = _exp.GetParam(_const.EXP_RUNNING)
         if status == 0:
             break
         i += 1
-	qt.msleep(0.1)
-    if i == MAX_SLEEPS:
+        qt.msleep(0.1)
+
+    if i == max_sleeps:
         print 'Warning: maximum delay exceeded'
         return None
 
