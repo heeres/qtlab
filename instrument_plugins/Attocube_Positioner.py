@@ -20,10 +20,9 @@ import types
 import logging
 import random
 import math
-import misc
 import time
 import qt
-from packages import positioning
+from addons import positioning
 
 class Attocube_Positioner(Instrument):
 
@@ -35,12 +34,16 @@ class Attocube_Positioner(Instrument):
 
         # Instrument parameters
         self.add_parameter('position',
+            type=types.TupleType,
             flags=Instrument.FLAG_GET,
             format='%.03f, %.03f, %.03f')
         self.add_parameter('speed',
+            type=types.TupleType,
             flags=Instrument.FLAG_GETSET)
         self.add_parameter('channels',
-            flags=Instrument.FLAG_GETSET)
+            type=types.IntType,
+            flags=Instrument.FLAG_SET|Instrument.FLAG_SOFTGET)
+
         self.set_channels(channels)
 
         # Instrument functions
@@ -54,11 +57,8 @@ class Attocube_Positioner(Instrument):
         else:
             return [0, 0, 0]
 
-    def _do_get_channels(self, query=True):
-        return self._channels
-
     def _do_set_channels(self, val, query=True):
-        self._channels = val
+        return True
 
     def start(self):
         self._anc.start()

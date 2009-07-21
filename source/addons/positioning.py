@@ -1,5 +1,5 @@
 import time
-import misc
+from lib import misc
 
 def _all_true(vec):
     for v in vec:
