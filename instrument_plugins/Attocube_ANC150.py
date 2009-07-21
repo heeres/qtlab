@@ -108,6 +108,7 @@ class Attocube_ANC150(Instrument):
         self._visa.write('')
 
     def get_last_error(self):
+        '''Return last error message.'''
         return self._last_error
 
     def _ask(self, query):
@@ -143,10 +144,12 @@ class Attocube_ANC150(Instrument):
             return m.group(1)
 
     def reset(self):
+        '''Reset instrument.'''
         self._visa.write('resetp')
 
     def get_all(self):
-        for ch in xrange(1, 4):
+        '''Get all parameters.'''
+        for ch in range(1, 4):
             self.get('mode%d' % ch)
             self.get('frequency%d' % ch)
             self.get('voltage%d' % ch)
@@ -194,8 +197,17 @@ class Attocube_ANC150(Instrument):
         return self._parse(reply, self._RE_CAP)
 
     def step(self, channel, steps):
+        '''
+        Step channel <channel> by <steps> steps.
+
+        <channel> should by 1, 2 or 3
+        '''
+
         if steps == 0:
             return True
+        if channel < 1 or channel > 3:
+            logging.warning('Channel has to be between 1 and 3')
+            return False
 
         if steps > 0:
             dir = 'u'
