@@ -220,6 +220,7 @@ class QTInstrumentFrame(gtk.VBox):
         self._label_range = {}
         self._label_rate = {}
         self._update_dict = {}
+        self._cur_val = {}
 
         self._add_parameters()
 
@@ -253,9 +254,10 @@ class QTInstrumentFrame(gtk.VBox):
         self._table.attach(plabel, 1, 2, nrows, nrows + 1)
 
         vlabel = gtk.Label()
+        val = self._instrument.get(param, query=False)
+        self._cur_val[param] = val
         vlabel.set_markup('<b>%s</b>' % \
-                self._instrument.format_parameter_value(param,
-                self._instrument.get(param, query=False)))
+                self._instrument.format_parameter_value(param, val))
         vlabel.set_alignment(0, 0)
         vlabel.show()
         self._table.attach(vlabel, 2, 3, nrows, nrows + 1)
@@ -299,9 +301,10 @@ class QTInstrumentFrame(gtk.VBox):
         gtk.gdk.threads_enter()
 
         for param, val in self._update_dict.iteritems():
-            if param in self._label_val:
+            if param in self._label_val and self._cur_val[param] != val:
                 self._label_val[param].set_markup('<b>%s</b>' % \
                     self._instrument.format_parameter_value(param, val))
+                self._cur_val[param] = val
 
         self._update_dict = {}
 
@@ -313,7 +316,6 @@ class QTInstrumentFrame(gtk.VBox):
         """
         Set parameter to be updated on next refresh.
         """
-
         self._update_dict[param] = val
 
     def get_instrument(self):
