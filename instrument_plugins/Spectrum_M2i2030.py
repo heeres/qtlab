@@ -259,7 +259,7 @@ class Spectrum_M2i2030(Instrument):
             self._get_error()
             raise ValueError('Error communicating with device')
 
-    def _invalidate_buffer(self, buffertype=_spcm_regs.SPCM_BUF_DATA):
+    def invalidate_buffer(self, buffertype=_spcm_regs.SPCM_BUF_DATA):
         '''
         Discards the buffer.
 
