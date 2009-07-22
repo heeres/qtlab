@@ -56,34 +56,48 @@ class StringLabel(gtk.Label):
 
 class StringEntry(gtk.Entry):
 
-    def __init__(self, ins, param, opts, autoupdate=False):
+    def __init__(self, ins, param, opts, autoupdate=True):
         gtk.Entry.__init__(self)
         self._instrument = ins
         self._parameter = param
+        self._dirty = False
 
         self._autoupdate = autoupdate
         if self._autoupdate:
             ins.connect('changed', self._parameter_changed_cb)
-        
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+
+        self.connect('changed', self._entry_changed_cb)
+
+    def _update_value(self, val):
+        self._dirty = False
         if val is None:
             val = ''
         self.set_text(val)
-        
+
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        self._update_value(val)
+
     def do_set(self):
+        self._dirty = False
         val = self.get_text()
         self._instrument.set(self._parameter, val)
 
     def _parameter_changed_cb(self, sender, params):
+        if self._parameter in params and not self._dirty:
+            self._update_value(params[self._parameter])
+
+    def _entry_changed_cb(self, sender, *args):
+        # FIXME: how to detect whether we're dirty?
         pass
 
 class NumberEntry(gtk.SpinButton):
 
-    def __init__(self, ins, param, opts, autoupdate=False):
+    def __init__(self, ins, param, opts, autoupdate=True):
         gtk.SpinButton.__init__(self)
         self._instrument = ins
         self._parameter = param
+        self._dirty = False
 
         minval = 0
         if 'minval' in opts:
@@ -105,25 +119,36 @@ class NumberEntry(gtk.SpinButton):
         if self._autoupdate:
             ins.connect('changed', self._parameter_changed_cb)
 
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+        self.connect('changed', self._spin_changed_cb)
+
+    def _update_value(self, val):
+        self._dirty = False
         if val is None:
             self.set_value(0)
         else:
             self.set_value(val)
-        
+
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        self._update_value(val)
+
     def do_set(self):
         val = self.get_value()
         self._instrument.set(self._parameter, val)
 
     def _parameter_changed_cb(self, sender, params):
+        if self._parameter in params and not self._dirty:
+            self._update_value(params[self._parameter])
+
+    def _spin_changed_cb(self, sender, *args):
         pass
 
 class ComboEntry(gtk.ComboBox):
 
-    def __init__(self, ins, param, opts, autoupdate=False):
+    def __init__(self, ins, param, opts, autoupdate=True):
         self._instrument = ins
         self._parameter = param
+        self._dirty = False
 
         self._model = gtk.ListStore(gobject.TYPE_STRING)
         if 'format_map' in opts:
@@ -145,8 +170,9 @@ class ComboEntry(gtk.ComboBox):
         if self._autoupdate:
             ins.connect('changed', self._parameter_changed_cb)
 
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+        self.connect('changed', self._combo_changed_cb)
+
+    def _update_value(self, val):
         if val is None:
             return
 
@@ -158,7 +184,12 @@ class ComboEntry(gtk.ComboBox):
         for row in self._model:
             if row[0] == valstr:
                 self.set_active_iter(row.iter)
+                self._dirty = False
                 break
+
+    def do_get(self):
+        val = self._instrument.get(self._parameter)
+        self._update_value(val)
 
     def do_set(self):
         val = self._model[self.get_active()][0]
@@ -174,6 +205,10 @@ class ComboEntry(gtk.ComboBox):
             self._instrument.set(self._parameter, val)
 
     def _parameter_changed_cb(self, sender, params):
+        if self._parameter in params and not self._dirty:
+            self._update_value(params[self._parameter])
+
+    def _combo_changed_cb(self, sender, *args):
         pass
 
 class FrontPanel(qtwindow.QTWindow):
@@ -195,9 +230,15 @@ class FrontPanel(qtwindow.QTWindow):
         self._param_info = {}
 
         self._table = gtk.Table(1, 3)
-        self.add(self._table)
-
         self._add_parameters()
+
+        self._get_all_but = gtk.Button('Get all')
+        self._get_all_but.connect('clicked', self._get_all_clicked_cb)
+
+        self._vbox = gtk.VBox()
+        self._vbox.pack_start(self._table)
+        self._vbox.pack_start(self._get_all_but, False, False)
+        self.add(self._vbox)
 
         self.show_all()
 
@@ -254,3 +295,8 @@ class FrontPanel(qtwindow.QTWindow):
 
     def _get_clicked(self, widget, param):
         self._param_info[param]['entry'].do_get()
+
+    def _get_all_clicked_cb(self, sender):
+        for key, info in self._param_info.iteritems():
+            info['entry'].do_get()
+
