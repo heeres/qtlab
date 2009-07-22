@@ -116,7 +116,7 @@ class Instrument(calltimer.ThreadSafeGObject):
     def get_type(self):
         """Return type of instrument as a string."""
         modname = str(self.__module__)
-        return modname.split('.')[1]
+        return modname
 
     def get_options(self):
         '''Return instrument options.'''
