@@ -213,24 +213,48 @@ class _QTGnuPlot():
     def get_save_as_types():
         return _QTGnuPlot._SAVE_AS_TYPES
 
-    def save_ps(self, **kwargs):
-        '''Save postscript version of the plot'''
-        font = kwargs.pop('font', 'Helvetica')
-        fontsize = kwargs.pop('fontsize', 14)
+    def save_ps(self, filepath=None, font='Helvetica', fontsize=14, **kwargs):
+        '''
+        Save postscript version of the plot.
+
+        Arguments:
+            - filepath: file path + name
+            - font: font name
+            - fontsize: font size
+        '''
+
         fontstring = '"%s, %s"' % (font, fontsize)
         term = 'postscript color enhanced %s' % (fontstring)
         self.save_as_type(term, 'ps', **kwargs)
 
-    def save_png(self, **kwargs):
-        '''Save png version of the plot'''
-        font = kwargs.pop('font', '')
-        self.save_as_type('png %s size 1024,768' % font, 'png', **kwargs)
+    def save_png(self, filepath=None, font='', transparent=False, **kwargs):
+        '''
+        Save png version of the plot.
 
-    def save_jpeg(self, **kwargs):
+        Arguments:
+            - filepath: file path + name
+            - font: font spec (either 'tiny', 'small', 'medium', 'large' or
+            'giant', or font <face> <pointsize>)
+            - transparent:
+                - False: no transparency
+                - True: white will be transparent
+                - Color spec (e.g. '#808080'): the transparent color
+        '''
+
+        if type(transparent) is False:
+            transparent = ''
+        else:
+            if transparent is True:
+                transparent = '#ffffff'
+            transparent = 'transparent %s' % transparent
+
+        self.save_as_type('png %s %s size 1024,768' % (font, transparent), 'png', **kwargs)
+
+    def save_jpeg(self, filepath=None, **kwargs):
         '''Save jpeg version of the plot'''
         self.save_as_type('jpeg', 'jpg', **kwargs)
 
-    def save_svg(self, **kwargs):
+    def save_svg(self, filepath=None, **kwargs):
         '''Save svg version of the plot'''
         self.save_as_type('svg', 'svg', **kwargs)
 
