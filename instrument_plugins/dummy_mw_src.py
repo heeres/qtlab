@@ -78,7 +78,7 @@ class dummy_mw_src(Instrument):
         self._dummy_phase = phase
 
     def _do_get_status(self):
-        return self._status
+        return self._dummy_status
 
     def _do_set_status(self,status):
         self._dummy_status = status
