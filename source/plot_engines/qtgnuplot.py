@@ -177,7 +177,7 @@ class _QTGnuPlot():
 
         return suffix
 
-    def save_as_type(self, terminal, extension, **kwargs):
+    def save_as_type(self, terminal, extension, filepath=None, **kwargs):
         '''
         Save a different version of the plot.
 
@@ -189,7 +189,6 @@ class _QTGnuPlot():
             append_graphname  :       add graphname to filename
         '''
 
-        filepath = kwargs.get('filepath', None)
         if filepath is None:
             filepath = self.get_first_filepath()
         filepath = os.path.abspath(filepath)
@@ -225,7 +224,7 @@ class _QTGnuPlot():
 
         fontstring = '"%s, %s"' % (font, fontsize)
         term = 'postscript color enhanced %s' % (fontstring)
-        self.save_as_type(term, 'ps', **kwargs)
+        self.save_as_type(term, 'ps', filepath=filepath, **kwargs)
 
     def save_png(self, filepath=None, font='', transparent=False, **kwargs):
         '''
@@ -248,20 +247,23 @@ class _QTGnuPlot():
                 transparent = '#ffffff'
             transparent = 'transparent %s' % transparent
 
-        self.save_as_type('png %s %s size 1024,768' % (font, transparent), 'png', **kwargs)
+        self.save_as_type('png %s %s size 1024,768' % (font, transparent),
+                'png', filepath=filepath, **kwargs)
 
     def save_jpeg(self, filepath=None, **kwargs):
         '''Save jpeg version of the plot'''
-        self.save_as_type('jpeg', 'jpg', **kwargs)
+        self.save_as_type('jpeg', 'jpg', filepath=filepath, **kwargs)
 
     def save_svg(self, filepath=None, **kwargs):
         '''Save svg version of the plot'''
-        self.save_as_type('svg', 'svg', **kwargs)
+        self.save_as_type('svg', 'svg', filepath=filepath, **kwargs)
 
-    def _write_gp(self, s, **kwargs):
-        fn, ext = os.path.splitext(self.get_first_filepath())
-        suffix = self._generate_suffix(gp=True, **kwargs)
-        f = open('%s%s.gp' % (str(fn), suffix), 'w')
+    def _write_gp(self, s, filepath=None, **kwargs):
+        if filepath is None:
+            fn, ext = os.path.splitext(self.get_first_filepath())
+            suffix = self._generate_suffix(gp=True, **kwargs)
+            filepath = '%s%s.gp' % (str(fn), suffix)
+        f = open(filepath, 'w')
         f.write(s)
         f.close()
 
@@ -404,6 +406,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         'lines': {'datastyle': 'lines'},
         'points': {'datastyle': 'points'},
         'linespoints': {'datastyle': 'linespoints'},
+        'histeps': {'datastyle': 'histeps'},
+        'boxes': {'datastyle': 'boxes'},
     }
 
     def __init__(self, *args, **kwargs):
@@ -411,11 +415,20 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
-        self.set_grid()
-        self.set_style('lines')
+        self.set_grid(update=False)
+        self.set_style('lines', update=False)
 
-        self.set_labels(update=False)
-        self.update()
+        top = kwargs.get('x2label', '')
+        bottom = kwargs.get('xlabel', '')
+        right = kwargs.get('y2label', '')
+        left = kwargs.get('ylabel', '')
+        self.set_labels(
+                left=left, right=right,
+                bottom=bottom, top=top,
+                update=False)
+
+        if kwargs.get('update', True):
+            self.update()
 
     def set_property(self, *args, **kwargs):
         return _QTGnuPlot.set_property(self, *args, **kwargs)
@@ -519,11 +532,11 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         else:
             return s
 
-    def save_gp(self):
+    def save_gp(self, filepath=None, **kwargs):
         '''Save file that can be opened with gnuplot.'''
         s = self.get_commands()
         s += self.create_plot_command(fullpath=False)
-        self._write_gp(s)
+        self._write_gp(s, filepath=filepath, **kwargs)
 
     def is_busy(self):
         return _QTGnuPlot.is_busy(self)
@@ -783,11 +796,11 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         else:
             return s
 
-    def save_gp(self):
+    def save_gp(self, filepath=None, **kwargw):
         '''Save file that can be opened with gnuplot.'''
         s = self.get_commands()
         s += self.create_plot_command(fullpath=False)
-        self._write_gp(s)
+        self._write_gp(s, filepath=filepath, **kwargs)
 
     def _new_data_point_cb(self, sender):
         if self.get_property('style') != self.STYLE_IMAGE:

@@ -99,7 +99,8 @@ class Plot(gobject.GObject):
         self._last_update = 0
         self._update_hid = None
 
-        data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim'))
+        data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim',
+            'title'))
         data_args['update'] = False
         data_args['setlabels'] = False
         self.add(*args, **data_args)
@@ -428,7 +429,7 @@ class Plot2D(Plot):
                     i += 1
 
                 else:
-                    logging.warngin('Unable to plot array of shape %r', \
+                    logging.warning('Unable to plot array of shape %r',
                             (args[i].shape))
                     i += 1
                     continue
