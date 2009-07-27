@@ -240,7 +240,7 @@ class _QTGnuPlot():
                 - Color spec (e.g. '#808080'): the transparent color
         '''
 
-        if type(transparent) is False:
+        if transparent is False:
             transparent = ''
         else:
             if transparent is True:
