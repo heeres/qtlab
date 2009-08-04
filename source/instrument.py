@@ -82,6 +82,9 @@ class Instrument(calltimer.ThreadSafeGObject):
         self._initialized = False
         self._locked = False
 
+        self._changed = {}
+        self._changed_hid = None
+
         self._options = kwargs
         if 'tags' not in self._options:
             self._options['tags'] = []
@@ -675,7 +678,7 @@ class Instrument(calltimer.ThreadSafeGObject):
             self._access_lock.release()
 
         if len(changed) > 0 and query:
-            self.emit('changed', changed)
+            self._queue_changed(changed)
 
         return result
 
@@ -894,14 +897,16 @@ class Instrument(calltimer.ThreadSafeGObject):
         changed = {}
         if type(name) == types.DictType:
             for key, val in name.iteritems():
-                if self._set_value(key, val, **kwargs) is not None:
+                val = self._set_value(key, val, **kwargs)
+                if val is not None:
                     changed[key] = val
                 else:
                     result = False
 
         else:
-            if self._set_value(name, value, **kwargs) is not None:
-                changed[name] = value
+            val = self._set_value(name, value, **kwargs)
+            if val is not None:
+                changed[name] = val
             else:
                 result = False
 
@@ -1049,6 +1054,16 @@ class Instrument(calltimer.ThreadSafeGObject):
             return
 
         update_func()
+
+    def _do_emit_changed(self):
+        self._idle_emit('changed', self._changed)
+        self._changed = {}
+        self._changed_hid = None
+
+    def _queue_changed(self, changed):
+        self._changed.update(changed)
+        if self._changed_hid is None:
+            self._changed_hid = gobject.idle_add(self._do_emit_changed)
 
 class GPIBInstrument(Instrument):
     def __init__(self, *args, **kwargs):
