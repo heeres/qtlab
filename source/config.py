@@ -27,11 +27,11 @@ class QTConfig(gobject.GObject):
         self.load()
 
     def _get_filename(self):
-        return os.path.join(get_workdir(), self.CONFIG_FILE)
+        return os.path.join(get_qtlabdir(), self.CONFIG_FILE)
 
     def load_defaults(self):
         self._defaults['test'] = True
-        self._defaults['datadir'] = os.path.join(get_workdir(), 'data')
+        self._defaults['datadir'] = os.path.join(get_qtlabdir(), 'data')
 
     def save_defaults(self):
         return
@@ -118,26 +118,26 @@ def get_config():
     '''Get configuration object.'''
     return _config
 
-def get_workdir():
+def get_qtlabdir():
     '''Get work directory we started in.'''
-    return _work_dir
+    return _qtlab_dir
 
 def get_tempdir():
     '''Get directory for temporary files.'''
     dir = _config.get('tempdir', None)
     if dir == None:
-        dir = os.path.join(get_workdir(), 'tmp')
+        dir = os.path.join(get_qtlabdir(), 'tmp')
         _config['tempdir'] = dir
     if not os.path.exists(dir):
         os.makedirs(dir)
     return dir
 
-_work_dir = os.path.split(os.path.dirname(__file__))[0]
+_qtlab_dir = os.path.split(os.path.dirname(__file__))[0]
 _config = QTConfig()
-_config['workdir'] = _work_dir
+_config['qtlabdir'] = _qtlab_dir
 
 # Load user defined configuration
-if os.path.exists('userconfig.py'):
-    execfile('userconfig.py', {'config': _config})
+if os.path.exists(os.path.join(get_qtlabdir(), 'userconfig.py')):
+    execfile(os.path.join(get_qtlabdir(), 'userconfig.py'), {'config': _config})
 
 get_tempdir()

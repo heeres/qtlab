@@ -6,7 +6,7 @@ from lib import temp
 _remove_lock = True
 
 def get_lockfile():
-    return os.path.join(config.get_workdir(), 'qtlab.lock')
+    return os.path.join(config.get_qtlabdir(), 'qtlab.lock')
 
 def qtlab_exit():
     print "\nClosing QTlab..."

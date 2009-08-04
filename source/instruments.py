@@ -27,7 +27,7 @@ from config import get_config
 from insproxy import Proxy
 
 def _set_insdir():
-    dir = os.path.join(_config['workdir'], 'instrument_plugins')
+    dir = os.path.join(_config['qtlabdir'], 'instrument_plugins')
     sys.path.append(dir)
     return dir
 
