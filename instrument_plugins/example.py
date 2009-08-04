@@ -43,6 +43,7 @@ class example(Instrument):
 #        self.set_channel_bounds('output', 1, -1, 1)
 
         self.add_function('reset')
+        self.add_function('step')
 
         self.set_default_read_var('value')
         self.set_default_write_var('value')
@@ -89,3 +90,10 @@ class example(Instrument):
         self.get_ch3_output()
         self.get_ch4_output()
         return True
+
+    def step(self, channel, stepsize=0.1):
+        '''Step channel <channel>'''
+        print 'Stepping channel %d by %f' % (channel, stepsize)
+        cur = self.get('ch%d_output' % channel, query=False)
+        self.set('ch%d_output' % channel, cur + stepsize)
+

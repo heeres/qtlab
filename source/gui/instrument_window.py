@@ -17,179 +17,14 @@
 
 import gtk
 import gobject
+
 import logging
 from gettext import gettext as _L
 
 import qt
 import lib.gui as gui
-from lib.gui import dropdowns, frontpanel, qtwindow
+from lib.gui import dropdowns, qtwindow
 
-class QTManageInstrumentFrame(gtk.VBox):
-
-    def __init__(self, **kwargs):
-        gtk.VBox.__init__(self, **kwargs)
-
-        self._instruments = qt.instruments
-        self._frontpanels = {}
-        qt.frontpanels = self._frontpanels
-
-        self._add_frame = gtk.Frame()
-        self._add_frame.set_label(_L('Create'))
-
-        name_label = gtk.Label(_L('Name'))
-        self._name_entry = gtk.Entry()
-        self._name_entry.connect('changed', self._name_changed_cb)
-
-        type_label = gtk.Label(_L('Type'))
-        self._type_dropdown = dropdowns.InstrumentTypeDropdown()
-        self._type_dropdown.connect('changed', self._dropdown_changed_cb)
-        self._add_button = gtk.Button(_L('Add'))
-        self._add_button.connect('clicked', self._add_clicked_cb)
-        self._add_button.set_sensitive(False)
-
-        self._argument_table = gtk.Table(2, 2)
-        self._argument_table.attach(name_label, 0, 1, 0, 1)
-        self._argument_table.attach(self._name_entry, 1, 2, 0, 1)
-        self._argument_table.attach(type_label, 0, 1, 1, 2)
-        self._argument_table.attach(self._type_dropdown, 1, 2, 1, 2)
-        self._argument_info = {}
-
-        vbox = gui.pack_vbox([
-            self._argument_table,
-            self._add_button
-            ], False, False)
-        vbox.set_border_width(4)
-        self._add_frame.add(vbox)
-
-        self._action_frame = gtk.Frame()
-        self._action_frame.set_label(_L('Manage'))
-
-        self._ins_dropdown = dropdowns.InstrumentDropdown()
-
-        self._frontpanel_button = gtk.Button(_L('Frontpanel'))
-        self._frontpanel_button.connect('clicked', self._fp_clicked_cb)
-
-        self._reload_button = gtk.Button(_L('Reload'))
-        self._reload_button.connect('clicked', self._reload_clicked_cb)
-
-        self._remove_button = gtk.Button(_L('Remove'))
-        self._remove_button.connect('clicked', self._remove_clicked_cb)
-
-        vbox = gui.pack_vbox([
-            self._ins_dropdown,
-            gui.pack_hbox([
-                self._frontpanel_button,
-                self._reload_button,
-                self._remove_button
-                ], True, True)
-            ], False, False)
-        vbox.set_border_width(4)
-        self._action_frame.add(vbox)
-
-        vbox = gui.pack_vbox([
-            self._add_frame,
-            self._action_frame
-            ], False,False)
-        vbox.set_border_width(4)
-        self.add(vbox)
-
-        self.show_all()
-
-    def _dropdown_changed_cb(self, widget):
-        type_name = self._type_dropdown.get_typename()
-        if type_name is None:
-            args = None
-        else:
-            args = self._instruments.get_type_arguments(type_name)
-        self._set_type_arguments(args)
-
-        self._update_add_button_sensitivity()
-
-    def _remove_arguments(self):
-        for name, info in self._argument_info.iteritems():
-            self._argument_table.remove(info['label'])
-            self._argument_table.remove(info['entry'])
-
-        self._argument_info = {}
-
-    def _set_type_arguments(self, args):
-        self._remove_arguments()
-        if args is None:
-            return
-
-        i = -1
-        rows = 0
-        arg_names = args[0]
-        defaults = args[3]
-        for name in arg_names:
-            i += 1
-            if name in ('self', 'name'):
-                continue
-            rows += 1
-
-            label = gtk.Label(name)
-            entry = gtk.Entry()
-            if defaults is not None and i >= len(arg_names) - len(defaults):
-                entry.set_text(str(defaults[i - len(arg_names) + len(defaults)]))
-
-            self._argument_info[name] = {'label': label, 'entry': entry}
-            self._argument_table.resize(rows + 2, 2)
-            self._argument_table.attach(label, 0, 1, rows + 2, rows + 3)
-            self._argument_table.attach(entry, 1, 2, rows + 2, rows + 3)
-
-        self.show_all()
-
-    def _add_clicked_cb(self, widget):
-        name = self._name_entry.get_text()
-        typename = self._type_dropdown.get_typename()
-        args = {}
-        for param, info in self._argument_info.iteritems():
-            value = info['entry'].get_text()
-            try:
-                value = eval(value)
-            except:
-                pass
-
-            if value == '':
-                value = None
-            args[param] = value
-
-        logging.debug("Creating %s as %s, **args: %r", name, typename, args)
-        ins = qt.instruments.create(name, typename, **args)
-        if ins is not None:
-            self._name_entry.set_text('')
-            self._type_dropdown.select_none_type()
-
-    def _name_changed_cb(self, widget):
-        self._update_add_button_sensitivity()
-
-    def _update_add_button_sensitivity(self):
-        typename = self._type_dropdown.get_typename()
-        namelen = len(self._name_entry.get_text())
-
-        if typename is not None and typename != '' and namelen > 0:
-            self._add_button.set_sensitive(True)
-        else:
-            self._add_button.set_sensitive(False)
-
-    def _fp_clicked_cb(self, sender):
-        ins = self._ins_dropdown.get_instrument()
-        if ins is not None:
-            name = ins.get_name()
-            if name not in self._frontpanels:
-                self._frontpanels[name] = frontpanel.FrontPanel(ins)
-            self._frontpanels[name].show()
-            self._frontpanels[name].present()
-
-    def _reload_clicked_cb(self, sender):
-        ins = self._ins_dropdown.get_instrument()
-        if ins is not None:
-            return self._instruments.reload(ins)
-
-    def _remove_clicked_cb(self, sender):
-        ins = self._ins_dropdown.get_instrument()
-        if ins is not None:
-            return ins.remove()
 
 class QTInstrumentFrame(gtk.VBox):
 
@@ -359,7 +194,7 @@ class QTInstrumentFrame(gtk.VBox):
 class InstrumentWindow(qtwindow.QTWindow):
 
     def __init__(self):
-        qtwindow.QTWindow.__init__(self, 'instruments', 'Instruments')
+        qtwindow.QTWindow.__init__(self, 'instruments', 'Instrument View')
 
         self.connect("delete-event", self._delete_event_cb)
 
@@ -405,16 +240,8 @@ class InstrumentWindow(qtwindow.QTWindow):
 
         self._outer_vbox.pack_start(self._scrolled_win, True, True)
 
-        self._add_instrument_frame = QTManageInstrumentFrame()
-
-        self._notebook = gtk.Notebook()
-        self._notebook.append_page(self._outer_vbox,
-            gtk.Label(_L('Info')))
-        self._notebook.append_page(self._add_instrument_frame,
-            gtk.Label(_L('Manage')))
-        self._notebook.show_all()
-        self._notebook.set_current_page(0)
-        self.add(self._notebook)
+        self._outer_vbox.show_all()
+        self.add(self._outer_vbox)
 
     def _add_instrument(self, ins):
         name = ins.get_name()

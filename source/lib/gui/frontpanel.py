@@ -42,10 +42,9 @@ class StringLabel(gtk.Label):
         fmtval = self._instrument.format_parameter_value(self._parameter, val)
         self.set_text(fmtval)
 
-    def do_get(self):
+    def do_get(self, query=True):
         ins = self._instrument
-        val = ins.get(self._parameter)
-        self._update_value(val)
+        val = ins.get(self._parameter, query=query)
 
     def do_set(self):
         return
@@ -74,8 +73,8 @@ class StringEntry(gtk.Entry):
             val = ''
         self.set_text(val)
 
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+    def do_get(self, query=True):
+        val = self._instrument.get(self._parameter, query=query)
         self._update_value(val)
 
     def do_set(self):
@@ -128,8 +127,8 @@ class NumberEntry(gtk.SpinButton):
         else:
             self.set_value(val)
 
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+    def do_get(self, query=True):
+        val = self._instrument.get(self._parameter, query=query)
         self._update_value(val)
 
     def do_set(self):
@@ -187,8 +186,8 @@ class ComboEntry(gtk.ComboBox):
                 self._dirty = False
                 break
 
-    def do_get(self):
-        val = self._instrument.get(self._parameter)
+    def do_get(self, query=True):
+        val = self._instrument.get(self._parameter, query=query)
         self._update_value(val)
 
     def do_set(self):
@@ -231,6 +230,7 @@ class FrontPanel(qtwindow.QTWindow):
 
         self._table = gtk.Table(1, 3)
         self._add_parameters()
+        self._add_functions()
 
         self._get_all_but = gtk.Button('Get all')
         self._get_all_but.connect('clicked', self._get_all_clicked_cb)
@@ -256,7 +256,7 @@ class FrontPanel(qtwindow.QTWindow):
         else:
             entry = StringEntry(self._instrument, param, opts)
 
-        entry.do_get()
+        entry.do_get(query=False)
 
         return entry
 
@@ -289,6 +289,19 @@ class FrontPanel(qtwindow.QTWindow):
 
             self._table.attach(hbox, 2, 3, rows, rows + 1)
             rows += 1
+
+    def _add_functions(self):
+        functions = self._instrument.get_functions()
+        for fname, fopts in dict_to_ordered_tuples(functions):
+            anames = fopts['argspec'][0]
+            adefaults = fopts['argspec'][3]
+            for i, aname in enumerate(anames):
+                if aname == 'self':
+                    continue
+                if adefaults is not None and i >= len(anames) - len(adefaults):
+                    default = adefaults[i - len(anames) + len(adefaults)]
+                else:
+                    default = ''
 
     def _set_clicked(self, widget, param):
         val = self._param_info[param]['entry'].do_set()

@@ -16,6 +16,7 @@ sys.path.append(config['qtlabdir'])
 data = Data.get_named_list()
 instruments = get_instruments()
 windows = QTWindow.get_named_list()
+frontpanels = {}
 
 flow = get_flowcontrol()
 msleep = flow.measurement_idle
