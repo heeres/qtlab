@@ -41,18 +41,26 @@ def get_shell_files(path, ignore_list):
 if __name__ == '__main__':
     print 'Starting QT Lab environment...'
 
-    sys.path.append('%s/source/' % os.getcwd())
+    basedir = os.path.split(os.path.dirname(sys.argv[0]))[0]
+    sys.path.append(os.path.join(basedir, 'source'))
 
     _vars = {}
     _vars['ignorelist'] = []
     _vars['i'] = 1
+    __startdir__ = None
+    # FIXME: use of __startdir__ is spread over multiple scripts:
+    # 1) source/qtlab_client_shell.py
+    # 2) shell/02_qtlab_start.py
+    # This should be solved differently
     while _vars['i'] < len(sys.argv):
-        if sys.argv[_vars['i']] == '-i':
+        if os.path.isdir(sys.argv[_vars['i']]):
+            __startdir__ = sys.argv[_vars['i']]
+        elif sys.argv[_vars['i']] == '-i':
             i += 1
             _vars['ignorelist'].append(sys.argv[_vars['i']])
         _vars['i'] += 1
 
-    _vars['filelist'] = get_shell_files('shell', _vars['ignorelist'])
+    _vars['filelist'] = get_shell_files(os.path.join(basedir, 'shell'), _vars['ignorelist'])
     for (_vars['dir'], _vars['name']) in _vars['filelist']:
         _vars['filename'] = '%s/%s' % (_vars['dir'], _vars['name'])
         print 'Executing %s...' % (_vars['filename'])

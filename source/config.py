@@ -132,7 +132,7 @@ def get_tempdir():
         os.makedirs(dir)
     return dir
 
-_work_dir = os.getcwd()
+_work_dir = os.path.split(os.path.dirname(__file__))[0]
 _config = QTConfig()
 _config['workdir'] = _work_dir
 
