@@ -796,7 +796,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         else:
             return s
 
-    def save_gp(self, filepath=None, **kwargw):
+    def save_gp(self, filepath=None, **kwargs):
         '''Save file that can be opened with gnuplot.'''
         s = self.get_commands()
         s += self.create_plot_command(fullpath=False)
