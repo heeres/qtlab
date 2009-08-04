@@ -15,8 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-import numpy
-
+import numpy as np
 from lib.namedstruct import *
 
 class SPEFile:
@@ -35,10 +34,10 @@ class SPEFile:
     DTYPE_SHORT = 2
     DTYPE_USHORT = 3
     DSIZE = {
-        DTYPE_FLOAT: (4, 'f'),
-        DTYPE_LONG: (4, 'L'),
-        DTYPE_SHORT: (2, 'h'),
-        DTYPE_USHORT: (2, 'H')
+        DTYPE_FLOAT: (4, 'f', np.float32),
+        DTYPE_LONG: (4, 'l', np.int32),
+        DTYPE_SHORT: (2, 'h', np.int16),
+        DTYPE_USHORT: (2, 'H', np.uint16)
     }
 
     _STRUCTINFO = [
@@ -254,10 +253,10 @@ class SPEFile:
         info = self._struct.unpack(header)
         self._info = info
 
-        typesize, formatchr = self.DSIZE[info['datatype']]
+        typesize, formatchr, nptype = self.DSIZE[info['datatype']]
         formatstr = '%s%s' % (formatchr, formatchr)
         entries = info['xdim'] * info['ydim'] * info['NumFrames']
-        self._data = numpy.zeros(entries)
+        self._data = np.zeros(entries, dtype=nptype)
         for i in range(entries):
             elem = f.read(typesize)
             if elem == '':
@@ -281,18 +280,30 @@ class SPEFile:
         return self._info
 
     def get_data(self):
-        xvals = numpy.array(
+        xvals = np.array(
                 [self.convert_value('x', i) for i in range(len(self._data))])
-        yvals = numpy.array(
+        yvals = np.array(
                 [self.convert_value('y', i) for i in self._data])
-        return numpy.column_stack((xvals, yvals))
+        return np.column_stack((xvals, yvals))
 
 if __name__ == '__main__':
-    spe = SPEFile('test.spe')
+    import sys
+    if len(sys.argv) == 2:
+        fname = sys.argv[1]
+    else:
+        fname = 'test.spe'
+    spe = SPEFile(fname)
     info = spe.get_info()
     print 'Info:'
     for line in spe._STRUCTINFO:
         key = line[0]
         val = info[key]
         print '  %s => %r' % (key, val)
-    print 'Data: %s' % spe.get_data()
+
+    import matplotlib.pyplot as plt
+    xys = spe.get_data()
+    xs, ys = xys[:,0], xys[:,1]
+    plt.plot(xs, ys)
+    plt.xlim(min(xs), max(xs))
+    plt.show()
+
