@@ -1,9 +1,10 @@
 import logging
+import config
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s %(name)-12s: %(levelname)-8s %(message)s',
     datefmt='%m-%d %H:%M',
-    filename='qtlab.log',
+    filename=os.path.join(config.get_qtlabdir(), 'qtlab.log'),
     filemode='a+')
 
 def _setup_logging():

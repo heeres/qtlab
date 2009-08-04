@@ -6,7 +6,7 @@ from lib import temp
 _remove_lock = True
 
 def get_lockfile():
-    return os.path.join(config.get_workdir(), 'qtlab.lock')
+    return os.path.join(config.get_qtlabdir(), 'qtlab.lock')
 
 def qtlab_exit():
     print "\nClosing QTlab..."
@@ -26,7 +26,7 @@ def qtlab_exit():
         except:
             pass
 
-def _check_logfile():
+def _check_lockfile():
     if os.path.exists(get_lockfile()):
         if '-f' not in sys.argv:
             print "QTlab already running, start with '-f' to force start."
@@ -42,7 +42,7 @@ def _check_logfile():
         onkill.append(cb)
     __IP.on_kill = onkill
 
-    f = file('qtlab.lock', 'w+')
+    f = file(get_lockfile(), 'w+')
     f.close()
 
-_check_logfile()
+_check_lockfile()

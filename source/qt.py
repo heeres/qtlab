@@ -10,8 +10,6 @@ from plot import Plot, plot, plot3, replot_all
 from lib.gui.qtwindow import QTWindow
 
 config = _config.get_config()
-config['qtlabdir'] = _config.get_workdir()
-sys.path.append(config['qtlabdir'])
 
 data = Data.get_named_list()
 instruments = get_instruments()
