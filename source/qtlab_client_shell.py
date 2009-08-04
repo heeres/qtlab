@@ -42,7 +42,7 @@ if __name__ == '__main__':
     print 'Starting QT Lab environment...'
 
     basedir = os.path.split(os.path.dirname(sys.argv[0]))[0]
-    sys.path.append(os.path.join(basedir, 'source'))
+    sys.path.append(os.path.abspath(os.path.join(basedir, 'source')))
 
     _vars = {}
     _vars['ignorelist'] = []
