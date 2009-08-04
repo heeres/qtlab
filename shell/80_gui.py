@@ -8,8 +8,8 @@ gui.measurement_window.MeasurementWindow()
 import gui.instrument_window
 gui.instrument_window.InstrumentWindow()
 
-import gui.tune_window
-gui.tune_window.TuneWindow()
+import gui.control_window
+gui.control_window.ControlWindow()
 
 import gui.watch_window
 gui.watch_window.WatchWindow()
