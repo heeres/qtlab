@@ -18,9 +18,6 @@
 from instrument import Instrument
 import types
 import logging
-import random
-import math
-import time
 import qt
 from addons import positioning
 
@@ -57,7 +54,7 @@ class Attocube_Positioner(Instrument):
         else:
             return [0, 0, 0]
 
-    def _do_set_channels(self, val, query=True):
+    def _do_set_channels(self, val):
         return True
 
     def start(self):

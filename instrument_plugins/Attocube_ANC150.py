@@ -81,6 +81,7 @@ class Attocube_ANC150(Instrument):
 
         self._speed = [0, 0, 0]
         self.add_parameter('speed',
+            type=types.TupleType,
             flags=Instrument.FLAG_SET|Instrument.FLAG_SOFTGET,
             doc="""
             Set speed for continuous motion mode.
@@ -91,7 +92,7 @@ class Attocube_ANC150(Instrument):
                 'type': types.IntType,
             }, {
                 'name': 'steps',
-                'type': types.IntType
+                'type': types.IntType,
             }])
 
         self.add_function('start')
@@ -196,15 +197,23 @@ class Attocube_ANC150(Instrument):
         reply = self._ask('getc %d' % channel)
         return self._parse(reply, self._RE_CAP)
 
-    def step(self, channel, steps):
+    def step(self, channel, steps, wait=True, cont=False):
         '''
-        Step channel <channel> by <steps> steps.
+        Step channel <channel> (1, 2 or 3) by <steps> steps.
 
-        <channel> should by 1, 2 or 3
+        If wait=True (default), the function will sleep until the motion
+        is finished.
+
+        If cont=True (not default), the function will put the positioner
+        in continuous motion. Use stop() to stop this motion.
         '''
 
+        if type(steps) is not types.IntType:
+            logging.warning('Integer number of steps required')
+            return False
         if steps == 0:
             return True
+
         if channel < 1 or channel > 3:
             logging.warning('Channel has to be between 1 and 3')
             return False
@@ -214,26 +223,28 @@ class Attocube_ANC150(Instrument):
         else:
             dir = 'd'
             steps = -steps
-
-        if steps == 1:
-            ret = self._short_cmd('$S%d%s' % (channel, dir.upper()))
-            if not ret:
-                logging.info('Axis %d problem, trying to set mode', channel)
-                self.set('mode%d' % channel, 's')
-                ret = self._short_cmd('$S%d%s' % (channel, dir.upper()))
-
-            return ret
-
-        if steps == 'c' or steps == -1:
+        if cont:
             steps = 'c'
+            delay = 0
         else:
-            steps = str(steps)
+            frequency = self.get('frequency%d' % channel, query=False)
+            if frequency in (None, 0):
+                frequency = self.get('frequency%d' % channel)
+            delay = 1.1 * steps / frequency
 
-        reply = self._ask('step%s %d %s' % (dir, channel, steps))
+        if steps == 1 and not cont:
+            func = lambda: self._short_cmd('$S%d%s' % (channel, dir.upper()))
+        else:
+            func = lambda: self._ask('step%s %d %s' % (dir, channel, steps))
+
+        reply = func()
         if not reply:
             logging.info('Axis %d problem, trying to set mode', channel)
             self.set('mode%d' % channel, 's')
-            reply = self._ask('step%s %d %s' % (dir, channel, steps))
+            reply = func()
+
+        if wait:
+            time.sleep(delay)
 
         return (reply is not None)
 
@@ -244,19 +255,32 @@ class Attocube_ANC150(Instrument):
         self._speed = copy.copy(val)
 
     def start(self):
-        '''Start continuous motion'''
+        '''
+        Start continuous motion using the speed property for each channel.
+        '''
 
         for i in range(len(self._speed)):
             mode = self.get('mode%d' % (i + 1), query=False)
 
             self.set('mode%d' % (i + 1), 'stp')
             if self._speed[i] > 0:
-                self.stepu(i + 1, 'c')
+                reply = self._ask('stepu %d c' % (i + 1))
             elif self._speed[i] < 0:
-                self.stepd(i + 1, 'c')
+                reply = self._ask('stepd %d c' % (i + 1))
+            else:
+                reply = True
 
-    def stop(self):
-        '''Stop continuous motion'''
+            if not reply:
+                logging.info('Problem setting axis %d', i + 1)
 
-        for i in range(len(self._speed)):
-            self._ask('stop %d' % (i + 1))
+    def stop(self, channel=None):
+        '''
+        Stop continuous motion.
+        If channel=None (default) all channels will be halted.
+        '''
+        if channel is None:
+            for i in range(len(self._speed)):
+                self._ask('stop %d' % (i + 1))
+        else:
+            self._ask('stop %d' % channel)
+
