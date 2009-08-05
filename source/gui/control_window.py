@@ -235,6 +235,7 @@ class QTSetInstrumentFrame(gtk.VBox):
                 sset = opts['flags'] & Instrument.FLAG_SET
         self._get_but.set_sensitive(sget)
         self._set_but.set_sensitive(sset)
+        self._make_sl.set_sensitive(sset)
 
     def _get_param_clicked_cb(self, widget):
         param = self._param_combo.get_parameter()
