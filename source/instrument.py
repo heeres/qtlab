@@ -740,6 +740,8 @@ class Instrument(calltimer.ThreadSafeGObject):
             types.FloatType: float,
             types.StringType: str,
             types.BooleanType: bool,
+            types.TupleType: tuple,
+            types.ListType: list,
     }
 
     def _convert_value(self, value, ttype):
