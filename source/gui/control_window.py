@@ -22,7 +22,7 @@ from gettext import gettext as _L
 
 import qt
 import lib.gui as gui
-from lib.gui import dropdowns, qtwindow, frontpanel
+from lib.gui import dropdowns, qtwindow, frontpanel, slider
 from lib.gui.flexscale import FlexScale
 from lib.gui.functionframe import ArgumentTable, FunctionFrame
 from instrument import Instrument
@@ -167,11 +167,8 @@ class QTSetInstrumentFrame(gtk.VBox):
     def __init__(self, **kwargs):
         gtk.VBox.__init__(self, **kwargs)
 
-        try:
-            qt.frontpanels
-        except:
-            qt.frontpanels = {}
         self._frontpanels = qt.frontpanels
+        self._sliders = qt.sliders
 
         self._ins = None
         self._ins_combo = dropdowns.InstrumentDropdown()
@@ -259,7 +256,14 @@ class QTSetInstrumentFrame(gtk.VBox):
             self._frontpanels[name].present()
 
     def _slider_clicked_cb(self, sender):
-        pass
+        ins = self._ins_combo.get_instrument()
+        param = self._param_combo.get_parameter()
+        if ins is not None and param is not None:
+            name = '%s.%s' % (ins.get_name(), param)
+            if name not in self._sliders:
+                self._sliders[name] = slider.SliderWindow(ins, param)
+            self._sliders[name].show()
+            self._sliders[name].present()
 
 class ControlWindow(qtwindow.QTWindow):
 
