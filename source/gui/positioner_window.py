@@ -26,6 +26,7 @@ from lib.gui.qtwindow import QTWindow
 from lib.gui.qttable import QTTable
 from lib.gui.dropdowns import InstrumentDropdown
 from lib.gui.misc import pack_hbox, pack_vbox
+from lib.misc import sign
 
 class PositionControls(gtk.Frame):
 
@@ -48,6 +49,8 @@ class PositionControls(gtk.Frame):
         'decel-changed': (gobject.SIGNAL_RUN_FIRST,
                         gobject.TYPE_NONE,
                         ([gobject.TYPE_PYOBJECT])),
+        'stop-request': (gobject.SIGNAL_RUN_FIRST,
+                        gobject.TYPE_NONE, [])
     }
 
     def __init__(self, ins):
@@ -57,7 +60,7 @@ class PositionControls(gtk.Frame):
 
         self.set_label(_L('Controls'))
 
-        self._table = gtk.Table(3, 9)
+        self._table = gtk.Table(4, 9)
         self._button_up = gtk.Button('/\\')
         self._button_up.connect('pressed',
                 lambda x: self._direction_clicked(True, 0, 1, 0))
@@ -169,6 +172,10 @@ class PositionControls(gtk.Frame):
         self._table.attach(gtk.Label(_L('Deceleration')), 8, 9, 0, 1, 0, 0)
         self._table.attach(self._decel, 8, 9, 1, 3, 0, 0)
 
+        self._stop_but = gtk.Button('Stop')
+        self._stop_but.connect('clicked', self._stop_clicked_cb)
+        self._table.attach(self._stop_but, 0, 3, 3, 4, gtk.FILL, 0)
+
         self.connect('key-press-event', self._key_pressed_cb)
         self.connect('key-release-event', self._key_released_cb)
 
@@ -219,6 +226,7 @@ class PositionControls(gtk.Frame):
         self._button_upright.set_sensitive(bval)
         self._button_downleft.set_sensitive(bval)
         self._button_downright.set_sensitive(bval)
+        self._stop_but.set_sensitive(bval)
 
         bval = False
         if self._channels > 1:
@@ -281,6 +289,9 @@ class PositionControls(gtk.Frame):
     def _decel_changed_cb(self, sender):
         self._save_settings()
         self.emit('decel-changed', sender.get_value())
+
+    def _stop_clicked_cb(self, sender):
+        self.emit('stop-request')
 
 class PositionBookmarks(gtk.Frame):
 
@@ -414,6 +425,8 @@ class PositionerWindow(QTWindow):
         QTWindow.__init__(self, 'positioner', 'Positioner')
         self.connect("delete-event", self._delete_event_cb)
 
+        self._moving = False
+
         self._controls = PositionControls(None)
         self._controls.connect('direction-clicked', self._direction_clicked_cb)
         self._controls.connect('direction-released', self._direction_released_cb)
@@ -421,6 +434,7 @@ class PositionerWindow(QTWindow):
         self._controls.connect('min-speed-changed', self._min_speed_changed_cb)
         self._controls.connect('accel-changed', self._accel_changed_cb)
         self._controls.connect('decel-changed', self._decel_changed_cb)
+        self._controls.connect('stop-request', self._stop_request_cb)
         self._max_speed = self._controls.get_max_speed()
         self._min_speed = self._controls.get_min_speed()
         self._accel_factor = self._controls.get_accel()
@@ -488,7 +502,7 @@ class PositionerWindow(QTWindow):
     def _do_single_step(self):
         for i in range(len(self._direction_down)):
             if self._direction_down[i] != 0:
-                self._instrument.step(i, misc.sign(self._direction_down[i]))
+                self._instrument.step(i, sign(self._direction_down[i]))
 
     def _update_speed(self):
         for i in range(len(self._direction_down)):
@@ -498,7 +512,7 @@ class PositionerWindow(QTWindow):
                 else:
                     self._speed[i] = self._speed[i] * self._accel_factor
                     if abs(self._speed[i]) >= self._max_speed:
-                        self._speed[i] = misc.sign(self._speed[i]) * self._max_speed
+                        self._speed[i] = sign(self._speed[i]) * self._max_speed
             else:
                 self._speed[i] = self._speed[i] / self._decel_factor
                 if abs(self._speed[i]) < self._min_speed:
@@ -507,10 +521,13 @@ class PositionerWindow(QTWindow):
         if self._speed != [0, 0, 0]:
             self._step_done = True
             self._instrument.set_speed(self._speed)
-            self._instrument.start()
+            if not self._moving:
+                self._instrument.start()
+                self._moving = True
             return True
         else:
             self._instrument.stop()
+            self._moving = False
             return False
 
         return ret
@@ -543,4 +560,7 @@ class PositionerWindow(QTWindow):
 
     def _decel_changed_cb(self, sender, val):
         self._decel_factor = val
+
+    def _stop_request_cb(self, sender):
+        self._instrument.stop()
 
