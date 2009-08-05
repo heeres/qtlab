@@ -56,7 +56,7 @@ class SliderWindow(qtwindow.QTWindow):
         else:
             logging.warning('Be careful! Parameter has no \
                     minimum defined!')
-            self._insmin = 1e100
+            self._insmin = -1e100
             self._min = self._instrument.get(param)
 
         if self._instrument.get_parameter_options(param).has_key('maxval'):
@@ -65,7 +65,7 @@ class SliderWindow(qtwindow.QTWindow):
         else:
             logging.warning('Be careful! Parameter has no \
                     maximum defined!')
-            self._insmax = 1e-100
+            self._insmax = 1e100
             self._max = self._instrument.get(param)
 
         self._range = self._max - self._min
