@@ -22,7 +22,8 @@ import dropdowns
 class ArgumentTable(gtk.Table):
 
     def __init__(self, rows=0, cols=2, exclude=['self']):
-        gtk.Table.__init__(self, rows, cols)
+        setrows = max(rows, 1)
+        gtk.Table.__init__(self, setrows, cols)
         self._base_rows = rows
         self._base_cols = cols
         self._exclude = exclude
