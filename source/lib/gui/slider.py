@@ -22,7 +22,6 @@ import gtk
 import logging
 from gettext import gettext as _L
 
-from lib.gui.flexscale import FlexScale
 import lib.gui as gui
 
 import qtwindow
@@ -77,47 +76,44 @@ class SliderWindow(qtwindow.QTWindow):
 
         ### sliders frame
 
-        #self._spin_but = FlexScale(-10, 10, scaling=FlexScale.SCALE_SQRT)
-
-        self._main_slider = gtk.VScale()
-        self._main_slider.set_inverted(True)
-        self._main_slider.set_size_request(50, 200)
-        self._main_slider.set_range(self._min, self._max)
-        self._main_slider.set_digits(2)
-        self._main_slider.set_draw_value(False)
-        self._main_slider.connect('change-value', self._change_value_cb)
+        slider = gtk.VScale()
+        slider.set_inverted(True)
+        slider.set_size_request(50, -1)
+        slider.set_range(self._min, self._max)
+        slider.set_digits(2)
+        slider.set_draw_value(False)
+        slider.connect('change-value', self._change_value_cb)
+        self._main_slider = slider
 
         self._main_slider_label = gtk.Label('x1')
-        self._main_slider_label.set_size_request(1, 20)
 
-        self._main_slider_vbox = gui.pack_vbox([
-                    self._main_slider_label,
-                    self._main_slider ])
+        vbox = gtk.VBox()
+        vbox.pack_start(self._main_slider_label, False, False)
+        vbox.pack_start(slider, True, True)
+        self._main_slider_vbox = vbox
 
         self._fine_sliders = []
         self._fine_slider_vboxes = []
         self._fine_slider_labels = []
         for i in range(3):
-            self._fine_sliders.append(gtk.VScale())
-            self._fine_sliders[i].set_inverted(True)
-            self._fine_sliders[i].set_size_request(50, 200)
-            self._fine_sliders[i].set_range(-1, 1)
-            self._fine_sliders[i].set_digits(2)
-            self._fine_sliders[i].set_draw_value(False)
-            self._fine_sliders[i].connect('change-value', self._change_value_cb)
+            slider = gtk.VScale()
+            slider.set_inverted(True)
+            slider.set_size_request(50, -1)
+            slider.set_range(-1, 1)
+            slider.set_digits(2)
+            slider.set_draw_value(False)
+            slider.connect('change-value', self._change_value_cb)
+            self._fine_sliders.append(slider)
 
-            self._fine_slider_labels.append(gtk.Label('x0.%s1' % (i*'0')))
-            self._fine_slider_labels[i].set_size_request(1, 20)
+            label = gtk.Label('x0.%s1' % (i*'0'))
+            self._fine_slider_labels.append(label)
 
-            self._fine_slider_vboxes.append(
-                    gui.pack_vbox([
-                        self._fine_slider_labels[i],
-                        self._fine_sliders[i] ]) )
+            vbox = gtk.VBox()
+            vbox.pack_start(label, False, False)
+            vbox.pack_start(slider, True, True)
+            self._fine_slider_vboxes.append(vbox)
 
-
-#FIXME: make this transparant for number of fine sliders
         self._slider_hbox = gui.pack_hbox([
-        #    self._spin_but,
             self._main_slider_vbox,
             self._fine_slider_vboxes[0],
             self._fine_slider_vboxes[1],
