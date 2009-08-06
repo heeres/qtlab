@@ -25,6 +25,7 @@ class Proxy():
     def __init__(self, name):
         self._name = name
         self._proxy_names = []
+        self._setup_done = False
 
         self._setup_proxy()
         qt.instruments.connect('instrument-added', self._ins_added_cb)
@@ -37,7 +38,11 @@ class Proxy():
     )
 
     def _setup_proxy(self):
-        ins = qt.instruments[self._name]
+        if self._setup_done:
+            return
+        self._setup_done = True
+
+        ins = qt.instruments.get(self._name, proxy=False)
         members = inspect.getmembers(ins)
         for (name, item) in members:
             if type(item) in self._FUNCTION_TYPES \
@@ -46,8 +51,9 @@ class Proxy():
                 setattr(self, name, item)
 
     def _remove_functions(self):
+        self._setup_done = False
         for name in self._proxy_names:
-            del self.__dict__[name]
+            delattr(self, name)
         self._proxy_names = []
 
     def _ins_added_cb(self, sender, ins):

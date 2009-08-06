@@ -174,12 +174,15 @@ class Instrument(calltimer.ThreadSafeGObject):
 
     def remove(self):
         '''
-        Notifies the environment that the instrument is removed.
-        Override this in a sub-classed Instrument to perform cleanup.
+        Notify the instrument collection that this instrument should be
+        removed. Override this in a sub-classed Instrument to perform
+        cleanup.
 
         Input: None
         Output: None
         '''
+
+        self._remove_parameters()
         self.emit('removed', self.get_name())
 
     def is_initialized(self):
@@ -370,6 +373,18 @@ class Instrument(calltimer.ThreadSafeGObject):
             options['listed_hids'] = inshids
 
         self.emit('parameter-added', name)
+
+    def _remove_parameters(self):
+        '''
+        Remove remaining references to bound methods so that the Instrument
+        object can be garbage collected.
+        '''
+
+        for name, opts in self._parameters.iteritems():
+            for fname in ('get_%s' % name, 'set_%s' % name):
+                if hasattr(self, fname):
+                    delattr(self, fname)
+        self._parameters = {}
 
     def has_parameter(self, name):
         '''
@@ -916,7 +931,7 @@ class Instrument(calltimer.ThreadSafeGObject):
             self._access_lock.release()
 
         if not fast and len(changed) > 0:
-            self.emit('changed', changed)
+            self._queue_changed(changed)
 
         return result
 

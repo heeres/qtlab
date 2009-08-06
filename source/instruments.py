@@ -117,11 +117,14 @@ class Instruments(gobject.GObject):
         Input:  Instrument object
         Output: None
         '''
+
+        self._instruments[ins.get_name()] = ins
+
         info = {'create_args': create_args}
         info['changed_hid'] = ins.connect('changed', self._instrument_changed_cb)
         info['removed_hid'] = ins.connect('removed', self._instrument_removed_cb)
         info['reload_hid'] = ins.connect('reload', self._instrument_reload_cb)
-        self._instruments[ins.get_name()] = Proxy(ins)
+        info['proxy'] = Proxy(ins.get_name())
         self._instruments_info[ins.get_name()] = info
 
         newtags = []
@@ -132,7 +135,7 @@ class Instruments(gobject.GObject):
         if len(newtags) > 0:
             self.emit('tags-added', newtags)
 
-    def get(self, name):
+    def get(self, name, proxy=True):
         '''
         Return Instrument object with name 'name'.
 
@@ -149,7 +152,10 @@ class Instruments(gobject.GObject):
             name = name[0]
 
         if self._instruments.has_key(name):
-            return self._instruments[name]
+            if proxy:
+                return self._instruments_info[name]['proxy']
+            else:
+                return self._instruments[name]
         else:
             return None
 
@@ -245,7 +251,7 @@ class Instruments(gobject.GObject):
                     (1) tags, array of strings representing tags
                     (2) many instruments require address=<address>
 
-        Output: Instrument object
+        Output: Instrument object (Proxy)
         '''
 
         if not self.type_exists(instype):
@@ -268,7 +274,7 @@ class Instruments(gobject.GObject):
 
         self.add(ins, create_args=kwargs)
         self.emit('instrument-added', ins)
-        return ins
+        return self.get(name)
 
     def reload_module(self, instype):
         module = _get_driver_module(instype)
@@ -279,9 +285,7 @@ class Instruments(gobject.GObject):
     def reload(self, ins):
         '''
         Try to reload the module associated with instrument 'ins' and return
-        the new instance. Note that references to the old instance will not
-        be replaced, so care has to be taken that you refer to the newly
-        created object.
+        the new instrument.
 
         In general about reloading: your milage may vary!
 
@@ -289,7 +293,7 @@ class Instruments(gobject.GObject):
             ins (Instrument or string): the instrument to reload
 
         Output:
-            Reloaded instrument
+            Reloaded instrument (Proxy)
         '''
 
         if type(ins) is types.StringType:
@@ -301,8 +305,12 @@ class Instruments(gobject.GObject):
         instype = ins.get_type()
         kwargs = self._instruments_info[insname]['create_args']
 
+        logging.info('reloading %r, type: %r, kwargs: %r',
+                insname, instype, kwargs)
+        print 'Reloading %r (type %r)' % (insname, instype)
+
         self.reload_module(instype)
-        ins.remove()
+        self.remove(insname)
 
         return self.create(insname, instype, **kwargs)
 
@@ -332,12 +340,11 @@ class Instruments(gobject.GObject):
         except:
             return False
 
-    def _instrument_removed_cb(self, sender, name):
+    def remove(self, name):
         '''
         Remove instrument from list and emit instrument-removed signal.
 
-        Input:  (1) sender of signal
-                (2) instrument name
+        Input:  (1) instrument name
         Output: None
         '''
         if self._instruments.has_key(name):
@@ -345,6 +352,9 @@ class Instruments(gobject.GObject):
             del self._instruments_info[name]
 
         self.emit('instrument-removed', name)
+
+    def _instrument_removed_cb(self, sender, name):
+        self.remove(name)
 
     def _instrument_reload_cb(self, sender):
         '''

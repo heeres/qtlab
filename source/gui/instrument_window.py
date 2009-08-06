@@ -191,6 +191,11 @@ class QTInstrumentFrame(gtk.VBox):
     def _label_clicked_cb(self, sender, param):
         self.show_table(not self._table.props.visible)
 
+    def remove(self):
+        #FIXME: required to kill all references to the instrument object.
+        #This also suggests that InstrumentFrames are leaked.
+        self._instrument = None
+
 class InstrumentWindow(qtwindow.QTWindow):
 
     def __init__(self):
@@ -253,6 +258,7 @@ class InstrumentWindow(qtwindow.QTWindow):
     def _remove_instrument(self, insname):
         if insname in self._ins_widgets:
             self._vbox.remove(self._ins_widgets[insname])
+            self._ins_widgets[insname].remove()
             del self._ins_widgets[insname]
 
     def _update_instrument(self, ins, changes):
