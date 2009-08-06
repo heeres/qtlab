@@ -98,10 +98,10 @@ class NumberEntry(gtk.SpinButton):
         self._parameter = param
         self._dirty = False
 
-        minval = 0
+        minval = -1e12
         if 'minval' in opts:
             minval = opts['minval']
-        maxval = 1
+        maxval = 1e12
         if 'maxval' in opts:
             maxval = opts['maxval']
         self.set_range(minval, maxval)
