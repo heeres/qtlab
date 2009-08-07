@@ -1,6 +1,11 @@
 import gobject
-import simplejson
 import os
+
+# for backward compatibility to python 2.5
+try:
+    import json
+except:
+    import simplejson as json
 
 import logging
 
@@ -43,7 +48,7 @@ class QTConfig(gobject.GObject):
 
         try:
             f = file(self._get_filename(), 'r')
-            self._config = simplejson.load(f)
+            self._config = json.load(f)
             f.close()
         except Exception, e:
             logging.warning('Unable to load config file')
@@ -56,7 +61,7 @@ class QTConfig(gobject.GObject):
 
         try:
             f = file(self._get_filename(), 'w+')
-            simplejson.dump(self._config, f, indent=4, sort_keys=True)
+            json.dump(self._config, f, indent=4, sort_keys=True)
             f.close()
         except Exception, e:
             logging.warning('Unable to save config file')
