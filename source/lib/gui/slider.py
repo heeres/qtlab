@@ -212,10 +212,17 @@ class SliderWindow(qtwindow.QTWindow):
             slf.append( 10**(-i-1) * self._range * self._fine_sliders[i].get_value())
 
         value = min(max(slm + sum(slf), self._min), self._max)
-        self._set_value(value)
+
+        self._value_to_set = value
+        if self._set_hid is None:
+            self._set_hid = gobject.timeout_add(self._delay, self._set_value)
+        #self._set_value(value)
 
     def _set_max_clicked_cb(self, widget):
-        _max = float(self._max_entry.get_text())
+        _max = self._max_entry.get_text()
+        if _max == '':
+            return
+        _max = float(_max)
         if _max < self._value:
             logging.warning('Cannot put maximum lower then current value: %f' % self._value)
             return
@@ -229,7 +236,10 @@ class SliderWindow(qtwindow.QTWindow):
         self._main_slider.set_range(self._min, self._max)
 
     def _set_min_clicked_cb(self, widget):
-        _min = float(self._min_entry.get_text())
+        _min = self._min_entry.get_text()
+        if _min == '':
+            return
+        _min = float(_min)
         if _min > self._value:
             logging.warning('Cannot put minimum higher then current value: %f' % self._value)
             return
@@ -243,28 +253,30 @@ class SliderWindow(qtwindow.QTWindow):
         self._main_slider.set_range(self._min, self._max)
 
     def _set_delay_clicked_cb(self, widget):
-        self._delay = int(self._delay_entry.get_text())
+        _delay = self._delay_entry.get_text()
+        if _delay == '':
+            return
+        self._delay = int(_delay)
         self._delay_value.set_label('%d' % self._delay)
         self._delay_entry.set_text('')
 
     def _set_value_clicked_cb(self, widget):
-        value = float(self._value_entry.get_text())
+        value = self._value_entry.get_text()
+        if value == '':
+            return
+        value = float(value)
         if value > self._max:
             logging.warning('Trying to put too high value: %f' % value)
             return
         if value < self._min:
             logging.warning('Trying to put too low value: %f' % value)
             return
-        self._set_value(value)
+        self._value_to_set = value
+        self._set_value()
         self._value_entry.set_text('')
         self._set_sliders()
 
-    def _set_value(self, value):
-        self._value_to_set = value
-        if self._set_hid is None:
-            self._set_hid = gobject.timeout_add(self._delay, self._do_set_value)
-
-    def _do_set_value(self):
+    def _set_value(self):
         self._set_hid = None
         self._instrument.set(self._parameter, self._value_to_set)
         if self._get_after_set:
