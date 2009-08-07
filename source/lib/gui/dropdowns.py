@@ -263,8 +263,12 @@ class AllParametersDropdown(QTComboBox):
         self._flags = flags
         self._types = types
         self._tags = tags
-        self._parameter_added_hids = {}
-        self.update_list()
+
+        self._do_update_hid = None
+        self._param_info = {}
+        self._ins_names = []
+        self.add_instruments()
+
         self._param_list.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
         self._instruments = qt.instruments
@@ -272,14 +276,46 @@ class AllParametersDropdown(QTComboBox):
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
 
-    def _instrument_added_cb(self, sender, instrument):
-        self.update_list()
+    def _instrument_added_cb(self, sender, ins):
+        self.add_instrument(ins)
 
-    def _instrument_removed_cb(self, sender, instrument):
-        self.update_list()
+    def _instrument_removed_cb(self, sender, name):
+        self.remove_instrument(name)
 
     def _instrument_changed_cb(self, sender, instrument, changes):
         return
+
+    def add_instruments(self):
+        inslist = misc.dict_to_ordered_tuples(qt.instruments.get_instruments())
+        for (insname, ins) in inslist:
+            self.add_instrument(ins)
+
+    def add_instrument(self, ins):
+        if ins.get_name() not in self._ins_names:
+            self._ins_names.append(ins.get_name())
+            ins.connect('parameter-added', self._parameter_added_cb)
+            for param in ins.get_parameter_names():
+                self.add_parameter(ins, param)
+
+    def add_parameter(self, ins, param):
+        params = misc.dict_to_ordered_tuples(ins.get_parameters())
+        options = ins.get_parameter_options(param)
+        add_name = '%s.%s' % (ins.get_name(), param)
+        if add_name in self._param_info:
+            return
+        self._param_info[add_name] = {
+            'insname': ins.get_name(),
+            'options': options,
+            }
+
+    def remove_instrument(self, name):
+        remove_list = []
+        for add_name, opts in self._param_info.iteritems():
+            if opts['insname'] == name:
+                remove_list.append(add_name)
+        for name in remove_list:
+            del self._param_info[name]
+        self.update_list()
 
     def set_flags(self, flags):
         if self._flags != flags:
@@ -296,34 +332,33 @@ class AllParametersDropdown(QTComboBox):
             self._tags = tags
             return self.update_list()
 
+    def _should_add(self, options):
+        if len(self._tags) > 0:
+            tag_ok = False
+            for tag in self._tags:
+                if tag in options['tags']:
+                    tag_ok = True
+                    break
+        else:
+            tag_ok = True
+
+        if options['flags'] & self._flags and tag_ok:
+            return True
+        else:
+            return False
+
     def update_list(self):
+        if self._do_update_hid is None:
+            self._do_update_hid = gobject.idle_add(self._do_update_list)
+
+    def _do_update_list(self):
+        self._do_update_hid = None
+
         self._param_list.clear()
         self._param_list.append(['<None>'])
-
-        for ins, hid in self._parameter_added_hids.iteritems():
-            if ins.handler_is_connected(hid):
-                ins.disconnect(hid)
-
-        inslist = misc.dict_to_ordered_tuples(qt.instruments.get_instruments())
-        for (insname, ins) in inslist:
-            self._parameter_added_hids[ins] = ins.connect('parameter-added',
-                self._parameter_added_cb)
-
-            params = misc.dict_to_ordered_tuples(ins.get_parameters())
-            for (varname, options) in params:
-
-                if len(self._tags) > 0:
-                    tag_ok = False
-                    for tag in self._tags:
-                        if tag in options['tags']:
-                            tag_ok = True
-                            break
-                else:
-                    tag_ok = True
-
-                if options['flags'] & self._flags and tag_ok:
-                    add_name = '%s.%s' % (insname, varname)
-                    self._param_list.append([add_name])
+        for add_name, opts in self._param_info.iteritems():
+            if self._should_add(opts['options']):
+                self._param_list.append([add_name])
 
     def get_selection(self):
         try:
