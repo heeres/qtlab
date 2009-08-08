@@ -105,8 +105,7 @@ class _QTGnuPlot():
         self.cmd('reset')
         self.cmd('clear')
 
-        self._auto_suffix_counter = 0
-        self._auto_suffix_gp_counter = 0
+        self._auto_suffix_counters = {}
 
     def create_command(self, name, val):
         '''Create command for a plot property.'''
@@ -154,10 +153,7 @@ class _QTGnuPlot():
         else:
             return ''
 
-    def _generate_suffix(self, gp=False, **kwargs):
-        append_graphname = kwargs.get('append_graphname', True)
-        add_suffix = kwargs.get('suffix', None)
-        autosuffix = kwargs.get('autosuffix', True)
+    def _generate_suffix(self, append_graphname=True, add_suffix=None, autosuffix=True, ext='None'):
 
         suffix = ''
         if append_graphname:
@@ -165,44 +161,51 @@ class _QTGnuPlot():
         if add_suffix is not None:
             suffix += '_' + str(add_suffix)
         if autosuffix:
-            if gp and self._auto_suffix_gp_counter > 0:
-                suffix += '_%d' % self._auto_suffix_gp_counter
-            elif not gp and self._auto_suffix_counter > 0:
-                suffix += '_%d' % self._auto_suffix_counter
-
-            if gp:
-                self._auto_suffix_gp_counter += 1
-            else:
-                self._auto_suffix_counter += 1
+            if not self._auto_suffix_counters.has_key(ext):
+                self._auto_suffix_counters[ext] = 0
+            if self._auto_suffix_counters[ext] > 0:
+                suffix += '_%d' % self._auto_suffix_counters[ext]
+            self._auto_suffix_counters[ext] += 1
 
         return suffix
+
+    def _process_filepath(self, filepath, extension, **kwargs):
+
+        if filepath is None:
+            filepath = self.get_first_filepath()
+            if filepath.startswith(qt.config['tempdir']):
+                filepath = os.getcwd()
+
+        if os.path.isdir(filepath):
+            fn = os.path.join(filepath, self.get_name())
+            kwargs['append_graphname'] = False
+        else:
+            fn, ext = os.path.splitext(filepath)
+
+        suffix = self._generate_suffix(ext=extension, **kwargs)
+        filepath = '%s%s.%s' % (fn, suffix, extension)
+        filepath = os.path.abspath(filepath)
+
+        return filepath
 
     def save_as_type(self, terminal, extension, filepath=None, **kwargs):
         '''
         Save a different version of the plot.
 
         kwargs:
-            filepath (path)   :       filepath to save to
-            gp (bool)         :       ?
-            suffix (string)   :       filename suffix
-            autosuffix (bool) :       auto increment suffix
-            append_graphname  :       add graphname to filename
+            filepath (path)     :       filepath to save to
+            add_suffix (string) :       filename suffix
+            autosuffix (bool)   :       auto increment suffix
+            append_graphname    :       add graphname to filename
         '''
 
-        if filepath is None:
-            filepath = self.get_first_filepath()
-        filepath = os.path.abspath(filepath)
+        filepath = self._process_filepath(filepath, extension, **kwargs)
+        # Fix GnuPlot on windows issue
+        filepath = filepath.replace('\\', '/')
 
         self.update()
-
         self._gnuplot.set_terminal(terminal)
-
-        fn, ext = os.path.splitext(filepath)
-        # Fix GnuPlot on windows issue
-        fn = fn.replace('\\', '/')
-        suffix = self._generate_suffix(**kwargs)
-        self._gnuplot.cmd('set output "%s%s.%s"' % (fn, suffix, extension))
-
+        self._gnuplot.cmd('set output "%s"' % filepath)
         self._gnuplot.cmd('replot')
         self._gnuplot.reset_default_terminal()
         self._gnuplot.cmd('set output')
@@ -273,10 +276,9 @@ class _QTGnuPlot():
         self.save_as_type('svg', 'svg', filepath=filepath, **kwargs)
 
     def _write_gp(self, s, filepath=None, **kwargs):
-        if filepath is None:
-            fn, ext = os.path.splitext(self.get_first_filepath())
-            suffix = self._generate_suffix(gp=True, **kwargs)
-            filepath = '%s%s.gp' % (str(fn), suffix)
+
+        filepath = self._process_filepath(filepath, 'gp', **kwargs)
+
         f = open(filepath, 'w')
         f.write(s)
         f.close()
