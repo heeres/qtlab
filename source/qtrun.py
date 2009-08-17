@@ -20,7 +20,7 @@ import shutil
 import copy
 from lib import calltimer
 
-def run(filepath, name=''):
+def qtrun(filepath, name=''):
     if not os.path.isfile(filepath):
         raise ValueError("file '%s' does not exist" % filepath)
 
@@ -51,6 +51,6 @@ def run(filepath, name=''):
     finally:
         data.close_datafile()
 
-def run_thread(filepath, name=''):
+def qtrun_thread(filepath, name=''):
     calltimer.ThreadCall(qtrun, filepath, name)
 
