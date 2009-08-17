@@ -54,6 +54,21 @@ class QTConfig(gobject.GObject):
             logging.warning('Unable to load config file')
             self._config = {}
 
+    def remove(self, remove_list, save=True):
+        '''
+        Remove settings from config file
+
+        Input:
+            remove_list [string] : list of items to remove
+        '''
+
+        for item in remove_list:
+            if item in self._config:
+                del self._config[item]
+
+        if save:
+            self.save()
+
     def save(self):
         '''
         Save settings.
