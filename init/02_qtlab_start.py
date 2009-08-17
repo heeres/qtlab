@@ -28,7 +28,7 @@ if __startdir__ is not None:
     qt.config['startdir'] = __startdir__
 # FIXME: use of __startdir__ is spread over multiple scripts:
 # 1) source/qtlab_client_shell.py
-# 2) shell/02_qtlab_start.py
+# 2) init/02_qtlab_start.py
 # This should be solved differently
 
 # Set exception handler

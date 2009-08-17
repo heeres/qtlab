@@ -2,6 +2,7 @@ import os
 import sys
 import config
 from lib import temp
+from lib.misc import exit_ipython
 
 _remove_lock = True
 
@@ -35,6 +36,7 @@ def _check_lockfile():
             line = sys.stdin.readline().strip()
             if line != 's':
                 _remove_lock = False
+                exit_ipython()
                 sys.exit()
 
     onkill = [qtlab_exit]

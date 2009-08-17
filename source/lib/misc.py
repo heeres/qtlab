@@ -108,3 +108,8 @@ def exact_time():
 
     return _time_func()
 
+def exit_ipython():
+    import IPython
+    ip = IPython.ipapi.get()
+    ip.magic('Exit')
+

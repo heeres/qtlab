@@ -37,31 +37,59 @@ def get_shell_files(path, ignore_list):
 
     return ret
 
+def show_start_help():
+    print 'Usage: qtlab <options> <directory> <files>'
+    print '\t<directory> is an optional directory to start in'
+    print '\t<files> is an optional list of scripts to execute'
+    print '\tOptions:'
+    print '\t--help\t\tShow this help'
+    print '\t-i <pattern>\tIgnore shell scripts starting with <pattern>'
+    print '\t\t\t(can be used multiple times'
 
-if __name__ == '__main__':
-    print 'Starting QT Lab environment...'
+    import IPython
+    ip = IPython.ipapi.get()
+    ip.magic('Exit')
 
+def do_start():
     basedir = os.path.split(os.path.dirname(sys.argv[0]))[0]
     sys.path.append(os.path.abspath(os.path.join(basedir, 'source')))
 
-    _vars = {}
-    _vars['ignorelist'] = []
-    _vars['i'] = 1
+    ignorelist = []
+    i = 1
+
+    global __startdir__
     __startdir__ = None
     # FIXME: use of __startdir__ is spread over multiple scripts:
     # 1) source/qtlab_client_shell.py
-    # 2) shell/02_qtlab_start.py
+    # 2) init/02_qtlab_start.py
     # This should be solved differently
-    while _vars['i'] < len(sys.argv):
-        if os.path.isdir(sys.argv[_vars['i']]):
-            __startdir__ = sys.argv[_vars['i']]
-        elif sys.argv[_vars['i']] == '-i':
+    while i < len(sys.argv):
+        if os.path.isdir(sys.argv[i]):
+            __startdir__ = sys.argv[i]
+        elif sys.argv[i] == '-i':
             i += 1
-            _vars['ignorelist'].append(sys.argv[_vars['i']])
-        _vars['i'] += 1
+            ignorelist.append(sys.argv[i])
+        elif sys.argv[i] == '--help':
+            show_start_help()
+            return []
+        i += 1
 
-    _vars['filelist'] = get_shell_files(os.path.join(basedir, 'shell'), _vars['ignorelist'])
-    for (_vars['dir'], _vars['name']) in _vars['filelist']:
-        _vars['filename'] = '%s/%s' % (_vars['dir'], _vars['name'])
-        print 'Executing %s...' % (_vars['filename'])
-        execfile(_vars['filename'])
+    filelist = get_shell_files(os.path.join(basedir, 'init'), ignorelist)
+    return filelist
+
+if __name__ == '__main__':
+    print 'Starting QT Lab environment...'
+    filelist = do_start()
+    for (dir, name) in filelist:
+        filename = '%s/%s' % (dir, name)
+        print 'Executing %s...' % (filename)
+        try:
+            execfile(filename)
+        except SystemExit:
+            break
+
+    try:
+        del filelist, dir, name, filename
+    except:
+        pass
+
