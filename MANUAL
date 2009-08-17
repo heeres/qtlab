@@ -31,8 +31,8 @@ currently located at http://qtwork.nano.tudelft.nl/cgi-bin/gitweb.cgi.
 - Gtk
 - Pygtk
 - Gnuplot (4.3 on Windows)
-- simplejson
 - numpy
+For a complete list see the INSTALL file in the qtlab folder.
 
 1.3. Contributing
 Please send your contributions, such as new drivers and/or bugfixes to
@@ -50,7 +50,7 @@ Reinier Heeres <reinier@heeres.eu>
 - HP 8656B, 8657A, 8657B
 - HP 8753C
 - National Instruments DAQ devices (Windows only)
-- Quantum Transport IVVI, SMR40 and OptoDAC
+- Quantum Transport IVVI, SMS and OptoDAC
 - Keithley 2100
 - Keithley 2700
 - R&S SMR40
@@ -203,10 +203,18 @@ organize the extensions:
     lib/network         - Network functionality (e.g. tcpserver)
     lib/                - More generic things (e.g. temporary file handler)
 
-4. Measurement scripts
-Your own measurement scripts should be placed under the 'scripts/' directory.
-This directory should also contain a sub-directory called 'examples', where
-you can find some simple demonstration scripts.
+4. User specific configuration
+The most common user-specific settings can be set in the file userconfig.py
+The following options are available:
+
+    datadir         - Default data folder
+    startdir        - path where you like QT lab to start,
+                      i.e. your scripts folder.
+    startscript     - script file you wish to run when QT lab starts
+    user_insdir     - location where you store your user-specific
+                    - (virtual) instrument drivers.
+
+It is good practice to put any user specific scripts and modules in a folder outside the qtlab folder. This avoids unraveling all the files when you want to update QT lab.
 
 5. Performance
 The overhead of the 'get' and 'set' functions are quite small, but depending
