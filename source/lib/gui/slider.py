@@ -144,7 +144,8 @@ class SliderWindow(qtwindow.QTWindow):
         self._delay_but.connect('clicked', self._set_delay_clicked_cb)
 
         self._value_label = gtk.Label('value:')
-        self._value_value = gtk.Label('%e' % self._value)
+        self._value_getbut = gtk.Button('Get')
+        self._value_getbut.connect('clicked', self._get_value_clicked_cb)
         self._value_entry = gtk.Entry()
         self._value_but   = gtk.Button('Set')
         self._value_but.connect('clicked', self._set_value_clicked_cb)
@@ -168,7 +169,7 @@ class SliderWindow(qtwindow.QTWindow):
         self._ctable.attach(self._delay_but,   3, 4, 2, 3)
 
         self._ctable.attach(self._value_label, 0, 1, 3, 4)
-        self._ctable.attach(self._value_value, 1, 2, 3, 4)
+        self._ctable.attach(self._value_getbut, 1, 2, 3, 4)
         self._ctable.attach(self._value_entry, 2, 3, 3, 4)
         self._ctable.attach(self._value_but,   3, 4, 3, 4)
 
@@ -216,7 +217,6 @@ class SliderWindow(qtwindow.QTWindow):
         self._value_to_set = value
         if self._set_hid is None:
             self._set_hid = gobject.timeout_add(self._delay, self._set_value)
-        #self._set_value(value)
 
     def _set_max_clicked_cb(self, widget):
         _max = self._max_entry.get_text()
@@ -260,6 +260,22 @@ class SliderWindow(qtwindow.QTWindow):
         self._delay_value.set_label('%d' % self._delay)
         self._delay_entry.set_text('')
 
+    def _get_value_clicked_cb(self, widget):
+        value = self._instrument.get(self._parameter)
+        if value > self._max:
+            self._max = value
+            self._range = self._max - self._min
+            self._max_value.set_label('%e' % self._max)
+            self._main_slider.set_range(self._min, self._max)
+        if value < self._min:
+            self._min = value
+            self._range = self._max - self._min
+            self._min_value.set_label('%e' % self._min)
+            self._main_slider.set_range(self._min, self._max)
+        self._value = value
+        self._set_sliders()
+        self._vallabel.set_markup('<span size="xx-large">%e</span>' % self._value)
+
     def _set_value_clicked_cb(self, widget):
         value = self._value_entry.get_text()
         if value == '':
@@ -282,7 +298,6 @@ class SliderWindow(qtwindow.QTWindow):
         if self._get_after_set:
             value = self._instrument.get(self._parameter)
         self._value = value
-        self._value_value.set_label('%e' % self._value)
         self._vallabel.set_markup('<span size="xx-large">%e</span>' % self._value)
 
     def _set_sliders(self):
