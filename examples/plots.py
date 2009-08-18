@@ -14,7 +14,6 @@ p = plot(x, y, 'ks',                    # x vs y with black squares
 )
 
 # Add another curve to the plot, on the right axis
-x2 = np.arange(-10, 10, 0.1)
 y2 = np.cos(x) *10
 p.add(x, y2, 'r-', title='cos(x)', right=True)
 p.set_y2range(-25, 15)
