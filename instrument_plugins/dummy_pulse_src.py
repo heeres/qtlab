@@ -27,6 +27,7 @@ class dummy_pulse_src(Instrument):
                 units='Volts')
         self.add_parameter('status',
                 type=types.StringType,
+                option_list=('on', 'off'),
                 flags=Instrument.FLAG_GETSET | \
                 Instrument.FLAG_GET_AFTER_SET)
 

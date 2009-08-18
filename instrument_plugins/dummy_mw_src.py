@@ -11,7 +11,7 @@ class dummy_mw_src(Instrument):
                 type=types.FloatType,
                 flags=Instrument.FLAG_GETSET | \
                 Instrument.FLAG_GET_AFTER_SET,
-                minval=0, maxval=10,
+                minval=0, maxval=20e9,
                 units='Hz')
         self.add_parameter('power',
                 type=types.FloatType,
@@ -26,6 +26,7 @@ class dummy_mw_src(Instrument):
                 minval=-180, maxval=180)
         self.add_parameter('status',
                 type=types.StringType,
+                option_list=('on', 'off'),
                 flags=Instrument.FLAG_GETSET | \
                 Instrument.FLAG_GET_AFTER_SET)
 
@@ -34,7 +35,7 @@ class dummy_mw_src(Instrument):
         self._dummy_frequency = -99
         self._dummy_power = -99
         self._dummy_phase = -99
-        self._dummy_status = 'none'
+        self._dummy_status = 'on'
 
         if reset:
             self.reset()
