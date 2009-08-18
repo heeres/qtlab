@@ -6,5 +6,5 @@ if qt.config['startscript'] is not None:
         print 'Executing (user startscript): %s' % qt.config['startscript']
         execfile(qt.config['startscript'])
     else:
-        logging.warning('Dit not find startscript "%s", skipping' % qt.config['startscript'])
+        logging.warning('Did not find startscript "%s", skipping' % qt.config['startscript'])
 

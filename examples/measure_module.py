@@ -130,7 +130,7 @@ def example2(f_vec, b_vec):
     data.create_file()
 
     # this shows how to save to a specific path and name, and how
-    # to avoid a settinsg file to be created. The directory is first
+    # to avoid a settings file to be created. The directory is first
     # retreived from the previous data object
     dir = data.get_dir()
     maxfilepath = os.path.join(dir, 'maxvals.dat')
