@@ -238,6 +238,10 @@ class Instrument(calltimer.ThreadSafeGObject):
                 option_list (array/tuple): allowed options
                 persist (bool): if true load/save values in config file
                 probe_interval (int): interval in ms between automatic gets
+                listen_to (list of (ins, param) tuples): list of parameters
+                    to watch. If any of them changes, execute a get for this
+                    parameter. Useful for a parameter that depends on one
+                    (or more) other parameters.
 
         Output: None
         '''
