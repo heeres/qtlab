@@ -345,7 +345,7 @@ class _QTGnuPlot():
 
     def _get_trace_options(self, datadict, defaults={}):
         datadict = datadict.copy()
-        for key, val in defaults:
+        for key, val in defaults.iteritems():
             if key not in datadict:
                 datadict[key] = val
 
@@ -799,7 +799,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             defaults = {
                 'with': self._default_with
             }
-            s += self._get_trace_options(datadict)
+            s += self._get_trace_options(datadict, defaults)
 
         # gnuplot (version 4.3 november) has bug for placing keys (legends)
         # here we put ugly hack as a temporary fix
