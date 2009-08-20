@@ -55,28 +55,28 @@ class example(Instrument):
 
         self.reset()
 
-    def _do_get_value(self):
+    def do_get_value(self):
         return 1
 
-    def _do_get_speed(self):
+    def do_get_speed(self):
         print 'Getting speed'
         return 2
 
-    def _do_set_speed(self, val):
+    def do_set_speed(self, val):
         print 'Set speed to %s' % val
         return True
 
-    def _do_get_input(self, channel):
+    def do_get_input(self, channel):
         return channel * channel
 
-    def _do_get_output(self, channel):
+    def do_get_output(self, channel):
         return 0
 
-    def _do_set_output(self, val, channel, times2=False):
+    def do_set_output(self, val, channel, times2=False):
         if times2:
             val *= 2
 
-    def _do_set_gain(self, val):
+    def do_set_gain(self, val):
         return val
 
     def remove(self):

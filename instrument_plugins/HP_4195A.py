@@ -507,13 +507,13 @@ class HP_4195A(Instrument):
 
 ### parameters
 
-    def _do_get_sweep_time(self):
+    def do_get_sweep_time(self):
         '''
         Get sweep time from device
         '''
         return float(self._visainstrument.ask('FMT1;ST?'))
 
-    def _do_set_resbw(self, bw):
+    def do_set_resbw(self, bw):
         '''
         Set Resolution Bandwidth.
         Can be 3, 10, 30, 100, 300, 1k, 3k, 10k, 30k, 100k, 300k
@@ -527,7 +527,7 @@ class HP_4195A(Instrument):
         self._visainstrument.write('RBW=%f' %bw)
         self.get_sweep_time()
 
-    def _do_get_resbw(self):
+    def do_get_resbw(self):
         '''
         Get Resolution Bandwith.
 
@@ -539,7 +539,7 @@ class HP_4195A(Instrument):
         '''
         return int(float(self._visainstrument.ask('FMT1;RBW?')))
 
-    def _do_set_numpoints(self, numpts):
+    def do_set_numpoints(self, numpts):
         '''
         Set number of points in trace.
         Can be any number between 2-401.
@@ -553,7 +553,7 @@ class HP_4195A(Instrument):
         self._visainstrument.write('NOP=%f' %numpts)
         self.get_sweep_time()
 
-    def _do_get_numpoints(self):
+    def do_get_numpoints(self):
         '''
         Get number of points in trace
 
@@ -565,7 +565,7 @@ class HP_4195A(Instrument):
         '''
         return int(float(self._visainstrument.ask('FMT1;NOP?')))
 
-    def _do_set_start_freq(self, freq):
+    def do_set_start_freq(self, freq):
         '''
         Set start frequency.
 
@@ -577,7 +577,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('START=%f' %freq)
 
-    def _do_get_start_freq(self):
+    def do_get_start_freq(self):
         '''
         Get start frequency.
 
@@ -589,7 +589,7 @@ class HP_4195A(Instrument):
         '''
         return float(self._visainstrument.ask('FMT1;START?'))
 
-    def _do_set_stop_freq(self, freq):
+    def do_set_stop_freq(self, freq):
         '''
         Set stop frequency.
 
@@ -601,7 +601,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('STOP=%f' %freq)
 
-    def _do_get_stop_freq(self):
+    def do_get_stop_freq(self):
         '''
         Get stop frequency.
 
@@ -614,7 +614,7 @@ class HP_4195A(Instrument):
         return float(self._visainstrument.ask('FMT1;STOP?'))
 
 
-    def _do_set_center_freq(self, freq):
+    def do_set_center_freq(self, freq):
         '''
         Set center frequency.
 
@@ -626,7 +626,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('CENTER=%f' %freq)
 
-    def _do_get_center_freq(self):
+    def do_get_center_freq(self):
         '''
         Get center frequency
 
@@ -638,7 +638,7 @@ class HP_4195A(Instrument):
         '''
         return float(self._visainstrument.ask('FMT1;CENTER?'))
 
-    def _do_set_span_freq(self, freq):
+    def do_set_span_freq(self, freq):
         '''
         Set span frequency.
 
@@ -650,7 +650,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('SPAN=%f' %freq)
 
-    def _do_get_span_freq(self):
+    def do_get_span_freq(self):
         '''
         Get span frequency.
 
@@ -662,7 +662,7 @@ class HP_4195A(Instrument):
         '''
         return float(self._visainstrument.ask('FMT1;SPAN?'))
 
-    def _do_set_power(self, pow):
+    def do_set_power(self, pow):
         '''
         Set power.
 
@@ -674,7 +674,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('OSC1=%f' % pow)
 
-    def _do_get_power(self):
+    def do_get_power(self):
         '''
         Get power
 
@@ -686,7 +686,7 @@ class HP_4195A(Instrument):
         '''
         return float(self._visainstrument.ask('FMT1;OSC1?'))
 
-    def _do_set_att_r1(self,att):
+    def do_set_att_r1(self,att):
         '''
         Set attenuator in port r1
         Can be 0,10,20,30,40,50.
@@ -699,7 +699,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('ATR1=%f' %att)
 
-    def _do_get_att_r1(self):
+    def do_get_att_r1(self):
         '''
         Get attenuation port r1
 
@@ -711,7 +711,7 @@ class HP_4195A(Instrument):
         '''
         return int(float(self._visainstrument.ask('FMT1;ATR1?')))
     
-    def _do_set_att_t1(self,att):
+    def do_set_att_t1(self,att):
         '''
         Set attenuator in port t1
         Can be 0,10,20,30,40,50.
@@ -724,7 +724,7 @@ class HP_4195A(Instrument):
         '''
         self._visainstrument.write('ATT1=%f' %att)
 
-    def _do_get_att_t1(self):
+    def do_get_att_t1(self):
         '''
         Get attenuation port t1
 

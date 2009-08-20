@@ -130,7 +130,7 @@ class LeCroy_44Xi(Instrument):
         logging.info(__name__ + ' : Auto setup of vertical, timebase and trigger')
         self._visainstrument.write('ASET')
 
-    def _do_set_timebase(self, value):
+    def do_set_timebase(self, value):
         '''
         Modify the timebase setting in Sec/div.
 
@@ -145,7 +145,7 @@ class LeCroy_44Xi(Instrument):
         logging.info(__name__ + ' : Set timebase setting to %s' % value)
         self._visainstrument.write('TDIV %s' % value)
 
-    def _do_get_timebase(self):
+    def do_get_timebase(self):
         '''
         Get the timebase setting in Sec/div.
 
@@ -161,7 +161,7 @@ class LeCroy_44Xi(Instrument):
         result = result.replace(' S','')
         return float(result)
 
-    def _do_set_vertical(self, value, channel):
+    def do_set_vertical(self, value, channel):
         '''
         Set vertical sensitivity in Volts/div.
 
@@ -177,7 +177,7 @@ class LeCroy_44Xi(Instrument):
         logging.info(__name__ + ' : Set vertical base setting of channel %s to %s' % (channel,value))
         self._visainstrument.write('C%s:VDIV %s' % (channel,value))
 
-    def _do_get_vertical(self, channel):
+    def do_get_vertical(self, channel):
         '''
         Get vertical sensitivity in Volts/div.
 
@@ -245,7 +245,7 @@ class LeCroy_44Xi(Instrument):
         logging.info(__name__ + ' : Set the sequence mode settings. Segments: %s, Maximum memory size: %s' % (segments, max_size))
         self._visainstrument.write('SEQ ON, %s, %s' % (segments, max_size))
 
-    def _do_set_msize(self, msize):
+    def do_set_msize(self, msize):
         '''
         Set the current maximum memory length used to capture waveforms.
         Input:
@@ -256,7 +256,7 @@ class LeCroy_44Xi(Instrument):
         logging.info(__name__ + ' : Set maximum memory length to %s' % msize)
         self._visainstrument.write('MSIZ %s' % msize)
 
-    def _do_get_msize(self):
+    def do_get_msize(self):
         '''
         Get the current maximum memory length used to capture waveforms.
         Input:

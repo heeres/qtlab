@@ -749,10 +749,20 @@ class Instrument(calltimer.ThreadSafeGObject):
             return None
 
     def _val_from_option_dict(self, opts, value):
+        if value in opts:
+            return value
+
+        try:
+            v = eval(value)
+            if v in opts:
+                return v
+        except:
+            pass
+
         for k, v in opts.iteritems():
             if v == value:
                 return k
-        return self._val_from_option_list(opts.keys(), value)
+        return None
 
     _CONVERT_MAP = {
             types.IntType: int,

@@ -256,7 +256,7 @@ class SMS(Instrument):
         self._write_to_instrument('PC2DACOFF;')
 
     # Communication with wrapper
-    def _do_get_dac(self, channel):
+    def do_get_dac(self, channel):
         '''
         Reads the specified dacvalue from memory
 
@@ -275,7 +275,7 @@ class SMS(Instrument):
         voltage = self._bytevalue_to_voltage(byteval) + self._ask_value('corr_dac' + str(channel))
         return voltage
 
-    def _do_set_dac(self, voltage, channel):
+    def do_set_dac(self, voltage, channel):
         '''
         Sets the dac to the specified voltage
 
@@ -306,7 +306,7 @@ class SMS(Instrument):
         self._save_values_to_file()
 
     # Base functions to handle the polarity
-    def _do_get_pol_dac(self, channel, direct=True):
+    def do_get_pol_dac(self, channel, direct=True):
         '''
         Updates the polarities in memory of the
         rack containing the specified channel.
@@ -362,7 +362,7 @@ class SMS(Instrument):
         self.get_battvoltage_neg()
         self.get_battvoltage_pos()
 
-    def _do_get_battvoltage_pos(self):
+    def do_get_battvoltage_pos(self):
         '''
         Returns the positive battery voltage
 
@@ -377,7 +377,7 @@ class SMS(Instrument):
         reply = float(self._read_buffer())
         return reply
 
-    def _do_get_battvoltage_neg(self):
+    def do_get_battvoltage_neg(self):
         '''
         Returns the negative battery voltage
 

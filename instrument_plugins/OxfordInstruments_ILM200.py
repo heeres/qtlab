@@ -167,7 +167,7 @@ class OxfordInstruments_ILM200(Instrument):
         logging.info(__name__ + ' : Setting remote control status to %s' %status.get(mode,"Unknown"))
         self._execute('C%s' %mode)
 
-    def _do_get_level(self):
+    def do_get_level(self):
         '''
         Get Helium level of channel 1.
         Input:
@@ -180,7 +180,7 @@ class OxfordInstruments_ILM200(Instrument):
         result = self._execute('R1')
         return float(result.replace('R',''))
 
-    def _do_get_status(self):
+    def do_get_status(self):
         '''
         Get status of the device.
         Input:

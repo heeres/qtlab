@@ -115,7 +115,7 @@ class HP_81110A(Instrument):
         self.get_display()
 
     # communication with device
-    def _do_get_delay(self, channel):
+    def do_get_delay(self, channel):
         '''
         Reads the pulse delay from the specified channel
 
@@ -128,7 +128,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : get delay for channel %d' % channel)
         return float(self._visainstrument.ask(':PULS:DEL' + str(channel) + "?"))
 
-    def _do_set_delay(self, val, channel):
+    def do_set_delay(self, val, channel):
         '''
         Sets the delay of the pulse of the specified channel
 
@@ -142,7 +142,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : set delay for channel %d to %f' % (channel, val))
         self._visainstrument.write(':PULS:DEL' + str(channel) + " " + str(val) + "S")
 
-    def _do_get_width(self, channel):
+    def do_get_width(self, channel):
         '''
         Reads the pulse width from the device for the specified channel
 
@@ -155,7 +155,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : get width for channel %d' % channel)
         return float(self._visainstrument.ask(':PULS:WIDT' + str(channel) + "?"))
 
-    def _do_set_width(self, val, channel):
+    def do_set_width(self, val, channel):
         '''
         Sets the width of the pulse of the specified channel
 
@@ -169,7 +169,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : set width for channel %d to %f' % (channel, val))
         self._visainstrument.write(':PULS:WIDT' + str(channel) + " " + str(val) + "S")
 
-    def _do_get_high(self, channel):
+    def do_get_high(self, channel):
         '''
         Reads the upper value from the device for the specified channel
 
@@ -182,7 +182,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : get high for channel %d' % channel)
         return float(self._visainstrument.ask(':VOLT' + str(channel) + ':HIGH?'))
 
-    def _do_set_high(self, val, channel):
+    def do_set_high(self, val, channel):
         '''
         Sets the upper value of the specified channel
 
@@ -196,7 +196,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : set high for channel %d to %f' % (channel, val))
         self._visainstrument.write(':VOLT' + str(channel) + ":HIGH " + str(val) + "V")
 
-    def _do_get_low(self, channel):
+    def do_get_low(self, channel):
         '''
         Reads the lower value from the device for the specified channel
 
@@ -209,7 +209,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : get low for channel %d' % channel)
         return float(self._visainstrument.ask(':VOLT' + str(channel) + ':LOW?'))
 
-    def _do_set_low(self, val, channel):
+    def do_set_low(self, val, channel):
         '''
         Sets the lower value of the specified channel
 
@@ -223,7 +223,7 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : set low for channel %d to %f' % (channel, val))
         self._visainstrument.write(':VOLT' + str(channel) + ":LOW " + str(val)        + "V")
 
-    def _do_get_status(self, channel):
+    def do_get_status(self, channel):
         '''
         Reads the status from the device for the specified channel
 
@@ -241,7 +241,7 @@ class HP_81110A(Instrument):
             return 'off'
         return 'error'
 
-    def _do_set_status(self, val, channel):
+    def do_set_status(self, val, channel):
         '''
         Sets the status of the specified channel
 
@@ -258,7 +258,7 @@ class HP_81110A(Instrument):
         else:
             logging.error('Try tot set OUTP to ' + str(val))
 
-    def _do_get_display(self):
+    def do_get_display(self):
         '''
         Reads the display status from the device
 
@@ -276,7 +276,7 @@ class HP_81110A(Instrument):
             return 'off'
         return 'error'
 
-    def _do_set_display(self, val):
+    def do_set_display(self, val):
         '''
         Sets the display status of the device
 

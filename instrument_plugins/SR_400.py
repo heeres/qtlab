@@ -155,21 +155,21 @@ class SR_400(Instrument):
         self.get('counter_presetB')
         self.get('counter_presetT')
 
-    def _do_get_identification(self):
+    def do_get_identification(self):
         return self._visa.ask('*IDN?')
 
-    def _do_get_mode(self):
+    def do_get_mode(self):
         ans = self._visa.ask('CM')
         return ans
 
-    def _do_set_mode(self, mode):
+    def do_set_mode(self, mode):
         self._visa.write('CM %d' % mode)
 
-    def _do_get_counter(self, channel):
+    def do_get_counter(self, channel):
         ans = self._visa.ask('Q%s' % channel)
         return int(ans)
 
-    def _do_get_count(self, channel):
+    def do_get_count(self, channel):
         ans = self._visa.ask('CR; F%s' % channel)
         if channel == 'T':
             ans2 = self._visa.read()
@@ -177,45 +177,45 @@ class SR_400(Instrument):
         else:
             return int(ans)
 
-    def _do_get_counter_input(self, channel):
+    def do_get_counter_input(self, channel):
         ans = self._visa.ask('CI %d' % self._counter_num(channel))
         return int(ans)
 
-    def _do_set_counter_input(self, val, channel):
+    def do_set_counter_input(self, val, channel):
         self._visa.write('CI %d,%d' % (self._counter_num(channel), val))
 
-    def _do_get_counter_preset(self, channel):
+    def do_get_counter_preset(self, channel):
         ret = self._visa.ask('CP %d' % self._counter_num(channel))
         return float(ret)
 
-    def _do_set_counter_preset(self, val, channel):
+    def do_set_counter_preset(self, val, channel):
         self._visa.write('CP %d,%d' % (self._counter_num(channel), val))
 
-    def _do_get_periods(self):
+    def do_get_periods(self):
         ans = self._visa.ask('NP')
         return ans
 
-    def _do_set_periods(self, val):
+    def do_set_periods(self, val):
         self._visa.write('NP %d' % val)
 
-    def _do_get_disc_slope(self, channel):
+    def do_get_disc_slope(self, channel):
         ans = self._visa.ask('DS %d' % self._counter_num(channel))
         return ans
 
-    def _do_set_disc_slope(self, val, channel):
+    def do_set_disc_slope(self, val, channel):
         self._visa.write('DS %d,%d' % (self._counter_num(channel), val))
 
-    def _do_get_disc_level(self, channel):
+    def do_get_disc_level(self, channel):
         ans = self._visa.ask('DL %d' % self._counter_num(channel))
         return ans
 
-    def _do_set_disc_level(self, val, channel):
+    def do_set_disc_level(self, val, channel):
         self._visa.write('DL %d,%f' % (self._counter_num(channel), val))
 
-    def _do_set_periods(self, val):
+    def do_set_periods(self, val):
         self._visa.write('NP %d' % val)
 
-    def _do_get_current_period(self):
+    def do_get_current_period(self):
         ans = self._visa.ask('NN')
         return int(ans)
 

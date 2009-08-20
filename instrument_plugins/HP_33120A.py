@@ -138,22 +138,22 @@ class HP_33120A(Instrument):
 
 # Burst
 
-    def _do_set_burst_count(self, cnt):
+    def do_set_burst_count(self, cnt):
         logging.debug(__name__ + ' : Setting burst count')
         self._visainstrument.write('BM:NCYC %d' % cnt)
 
-    def _do_get_burst_count(self):
+    def do_get_burst_count(self):
         logging.debug(__name__ + ' : Getting burst count')
         return float(self._visainstrument.ask('BM:NCYC?'))
 
-    def _do_set_burst_status(self, stat):
+    def do_set_burst_status(self, stat):
         '''
         stat: { ON OFF }
         '''
         logging.debug(__name__ + ' : Setting burst status')
         self._visainstrument.write('BM:STAT %s' % stat)
 
-    def _do_get_burst_status(self):
+    def do_get_burst_status(self):
         '''
         stat: { ON OFF }
         '''
@@ -175,27 +175,27 @@ class HP_33120A(Instrument):
 
 # Parameters
 
-    def _do_set_frequency(self, freq):
+    def do_set_frequency(self, freq):
         logging.debug(__name__ + ' : Setting frequency')
         self._visainstrument.write('SOUR:FREQ %f' % freq)
 
-    def _do_get_frequency(self):
+    def do_get_frequency(self):
         logging.debug(__name__ + ' : Getting frequency')
         return self._visainstrument.ask('SOUR:FREQ?')
 
-    def _do_set_amplitude(self, amp):
+    def do_set_amplitude(self, amp):
         logging.debug(__name__ + ' : Setting amplitude')
         self._visainstrument.write('SOUR:VOLT %f' % amp)
 
-    def _do_get_amplitude(self):
+    def do_get_amplitude(self):
         logging.debug(__name__ + ' : Getting amplitude')
         return self._visainstrument.ask('SOUR:VOLT?')
 
-    def _do_set_offset(self, offset):
+    def do_set_offset(self, offset):
         logging.debug(__name__ + ' : Setting offset')
         self._visainstrument.write('SOUR:VOLT:OFFS %f' % offset)
 
-    def _do_get_offset(self):
+    def do_get_offset(self):
         logging.debug(__name__ + ' : Getting offset')
         return self._visainstrument.ask('SOUR:VOLT:OFFS?')
 

@@ -168,7 +168,7 @@ class OxfordInstruments_Kelvinox_IGH(Instrument):
         logging.info(__name__ + ' : Setting remote control status to %s' % status.get(mode,"Unknown"))
         self._execute('C%s' % mode)
 
-    def _do_get_1K_pot_temp(self):
+    def do_get_1K_pot_temp(self):
         '''
         Get 1K Pot Temperature from device.
         Input:
@@ -181,7 +181,7 @@ class OxfordInstruments_Kelvinox_IGH(Instrument):
         result = self._execute('R2')
         return float(result.replace('R',''))
 
-    def _do_get_mix_chamber_temp(self):
+    def do_get_mix_chamber_temp(self):
         '''
         Get Mix Chamber Temperature
         Input:

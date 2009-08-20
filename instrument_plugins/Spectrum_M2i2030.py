@@ -313,7 +313,7 @@ class Spectrum_M2i2030(Instrument):
 ### Card information
 ########################
 
-    def _do_get_serial(self):
+    def do_get_serial(self):
         '''
         Reads out the serial number of the card.
 
@@ -326,7 +326,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Reading serial number')
         return self._get_param(_spcm_regs.SPC_PCISERIALNO)
 
-    def _do_get_ramsize(self):
+    def do_get_ramsize(self):
         '''
         Returns the size of the random access memory installed
         on the card
@@ -695,7 +695,7 @@ class Spectrum_M2i2030(Instrument):
         return err
 
 
-    def _do_get_card_status(self):
+    def do_get_card_status(self):
         '''
         Returns the card status, see p136 of manual
 
@@ -1292,7 +1292,7 @@ class Spectrum_M2i2030(Instrument):
 ### setting / getting of parameters
 ###################################
 
-    def _do_set_timeout(self, timeout):
+    def do_set_timeout(self, timeout):
         '''
         Set card timeout
 
@@ -1305,7 +1305,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set timeout to %s' % timeout)
         self._set_param(_spcm_regs.SPC_TIMEOUT, timeout)
 
-    def _do_get_timeout(self):
+    def do_get_timeout(self):
         '''
         Get card timeout
 
@@ -1320,7 +1320,7 @@ class Spectrum_M2i2030(Instrument):
 
 ### timing
 
-    def _do_set_trigger_delay(self, nums):
+    def do_set_trigger_delay(self, nums):
         '''
         Set the trigger delay
 
@@ -1333,7 +1333,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set trigger delay to %s' % nums)
         self._set_param(_spcm_regs.SPC_TRIG_DELAY, nums)
 
-    def _do_get_trigger_delay(self):
+    def do_get_trigger_delay(self):
         '''
         Get the trigger delay
 
@@ -1347,7 +1347,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Get trigger delay')
         return self._get_param(_spcm_regs.SPC_TRIG_DELAY)
 
-    def _do_set_segmentsize(self, lSegsize):
+    def do_set_segmentsize(self, lSegsize):
         '''
         Sets the size of the datapoints taken per trigger
 
@@ -1360,7 +1360,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set segment size to %s' % lSegsize)
         self._set_param(_spcm_regs.SPC_SEGMENTSIZE, lSegsize)
 
-    def _do_get_segmentsize(self):
+    def do_get_segmentsize(self):
         '''
         Get the number of datapoints that are read out
         per trigger
@@ -1374,7 +1374,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Get segment size')
         return self._get_param(_spcm_regs.SPC_SEGMENTSIZE)
 
-    def _do_set_post_trigger(self, posttrigger):
+    def do_set_post_trigger(self, posttrigger):
         '''
         Sets the number of points that are read out
         after the trigger event
@@ -1388,7 +1388,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set post trigger to %s' % posttrigger)
         self._set_param( _spcm_regs.SPC_POSTTRIGGER, posttrigger)
 
-    def _do_get_post_trigger(self):
+    def do_get_post_trigger(self):
         '''
         Gets the number of points that are read out
         after the trigger event
@@ -1404,7 +1404,7 @@ class Spectrum_M2i2030(Instrument):
 
 ### buffer
 
-    def _do_set_memsize(self, lMemsize):
+    def do_set_memsize(self, lMemsize):
         '''
         Sets the size of the datapoints taken
 
@@ -1417,7 +1417,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set memsize to %s' % lMemzise)
         self._set_param(_spcm_regs.SPC_MEMSIZE, lMemsize)
 
-    def _do_get_memsize(self):
+    def do_get_memsize(self):
         '''
         Get the number of datapoints that are read out
 
@@ -1432,7 +1432,7 @@ class Spectrum_M2i2030(Instrument):
 
 ### channel parameters
 
-    def _do_set_input_amp_ch0(self, amp):
+    def do_set_input_amp_ch0(self, amp):
         '''
         Sets the amplitude of the range of channel 0
         The range defines the precision of the analog-digital conversion
@@ -1446,7 +1446,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Setting input amp0 to %s' % amp)
         self._set_param(_spcm_regs.SPC_AMP0, amp)
 
-    def _do_set_input_amp_ch1(self, amp):
+    def do_set_input_amp_ch1(self, amp):
         '''
         Sets the amplitude of the range of channel 1
         The range defines the precision of the analog-digital conversion
@@ -1460,7 +1460,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Setting input amp1 to %s' % amp)
         self._set_param(_spcm_regs.SPC_AMP1, amp)
 
-    def _do_set_input_offset_ch0(self, offset):
+    def do_set_input_offset_ch0(self, offset):
         '''
         Sets the offset of channel 0 as a percentage
         of the range
@@ -1474,7 +1474,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Setting input offset0 to %s' % offset)
         self._set_param(_spcm_regs.SPC_OFFS0, offset)
 
-    def _do_set_input_offset_ch1(self, offset):
+    def do_set_input_offset_ch1(self, offset):
         '''
         Sets the offset of channel 1 as a percentage
         of the range
@@ -1488,7 +1488,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Setting input offset1 to %s' % offset)
         self._set_param(_spcm_regs.SPC_OFFS1, offset)
 
-    def _do_get_input_amp_ch0(self):
+    def do_get_input_amp_ch0(self):
         '''
         Gets the amplitude of the range of channel 0
         The range defines the precision of the analog-digital conversion
@@ -1502,7 +1502,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Getting input amp0')
         return self._get_param(_spcm_regs.SPC_AMP0)
 
-    def _do_get_input_amp_ch1(self):
+    def do_get_input_amp_ch1(self):
         '''
         Gets the amplitude of the range of channel 1
         The range defines the precision of the analog-digital conversion
@@ -1516,7 +1516,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Getting input amp1')
         return self._get_param(_spcm_regs.SPC_AMP1)
 
-    def _do_get_input_offset_ch0(self):
+    def do_get_input_offset_ch0(self):
         '''
         Gets the offset of channel 0 as a percentage
         of the range
@@ -1530,7 +1530,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Getting input offset0')
         return self._get_param(_spcm_regs.SPC_OFFS0)
 
-    def _do_get_input_offset_ch1(self):
+    def do_get_input_offset_ch1(self):
         '''
         Gets the offset of channel 1 as a percentage
         of the range
@@ -1546,7 +1546,7 @@ class Spectrum_M2i2030(Instrument):
 
 ### clock
 
-    def _do_set_spc_samplerate(self, rate):
+    def do_set_spc_samplerate(self, rate):
         '''
         defines the sampling rate in Hz for internal
         sample rate generation
@@ -1561,7 +1561,7 @@ class Spectrum_M2i2030(Instrument):
         rate = int(rate)
         self._set_param(_spcm_regs.SPC_SAMPLERATE, rate)
 
-    def _do_get_spc_samplerate(self):
+    def do_get_spc_samplerate(self):
         '''
         gets the sampling rate in Hz for internal
         sample rate generation
@@ -1575,7 +1575,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Get spc samplerate')
         return self._get_param(_spcm_regs.SPC_SAMPLERATE)
 
-    def _do_set_reference_clock(self, freq):
+    def do_set_reference_clock(self, freq):
         '''
         Programs the external reference clock
 
@@ -1588,7 +1588,7 @@ class Spectrum_M2i2030(Instrument):
         logging.debug(__name__ + ' : Set reference clock freq to %s' % freq)
         self._set_param(_spcm_regs.SPC_REFERENCECLOCK, freq)
 
-    def _do_get_reference_clock(self):
+    def do_get_reference_clock(self):
         '''
         Gets the external reference clock setting
 

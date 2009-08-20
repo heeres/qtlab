@@ -79,25 +79,25 @@ class Thorlabs_PM100(Instrument):
         self.get_wavelength()
         self.get_filter_freq()
 
-    def _do_get_identification(self):
+    def do_get_identification(self):
         return self._visa.ask('*IDN?')
 
-    def _do_get_power(self):
+    def do_get_power(self):
         ans = self._visa.ask(':POWER?')
         return float(ans)
 
-    def _do_get_head_info(self):
+    def do_get_head_info(self):
         ans = self._visa.ask(':HEAD:INFO?')
         return ans
 
-    def _do_get_wavelength(self):
+    def do_get_wavelength(self):
         ans = self._visa.ask(':WAVELENGTH?')
         return float(ans)
 
-    def _do_set_wavelength(self, val):
+    def do_set_wavelength(self, val):
         self._visa.write(':WAVELENGTH %e' % val)
 
-    def _do_get_filter_freq(self):
+    def do_get_filter_freq(self):
         ans = self._visa.ask(':FILTER?')
         m = self._RE_FREQ.match(ans)
         if m is not None:
@@ -105,6 +105,6 @@ class Thorlabs_PM100(Instrument):
         else:
             return None
 
-    def _do_set_filter_freq(self, val):
+    def do_set_filter_freq(self, val):
         self._visa.write(':FILTER %dHz' % val)
 

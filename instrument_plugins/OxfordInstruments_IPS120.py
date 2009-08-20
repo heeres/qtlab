@@ -294,7 +294,7 @@ class OxfordInstruments_IPS120(Instrument):
         logging.info(__name__ + ' : Set control to local & locked')
         self.set_remote_status(0)
 
-    def _do_get_remote_status(self):
+    def do_get_remote_status(self):
         '''
         Get remote control status
 
@@ -316,7 +316,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('X')
         return int(result[6])
 
-    def _do_set_remote_status(self, mode):
+    def do_set_remote_status(self, mode):
         '''
         Set remote control status.
 
@@ -342,7 +342,7 @@ class OxfordInstruments_IPS120(Instrument):
         else:
             print 'Invalid mode inserted: %s' % mode
 
-    def _do_get_system_status(self):
+    def do_get_system_status(self):
         '''
         Get the system status
 
@@ -361,7 +361,7 @@ class OxfordInstruments_IPS120(Instrument):
         logging.info(__name__ + ' : Getting system status')
         return int(result[1])
 
-    def _do_get_system_status2(self):
+    def do_get_system_status2(self):
         '''
         Get the system status
 
@@ -380,7 +380,7 @@ class OxfordInstruments_IPS120(Instrument):
         logging.info(__name__ + ' : Getting system status')
         return int(result[2])
 
-    def _do_get_current(self):
+    def do_get_current(self):
         '''
         Demand output current of device
 
@@ -394,7 +394,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R0')
         return float(result.replace('R',''))
 
-    def _do_get_voltage(self):
+    def do_get_voltage(self):
         '''
         Demand measured output voltage of device
 
@@ -408,7 +408,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R1')
         return float(result.replace('R',''))
 
-    def _do_get_magnet_current(self):
+    def do_get_magnet_current(self):
         '''
         Demand measured magnet current of device
 
@@ -422,7 +422,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R2')
         return float(result.replace('R',''))
 
-    def _do_get_current_setpoint(self):
+    def do_get_current_setpoint(self):
         '''
         Return the set point (target current)
 
@@ -436,7 +436,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R5')
         return float(result.replace('R',''))
 
-    def _do_set_current_setpoint(self, current):
+    def do_set_current_setpoint(self, current):
         '''
         Set current setpoint (target current)
         Input:
@@ -449,7 +449,7 @@ class OxfordInstruments_IPS120(Instrument):
         self._execute('I%s' % current)
         self.get_field_setpoint() # Update field setpoint
 
-    def _do_get_sweeprate_current(self):
+    def do_get_sweeprate_current(self):
         '''
         Return sweep rate (current)
 
@@ -463,7 +463,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R6')
         return float(result.replace('R',''))
 
-    def _do_set_sweeprate_current(self, sweeprate):
+    def do_set_sweeprate_current(self, sweeprate):
         '''
         Set sweep rate (current)
 
@@ -477,7 +477,7 @@ class OxfordInstruments_IPS120(Instrument):
         self._execute('S%s' % sweeprate)
         self.get_sweeprate_field() # Update sweeprate_field
 
-    def _do_get_field(self):
+    def do_get_field(self):
         '''
         Demand output field
 
@@ -491,7 +491,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R7')
         return float(result.replace('R',''))
 
-    def _do_get_field_setpoint(self):
+    def do_get_field_setpoint(self):
         '''
         Return the set point (target field)
 
@@ -505,7 +505,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R8')
         return float(result.replace('R',''))
 
-    def _do_set_field_setpoint(self, field):
+    def do_set_field_setpoint(self, field):
         '''
         Set the field set point (target field)
         Input:
@@ -518,7 +518,7 @@ class OxfordInstruments_IPS120(Instrument):
         self._execute('J%s' % field)
         self.get_current_setpoint() #Update current setpoint
 
-    def _do_get_sweeprate_field(self):
+    def do_get_sweeprate_field(self):
         '''
         Return sweep rate (field)
 
@@ -532,7 +532,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R9')
         return float(result.replace('R',''))
 
-    def _do_set_sweeprate_field(self, sweeprate):
+    def do_set_sweeprate_field(self, sweeprate):
         '''
         Set sweep rate (field)
 
@@ -546,7 +546,7 @@ class OxfordInstruments_IPS120(Instrument):
         self._execute('T%s' % sweeprate)
         self.get_sweeprate_current() # Update sweeprate_current
 
-    def _do_get_voltage_limit(self):
+    def do_get_voltage_limit(self):
         '''
         Return voltage limit
 
@@ -562,7 +562,7 @@ class OxfordInstruments_IPS120(Instrument):
         self.set_parameter_bounds('voltage',-result,result)
         return result
 
-    def _do_get_persistent_current(self):
+    def do_get_persistent_current(self):
         '''
         Return persistent magnet current
 
@@ -576,7 +576,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R16')
         return float(result.replace('R',''))
 
-    def _do_get_trip_current(self):
+    def do_get_trip_current(self):
         '''
         Return trip current
 
@@ -590,7 +590,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R17')
         return float(result.replace('R',''))
 
-    def _do_get_persistent_field(self):
+    def do_get_persistent_field(self):
         '''
         Return persistent magnet field
 
@@ -604,7 +604,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R18')
         return float(result.replace('R',''))
 
-    def _do_get_trip_field(self):
+    def do_get_trip_field(self):
         '''
         Return trip field
 
@@ -618,7 +618,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R19')
         return float(result.replace('R',''))
 
-    def _do_get_heater_current(self):
+    def do_get_heater_current(self):
         '''
         Return switch heater current
 
@@ -632,7 +632,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R20')
         return float(result.replace('R',''))
 
-    def _do_get_current_limit_upper(self):
+    def do_get_current_limit_upper(self):
         '''
         Return safe current limit, most positive
 
@@ -646,7 +646,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R22')
         return float(result.replace('R',''))
 
-    def _do_get_current_limit_lower(self):
+    def do_get_current_limit_lower(self):
         '''
         Return safe current limit, most negative
 
@@ -660,7 +660,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R21')
         return float(result.replace('R',''))
 
-    def _do_get_lead_resistance(self):
+    def do_get_lead_resistance(self):
         '''
         Return lead resistance
 
@@ -674,7 +674,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R23')
         return float(result.replace('R',''))
 
-    def _do_get_magnet_inductance(self):
+    def do_get_magnet_inductance(self):
         '''
         Return magnet inductance
 
@@ -688,7 +688,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('R24')
         return float(result.replace('R',''))
 
-    def _do_get_activity(self):
+    def do_get_activity(self):
         '''
         Get the activity of the magnet. Possibilities: Hold, Set point, Zero or Clamp.
         Input:
@@ -701,7 +701,7 @@ class OxfordInstruments_IPS120(Instrument):
         logging.info(__name__ + ' : Get activity of the magnet.')
         return int(result[4])
 
-    def _do_set_activity(self, mode):
+    def do_set_activity(self, mode):
         '''
         Set the activity to Hold, To Set point or To Zero.
 
@@ -760,7 +760,7 @@ class OxfordInstruments_IPS120(Instrument):
         self.set_activity(2)
         self.get_activity()
 
-    def _do_get_switch_heater(self):
+    def do_get_switch_heater(self):
         '''
         Get the switch heater status.
         Input:
@@ -774,7 +774,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('X')
         return int(result[8])
 
-    def _do_set_switch_heater(self, mode):
+    def do_set_switch_heater(self, mode):
         '''
         Set the switch heater Off or On. Note: After issuing a command it is necessary to wait
         several seconds for the switch to respond.
@@ -822,7 +822,7 @@ class OxfordInstruments_IPS120(Instrument):
         self.set_switch_heater(0)
         self.get_switch_heater()
 
-    def _do_get_mode(self):
+    def do_get_mode(self):
         '''
         Get the Mode of the device
         Input:
@@ -838,7 +838,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('X')
         return int(result[10])
 
-    def _do_get_mode2(self):
+    def do_get_mode2(self):
         '''
         Get the Mode of the device
         Input:
@@ -854,7 +854,7 @@ class OxfordInstruments_IPS120(Instrument):
         result = self._execute('X')
         return int(result[11])
 
-    def _do_set_mode(self, mode):
+    def do_set_mode(self, mode):
         '''
         Input:
             mode(int):
@@ -882,7 +882,7 @@ class OxfordInstruments_IPS120(Instrument):
         else:
             print 'Invalid mode inserted.'
 
-    def _do_get_polarity(self):
+    def do_get_polarity(self):
         '''
         Get the polarity of the output current
         Input:

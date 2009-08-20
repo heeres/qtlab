@@ -208,7 +208,7 @@ class IVVI(Instrument):
         return values
 
     # Communication with device
-    def _do_get_dac(self, channel):
+    def do_get_dac(self, channel):
         '''
         Returns the value of the specified dac
 
@@ -222,7 +222,7 @@ class IVVI(Instrument):
         mvoltages = self._get_dacs()
         return mvoltages[channel - 1]
 
-    def _do_set_dac(self, mvoltage, channel):
+    def do_set_dac(self, mvoltage, channel):
         '''
         Sets the specified dac to the specified voltage
 
@@ -280,7 +280,7 @@ class IVVI(Instrument):
 
         return data_out_numbers
 
-    def _do_set_pol_dacrack(self, flag, channel):
+    def do_set_pol_dacrack(self, flag, channel):
         '''
         Changes the polarity of the specified set of dacs
 

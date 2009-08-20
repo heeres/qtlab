@@ -42,7 +42,7 @@ class NI_DAQ(Instrument):
                 type=types.FloatType,
                 units='V',
                 tags=['measure'],
-                get_func=self._do_get_input,
+                get_func=self.do_get_input,
                 channel=ch_in)
 
         for ch_out in self._get_output_channels():
@@ -52,7 +52,7 @@ class NI_DAQ(Instrument):
                 type=types.FloatType,
                 units='V',
                 tags=['sweep'],
-                set_func=self._do_set_output,
+                set_func=self.do_set_output,
                 channel=ch_out)
 
         self.add_function('reset')
@@ -74,11 +74,11 @@ class NI_DAQ(Instrument):
     def _get_output_channels(self):
         return nidaq.get_physical_output_channels(self._id)
 
-    def _do_get_input(self, channel):
+    def do_get_input(self, channel):
         devchan = '%s/%s' % (self._id, channel)
         return nidaq.read(devchan)
 
-    def _do_set_output(self, val, channel):
+    def do_set_output(self, val, channel):
         devchan = '%s/%s' % (self._id, channel)
         return nidaq.write(devchan, val)
 

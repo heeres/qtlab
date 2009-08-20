@@ -105,7 +105,7 @@ class Attocube_ARC200(Instrument):
     def get_all(self):
         self.get_position()
 
-    def _do_set_mode(self, mode):
+    def do_set_mode(self, mode):
         '''
         Set the measurement mode to continuous (0) or interval (1)
         '''
@@ -118,10 +118,10 @@ class Attocube_ARC200(Instrument):
         self.write_line('SM%d' % mode)
         self._visa.clear()
 
-    def _do_set_refvoltage(self, ref):
+    def do_set_refvoltage(self, ref):
         self.write_line('SRE %d' % ref)
 
-    def _do_get_position(self):
+    def do_get_position(self):
         reply = self.ask('C')
         str_list = reply.split(',')
         try:
@@ -130,12 +130,12 @@ class Attocube_ARC200(Instrument):
         except Exception, e:
             return None
 
-    def _do_set_channel_units(self, channel, units_id):
+    def do_set_channel_units(self, channel, units_id):
         self.write_line('SU%d%d' % (channel, units_id))
 
-    def _do_set_units(self, units_id):
-        self._do_set_channel_units(1, units_id)
-        self._do_set_channel_units(2, units_id)
-        self._do_set_channel_units(3, units_id)
+    def do_set_units(self, units_id):
+        self.do_set_channel_units(1, units_id)
+        self.do_set_channel_units(2, units_id)
+        self.do_set_channel_units(3, units_id)
         map = self.get_parameter_options('units')['format_map']
         self.set_parameter_options('position', units=map[units_id])

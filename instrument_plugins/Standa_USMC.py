@@ -80,10 +80,10 @@ class Standa_USMC(Instrument):
             raise ValueError('Error communicating with Stand USMC device')
         return True
 
-    def _do_get_serial(self):
+    def do_get_serial(self):
         return self._serial
 
-    def _do_get_version(self):
+    def do_get_version(self):
         return self._version
 
     def _get_mode(self):
@@ -102,18 +102,18 @@ class Standa_USMC(Instrument):
         self._check(ret)
         return struct
 
-    def _do_get_position(self):
+    def do_get_position(self):
         state = self._get_state()
         return state.CurPos
 
-    def _do_set_position(self, pos):
+    def do_set_position(self, pos):
         return standa.USMCSetPosition(self._id, pos)
 
-    def _do_get_power(self):
+    def do_get_power(self):
         mode = self._get_mode()
         return mode.ResetD == 0
 
-    def _do_set_power(self, state):
+    def do_set_power(self, state):
         mode = self._get_mode()
         if state:
             mode.ResetD = 0
@@ -121,10 +121,10 @@ class Standa_USMC(Instrument):
             mode.ResetD = 1
         return self._set_mode(mode)
 
-    def _do_get_speed(self):
+    def do_get_speed(self):
         return self._speed
 
-    def _do_set_speed(self, speed):
+    def do_set_speed(self, speed):
         self._speed = speed
 
     def _get_start_parameters(self):
@@ -148,7 +148,7 @@ class Standa_USMC(Instrument):
         ret = standa.USMC_Stop(self._id)
         return self._check(ret)
 
-    def _do_get_limits(self):
+    def do_get_limits(self):
         state = self._get_state()
         return (state.Trailer1, state.Trailer2)
 
