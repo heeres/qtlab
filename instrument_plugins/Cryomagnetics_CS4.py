@@ -88,7 +88,7 @@ class Cryomagnetics_CS4(Instrument):
         self.add_function('remote')
         self.add_function('sweep_up')
         self.add_function('sweep_down')
-        
+
         if reset:
             self.reset()
         else:
@@ -107,7 +107,7 @@ class Cryomagnetics_CS4(Instrument):
         self.get_uplim()
         self.get_field()
 
-    def _do_get_identification(self):
+    def do_get_identification(self):
         return self._visa.ask('*IDN?')
 
     def _update_units(self, unit):
@@ -116,12 +116,12 @@ class Cryomagnetics_CS4(Instrument):
         self.set_parameter_options('lowlim', units=unit)
         self.set_parameter_options('uplim', units=unit)
 
-    def _do_get_units(self):
+    def do_get_units(self):
         ans = self._visa.ask('UNITS?')
         self._update_units(ans)
         return ans
 
-    def _do_set_units(self, unit):
+    def do_set_units(self, unit):
         if unit not in self.UNITS:
             logging.error('Trying to set invalid unit: %s', unit)
             return False
@@ -144,21 +144,21 @@ class Cryomagnetics_CS4(Instrument):
         return float(val)
 
     #FIXME: allow all 4 parameter ranges
-    def _do_get_rate(self):
+    def do_get_rate(self):
         ans = self._visa.ask('RATE? 0')
         return float(ans)
 
-    def _do_set_rate(self, rate):
+    def do_set_rate(self, rate):
         self._visa.write('RATE 0 %.03f' % rate)
 
-    def _do_get_heater(self):
+    def do_get_heater(self):
         ans = self._visa.ask('PSHTR?')
         if len(ans) > 0 and ans[0] == '1':
             return True
         else:
             return False
 
-    def _do_set_heater(self, on):
+    def do_set_heater(self, on):
         if on:
             text = 'ON'
         else:
@@ -172,22 +172,22 @@ class Cryomagnetics_CS4(Instrument):
     def remote(self):
         self._visa.write('REMOTE')
 
-    def _do_get_magnetout(self):
+    def do_get_magnetout(self):
         ans = self._visa.ask('IMAG?')
         return self._check_ans_unit(ans)
 
-    def _do_get_supplyout(self):
+    def do_get_supplyout(self):
         ans = self._visa.ask('IMAG?')
         return self._check_ans_unit(ans)
 
-    def _do_get_sweep(self):
+    def do_get_sweep(self):
         ans = self._visa.ask('SWEEP?')
         if len(ans) > 6:
             return ans[6:]
         else:
             return ''
 
-    def _do_set_sweep(self, val):
+    def do_set_sweep(self, val):
         val = val.upper()
         if val not in ['UP', 'UP FAST', 'DOWN', 'DOWN FAST']:
             logging.warning('Invalid sweep mode selected')
@@ -206,21 +206,21 @@ class Cryomagnetics_CS4(Instrument):
         else:
             return self.set_sweep('DOWN')
 
-    def _do_get_lowlim(self):
+    def do_get_lowlim(self):
         ans = self._visa.ask('LLIM?')
         return self._check_ans_unit(ans)
 
-    def _do_set_lowlim(self, val):
+    def do_set_lowlim(self, val):
         self._visa.write('LLIM %f' % val)
 
-    def _do_get_uplim(self):
+    def do_get_uplim(self):
         ans = self._visa.ask('ULIM?')
         return self._check_ans_unit(ans)
 
-    def _do_set_uplim(self, val):
+    def do_set_uplim(self, val):
         self._visa.write('ULIM %f' % val)
 
-    def _do_set_field(self, val, wait=True):
+    def do_set_field(self, val, wait=True):
         units = self.get_units(query=False)
         if units != 'T':
             logging.warning('Unable to set field when units not in Tesla!')
@@ -250,7 +250,7 @@ class Cryomagnetics_CS4(Instrument):
 
         return True
 
-    def _do_get_field(self):
+    def do_get_field(self):
         unit = self.get_units(query=False)
         if unit != 'T':
             logging.warning('Unable to determine field if units are not T')
