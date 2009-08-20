@@ -106,9 +106,9 @@ class virtual_composite(Instrument):
                 self._instrument_watch.append(info['instrument'])
                 info['instrument'].connect('changed', self._instrument_changed_cb)
 
-        funcname = '_do_get_%s' % combined_name
+        funcname = 'do_get_%s' % combined_name
         setattr(self, funcname, lambda: self._get_combined(combined_name))
-        funcname = '_do_set_%s' % combined_name
+        funcname = 'do_set_%s' % combined_name
         setattr(self, funcname, lambda v: self._set_combined(combined_name, v))
 
         self.add_parameter(combined_name, **kwargs)

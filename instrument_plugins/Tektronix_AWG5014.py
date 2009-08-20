@@ -222,7 +222,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Stop/Terminate output of a waveform or sequence')
         self._visainstrument.write('AWGC:STOP:IMM')
 
-    def _do_set_output(self, state, channel):
+    def do_set_output(self, state, channel):
         '''
         This command sets the output state of the AWG.
         Input:
@@ -238,7 +238,7 @@ class Tektronix_AWG5014(Instrument):
         if (state == 0):
             self._visainstrument.write('OUTP%s:STAT OFF' % channel)
 
-    def _do_get_output(self, channel):
+    def do_get_output(self, channel):
         '''
         This command gets the output state of the AWG.
         Input:
@@ -250,7 +250,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get channel output state')
         return self._visainstrument.ask('OUTP%s:STAT?' % channel)
 
-    def _do_set_waveform(self, waveform, channel):
+    def do_set_waveform(self, waveform, channel):
         '''
         This command sets the output waveform from the current waveform
         list for each channel when Run Mode is not Sequence.
@@ -265,7 +265,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Set the output waveform for channel %s' % channel)
         self._visainstrument.write('SOUR%s:WAV "%s"' % (channel, waveform))
 
-    def _do_get_waveform(self, channel):
+    def do_get_waveform(self, channel):
         '''
         This command returns the output waveform from the current waveform
         list for each channel when Run Mode is not Sequence.
@@ -279,7 +279,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get the output waveform for channel %s' % channel)
         return self._visainstrument.ask('SOUR%s:WAV?' % channel)
 
-    def _do_get_wlist(self):
+    def do_get_wlist(self):
         '''
         This command returns the waveform list in an array.
         Input:
@@ -477,7 +477,7 @@ class Tektronix_AWG5014(Instrument):
         self._visainstrument.write('TRIG:IMP 50')
 
     # Parameters
-    def _do_get_trigger_mode(self):
+    def do_get_trigger_mode(self):
         '''
         Reads the trigger mode from the instrument
 
@@ -490,7 +490,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__  + ' : Get trigger mode from instrument')
         return self._visainstrument.ask('AWGC:RMOD?')
 
-    def _do_set_trigger_mode(self, mod):
+    def do_set_trigger_mode(self, mod):
         '''
         Sets trigger mode of the instrument
 
@@ -507,7 +507,7 @@ class Tektronix_AWG5014(Instrument):
         else:
             logging.error(__name__ + ' : Unable to set trigger mode to %s, expected "TRIG" or "CONT"' % mod)
 
-    def _do_get_trigger_impedance(self):
+    def do_get_trigger_impedance(self):
         '''
         Reads the trigger impedance from the instrument
 
@@ -520,7 +520,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__  + ' : Get trigger impedance from instrument')
         return self._visainstrument.ask('TRIG:IMP?')
 
-    def _do_set_trigger_impedance(self, mod):
+    def do_set_trigger_impedance(self, mod):
         '''
         Sets the trigger impedance of the instrument
 
@@ -537,7 +537,7 @@ class Tektronix_AWG5014(Instrument):
         else:
             logging.error(__name__ + ' : Unable to set trigger impedance to %s, expected "1e3" or "50"' % mod)
 
-    def _do_get_trigger_level(self):
+    def do_get_trigger_level(self):
         '''
         Reads the trigger level from the instrument
 
@@ -550,7 +550,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__  + ' : Get trigger level from instrument')
         return float(self._visainstrument.ask('TRIG:LEV?'))
 
-    def _do_set_trigger_level(self, level):
+    def do_set_trigger_level(self, level):
         '''
         Sets the trigger level of the instrument
 
@@ -560,7 +560,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__  + ' : Trigger level set to %.3f' % level)
         self._visainstrument.write('TRIG:LEV %.3f' % level)
 
-    def _do_get_numpoints(self):
+    def do_get_numpoints(self):
         '''
         Returns the number of datapoints in each wave
 
@@ -572,7 +572,7 @@ class Tektronix_AWG5014(Instrument):
         '''
         return self._numpoints
 
-    def _do_set_numpoints(self, numpts):
+    def do_set_numpoints(self, numpts):
         '''
         Sets the number of datapoints in each wave.
         This acts on all channels.
@@ -595,7 +595,7 @@ class Tektronix_AWG5014(Instrument):
         else:
             print 'aborted'
 
-    def _do_get_clock(self):
+    def do_get_clock(self):
         '''
         Returns the clockfrequency, which is the rate at which the datapoints are
         sent to the designated output
@@ -608,7 +608,7 @@ class Tektronix_AWG5014(Instrument):
         '''
         return self._clock
 
-    def _do_set_clock(self, clock):
+    def do_set_clock(self, clock):
         '''
         Sets the rate at which the datapoints are sent to the designated output channel
 
@@ -622,7 +622,7 @@ class Tektronix_AWG5014(Instrument):
         self._clock = clock
         self._visainstrument.write('SOUR:FREQ %f' % clock)
 
-    def _do_set_filename(self, name, channel):
+    def do_set_filename(self, name, channel):
         '''
         Specifies which file has to be set on which channel
         Make sure the file exists, and the numpoints and clock of the file
@@ -707,7 +707,7 @@ class Tektronix_AWG5014(Instrument):
             logging.warning(__name__  + ' : Verkeerde lengte %s ipv %s'
                 % (self._values['files'][name]['numpoints'], self._numpoints))
 
-    def _do_get_amplitude(self, channel):
+    def do_get_amplitude(self, channel):
         '''
         Reads the amplitude of the designated channel from the instrument
 
@@ -721,7 +721,7 @@ class Tektronix_AWG5014(Instrument):
             % channel)
         return float(self._visainstrument.ask('SOUR%s:VOLT:LEV:IMM:AMPL?' % channel))
 
-    def _do_set_amplitude(self, amp, channel):
+    def do_set_amplitude(self, amp, channel):
         '''
         Sets the amplitude of the designated channel of the instrument
 
@@ -736,7 +736,7 @@ class Tektronix_AWG5014(Instrument):
             % (channel, amp))
         self._visainstrument.write('SOUR%s:VOLT:LEV:IMM:AMPL %.6f' % (channel, amp))
 
-    def _do_get_offset(self, channel):
+    def do_get_offset(self, channel):
         '''
         Reads the offset of the designated channel of the instrument
 
@@ -749,7 +749,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get offset of channel %s' % channel)
         return float(self._visainstrument.ask('SOUR%s:VOLT:LEV:IMM:OFFS?' % channel))
 
-    def _do_set_offset(self, offset, channel):
+    def do_set_offset(self, offset, channel):
         '''
         Sets the offset of the designated channel of the instrument
 
@@ -763,7 +763,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Set offset of channel %s to %.6f' % (channel, offset))
         self._visainstrument.write('SOUR%s:VOLT:LEV:IMM:OFFS %.6f' % (channel, offset))
 
-    def _do_get_marker1_low(self, channel):
+    def do_get_marker1_low(self, channel):
         '''
         Gets the low level for marker1 on the designated channel.
 
@@ -776,7 +776,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get lower bound of marker1 of channel %s' % channel)
         return float(self._visainstrument.ask('SOUR%s:MARK1:VOLT:LEV:IMM:LOW?' % channel))
 
-    def _do_set_marker1_low(self, low, channel):
+    def do_set_marker1_low(self, low, channel):
         '''
         Sets the low level for marker1 on the designated channel.
 
@@ -791,7 +791,7 @@ class Tektronix_AWG5014(Instrument):
             % (channel, low))
         self._visainstrument.write('SOUR%s:MARK1:VOLT:LEV:IMM:LOW %.3f' % (channel, low))
 
-    def _do_get_marker1_high(self, channel):
+    def do_get_marker1_high(self, channel):
         '''
         Gets the high level for marker1 on the designated channel.
 
@@ -804,7 +804,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get upper bound of marker1 of channel %s' % channel)
         return float(self._visainstrument.ask('SOUR%s:MARK1:VOLT:LEV:IMM:HIGH?' % channel))
 
-    def _do_set_marker1_high(self, high, channel):
+    def do_set_marker1_high(self, high, channel):
         '''
         Sets the high level for marker1 on the designated channel.
 
@@ -819,7 +819,7 @@ class Tektronix_AWG5014(Instrument):
             % (channel, high))
         self._visainstrument.write('SOUR%s:MARK1:VOLT:LEV:IMM:HIGH %.3f' % (channel, high))
 
-    def _do_get_marker2_low(self, channel):
+    def do_get_marker2_low(self, channel):
         '''
         Gets the low level for marker2 on the designated channel.
 
@@ -832,7 +832,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get lower bound of marker2 of channel %s' % channel)
         return float(self._visainstrument.ask('SOUR%s:MARK2:VOLT:LEV:IMM:LOW?' % channel))
 
-    def _do_set_marker2_low(self, low, channel):
+    def do_set_marker2_low(self, low, channel):
         '''
         Sets the low level for marker2 on the designated channel.
 
@@ -847,7 +847,7 @@ class Tektronix_AWG5014(Instrument):
             % (channel, low))
         self._visainstrument.write('SOUR%s:MARK2:VOLT:LEV:IMM:LOW %.3f' % (channel, low))
 
-    def _do_get_marker2_high(self, channel):
+    def do_get_marker2_high(self, channel):
         '''
         Gets the high level for marker2 on the designated channel.
 
@@ -860,7 +860,7 @@ class Tektronix_AWG5014(Instrument):
         logging.debug(__name__ + ' : Get upper bound of marker2 of channel %s' % channel)
         return float(self._visainstrument.ask('SOUR%s:MARK2:VOLT:LEV:IMM:HIGH?' % channel))
 
-    def _do_set_marker2_high(self, high, channel):
+    def do_set_marker2_high(self, high, channel):
         '''
         Sets the high level for marker2 on the designated channel.
 
@@ -875,7 +875,7 @@ class Tektronix_AWG5014(Instrument):
             % (channel, high))
         self._visainstrument.write('SOUR%s:MARK2:VOLT:LEV:IMM:HIGH %.3f' % (channel, high))
 
-    def _do_get_status(self, channel):
+    def do_get_status(self, channel):
         '''
         Gets the status of the designated channel.
 
@@ -895,7 +895,7 @@ class Tektronix_AWG5014(Instrument):
             logging.debug(__name__ + ' : Read invalid status from instrument %s' % outp)
             return 'an error occurred while reading status from instrument'
 
-    def _do_set_status(self, status, channel):
+    def do_set_status(self, status, channel):
         '''
         Sets the status of designated channel.
 
@@ -1003,5 +1003,5 @@ class Tektronix_AWG5014(Instrument):
             logging.error(__name__ + ' : one (or more) lengths of waveforms do not match with numpoints')
 
         self.send_waveform(w,m1,m2,filename,clock)
-        self._do_set_filename(filename, channel)
+        self.do_set_filename(filename, channel)
 

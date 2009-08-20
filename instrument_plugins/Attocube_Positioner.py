@@ -48,13 +48,13 @@ class Attocube_Positioner(Instrument):
         self.add_function('stop')
         self.add_function('move_abs')
 
-    def _do_get_position(self, query=True):
+    def do_get_position(self, query=True):
         if self._arc:
             return self._arc.get_position(query=query)
         else:
             return [0, 0, 0]
 
-    def _do_set_channels(self, val):
+    def do_set_channels(self, val):
         return True
 
     def start(self):
@@ -66,10 +66,10 @@ class Attocube_Positioner(Instrument):
     def step(self, chan, nsteps):
         self._anc.step(chan + 1, nsteps)
 
-    def _do_get_speed(self):
+    def do_get_speed(self):
         return self._anc.get_speed()
 
-    def _do_set_speed(self, val):
+    def do_set_speed(self, val):
         self._anc.set_speed(val)
 
     def move_abs(self, pos, **kwargs):

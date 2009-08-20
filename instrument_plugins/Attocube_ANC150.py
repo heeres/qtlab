@@ -155,16 +155,16 @@ class Attocube_ANC150(Instrument):
             self.get('frequency%d' % ch)
             self.get('voltage%d' % ch)
 
-    def _do_get_version(self):
+    def do_get_version(self):
         reply = self._ask('ver')
         ver = self._parse(reply, self._RE_VER)
         return ver
 
-    def _do_get_mode(self, channel):
+    def do_get_mode(self, channel):
         reply = self._ask('getm %d' % channel)
         return self._parse(reply, self._RE_MODE)
 
-    def _do_set_mode(self, mode, channel):
+    def do_set_mode(self, mode, channel):
         ret = self._short_cmd('$M%d%s' % (channel, mode.upper()))
         if ret:
             return True
@@ -177,23 +177,23 @@ class Attocube_ANC150(Instrument):
                 logging.warning('Axis %d not in computer control mode', channel)
             return ret
 
-    def _do_get_frequency(self, channel):
+    def do_get_frequency(self, channel):
         reply = self._ask('getf %d' % channel)
         return self._parse(reply, self._RE_FREQ)
 
-    def _do_set_frequency(self, freq, channel):
+    def do_set_frequency(self, freq, channel):
         reply = self._ask('setf %d %d' % (channel, freq))
         return (reply is not None)
 
-    def _do_get_voltage(self, channel):
+    def do_get_voltage(self, channel):
         reply = self._ask('getv %d' % channel)
         return self._parse(reply, self._RE_VOLT)
 
-    def _do_set_voltage(self, volt, channel):
+    def do_set_voltage(self, volt, channel):
         reply = self._ask('setv %d %d' % (channel, volt))
         return (reply is not None)
 
-    def _do_get_capacitance(self, channel):
+    def do_get_capacitance(self, channel):
         reply = self._ask('getc %d' % channel)
         return self._parse(reply, self._RE_CAP)
 
@@ -248,7 +248,7 @@ class Attocube_ANC150(Instrument):
 
         return (reply is not None)
 
-    def _do_set_speed(self, val):
+    def do_set_speed(self, val):
         for i in range(len(self._speed)):
             if self._speed[i] != val[i]:
                 self.set('frequency%d' % (i + 1), int(abs(val[i])))

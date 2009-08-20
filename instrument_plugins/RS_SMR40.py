@@ -103,7 +103,7 @@ class RS_SMR40(Instrument):
 
     # communication with machine
 
-    def _do_get_frequency(self):
+    def do_get_frequency(self):
         '''
         Get frequency from device
 
@@ -116,7 +116,7 @@ class RS_SMR40(Instrument):
         logging.debug(__name__ + ' : reading frequency from instrument')
         return float(self._visainstrument.ask('SOUR:FREQ?'))
 
-    def _do_set_frequency(self, frequency):
+    def do_set_frequency(self, frequency):
         '''
         Set frequency of device
 
@@ -129,7 +129,7 @@ class RS_SMR40(Instrument):
         logging.debug(__name__ + ' : setting frequency to %s GHz' % frequency)
         self._visainstrument.write('SOUR:FREQ %e' % frequency)
 
-    def _do_get_power(self):
+    def do_get_power(self):
         '''
         Get output power from device
 
@@ -142,7 +142,7 @@ class RS_SMR40(Instrument):
         logging.debug(__name__ + ' : reading power from instrument')
         return float(self._visainstrument.ask('SOUR:POW?'))
 
-    def _do_set_power(self,power):
+    def do_set_power(self,power):
         '''
         Set output power of device
 
@@ -155,7 +155,7 @@ class RS_SMR40(Instrument):
         logging.debug(__name__ + ' : setting power to %s dBm' % power)
         self._visainstrument.write('SOUR:POW %e' % power)
 
-    def _do_get_status(self):
+    def do_get_status(self):
         '''
         Get status from instrument
 
@@ -175,7 +175,7 @@ class RS_SMR40(Instrument):
         else:
             raise ValueError('Output status not specified : %s' % stat)
 
-    def _do_set_status(self,status):
+    def do_set_status(self,status):
         '''
         Set status of instrument
 

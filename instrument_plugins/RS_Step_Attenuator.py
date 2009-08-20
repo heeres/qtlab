@@ -54,7 +54,7 @@ class RS_Step_Attenuator(Instrument):
 
         self.set_attenuation(139)
 
-    def _do_set_attenuation(self, dB):
+    def do_set_attenuation(self, dB):
         '''
         Apply the desired attenuation
 

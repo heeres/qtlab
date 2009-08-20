@@ -457,7 +457,7 @@ class HP_8753C(Instrument):
 
 ### parameters
 
-    def _do_set_IF_Bandwidth(self, bw):
+    def do_set_IF_Bandwidth(self, bw):
         '''
         Set IF Bandwidth.
         Can be 10, 30, 100, 300, 1000, 3000
@@ -470,7 +470,7 @@ class HP_8753C(Instrument):
         '''
         self._visainstrument.write('IFBW%d;' %bw)
 
-    def _do_get_IF_Bandwidth(self):
+    def do_get_IF_Bandwidth(self):
         '''
         Get IF Bandwith.
 
@@ -482,7 +482,7 @@ class HP_8753C(Instrument):
         '''
         return int(float(self._visainstrument.ask('IFBW?;')))
 
-    def _do_set_numpoints(self, numpts):
+    def do_set_numpoints(self, numpts):
         '''
         Set number of points in trace.
         Can be 3, 11, 26, 51, 101, 201, 401, 801, 1601
@@ -495,7 +495,7 @@ class HP_8753C(Instrument):
         '''
         self._visainstrument.write('POIN%d;' %numpts)
 
-    def _do_get_numpoints(self):
+    def do_get_numpoints(self):
         '''
         Get number of points in trace
 
@@ -507,7 +507,7 @@ class HP_8753C(Instrument):
         '''
         return int(float(self._visainstrument.ask('POIN?;')))
 
-    def _do_set_start_freq(self, freq):
+    def do_set_start_freq(self, freq):
         '''
         Set start frequency.
 
@@ -519,7 +519,7 @@ class HP_8753C(Instrument):
         '''
         self._visainstrument.write('STAR%eHZ;' %freq)
 
-    def _do_get_start_freq(self):
+    def do_get_start_freq(self):
         '''
         Get start frequency.
 
@@ -531,7 +531,7 @@ class HP_8753C(Instrument):
         '''
         return float(self._visainstrument.ask('STAR?;'))
 
-    def _do_set_stop_freq(self, freq):
+    def do_set_stop_freq(self, freq):
         '''
         Set stop frequency.
 
@@ -543,7 +543,7 @@ class HP_8753C(Instrument):
         '''
         self._visainstrument.write('STOP%eHZ;' %freq)
 
-    def _do_get_stop_freq(self):
+    def do_get_stop_freq(self):
         '''
         Get stop frequency.
 
@@ -555,7 +555,7 @@ class HP_8753C(Instrument):
         '''
         return float(self._visainstrument.ask('STOP?;'))
 
-    def _do_set_power(self, pow):
+    def do_set_power(self, pow):
         '''
         Set power.
 
@@ -567,7 +567,7 @@ class HP_8753C(Instrument):
         '''
         self._visainstrument.write('POWE%.3e;' % pow)
 
-    def _do_get_power(self):
+    def do_get_power(self):
         '''
         Get power
 

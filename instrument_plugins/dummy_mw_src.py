@@ -59,28 +59,28 @@ class dummy_mw_src(Instrument):
 
 #### communication with machine
 
-    def _do_get_frequency(self):
+    def do_get_frequency(self):
         return self._dummy_frequency
 
-    def _do_set_frequency(self, frequency):
+    def do_set_frequency(self, frequency):
         self._dummy_frequency = frequency
 
-    def _do_get_power(self):
+    def do_get_power(self):
         return self._dummy_power
 
-    def _do_set_power(self, power):
+    def do_set_power(self, power):
         self._dummy_power = power
 
-    def _do_get_phase(self):
+    def do_get_phase(self):
         return self._dummy_phase
 
-    def _do_set_phase(self, phase):
+    def do_set_phase(self, phase):
         self._dummy_phase = phase
 
-    def _do_get_status(self):
+    def do_get_status(self):
         return self._dummy_status
 
-    def _do_set_status(self,status):
+    def do_set_status(self,status):
         self._dummy_status = status
 
 ### shorcuts

@@ -55,19 +55,19 @@ class dummy_signal_generator(Instrument):
 
         self._start_time = time.time()
 
-    def _do_set_type(self, val):
+    def do_set_type(self, val):
         self._type = val
 
-    def _do_get_type(self):
+    def do_get_type(self):
         return self._type
 
-    def _do_set_amplitude(self, val):
+    def do_set_amplitude(self, val):
         self._amplitude = val
 
-    def _do_set_frequency(self, val):
+    def do_set_frequency(self, val):
         self._frequency = val
 
-    def _do_get_wave(self):
+    def do_get_wave(self):
         dt = time.time() - self._start_time
         if self._type == self.TYPE_SIN:
             return self._amplitude * math.sin(dt * self._frequency * 2 * math.pi)
@@ -86,9 +86,9 @@ class dummy_signal_generator(Instrument):
             else:
                 return -(amod - 0.95) * 2 / 0.1 * self._amplitude
 
-    def _do_get_slow_wave(self):
+    def do_get_slow_wave(self):
         time.sleep(1)
-        return self._do_get_wave()
+        return self.do_get_wave()
 
     def reset(self, arg):
         '''Reset signal generator.'''

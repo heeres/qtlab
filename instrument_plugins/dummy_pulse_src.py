@@ -63,27 +63,27 @@ class dummy_pulse_src(Instrument):
 
 #### communication with machine
 
-    def _do_get_start(self):
+    def do_get_start(self):
         return self._dummy_start
 
-    def _do_set_start(self, start):
+    def do_set_start(self, start):
         self._dummy_start = start
 
-    def _do_get_length(self):
+    def do_get_length(self):
         return self._dummy_length
 
-    def _do_set_length(self,length):
+    def do_set_length(self,length):
         self._dummy_length = length
 
-    def _do_get_amplitude(self):
+    def do_get_amplitude(self):
         return self._dummy_amplitude
 
-    def _do_set_amplitude(self,amplitude):
+    def do_set_amplitude(self,amplitude):
         self._dummy_amplitude = amplitude
 
-    def _do_get_status(self):
+    def do_get_status(self):
         return self._dummy_status
 
-    def _do_set_status(self,status):
+    def do_set_status(self,status):
         self._dummy_status = status
 

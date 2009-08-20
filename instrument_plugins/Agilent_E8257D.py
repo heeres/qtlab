@@ -96,7 +96,7 @@ class Agilent_E8257D(Instrument):
         self.get_frequency()
         self.get_status()
 
-    def _do_get_power(self):
+    def do_get_power(self):
         '''
         Reads the power of the signal from the instrument
 
@@ -109,7 +109,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : get power')
         return float(self._visainstrument.ask('POW:AMPL?'))
 
-    def _do_set_power(self, amp):
+    def do_set_power(self, amp):
         '''
         Set the power of the signal
 
@@ -122,7 +122,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : set power to %f' % amp)
         self._visainstrument.write('POW:AMPL %s' % amp)
 
-    def _do_get_phase(self):
+    def do_get_phase(self):
         '''
         Reads the phase of the signal from the instrument
 
@@ -135,7 +135,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : get phase')
         return float(self._visainstrument.ask('PHASE?'))
 
-    def _do_set_phase(self, phase):
+    def do_set_phase(self, phase):
         '''
         Set the phase of the signal
 
@@ -148,7 +148,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : set phase to %f' % phase)
         self._visainstrument.write('PHASE %s' % phase)
 
-    def _do_get_frequency(self):
+    def do_get_frequency(self):
         '''
         Reads the frequency of the signal from the instrument
 
@@ -161,7 +161,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : get frequency')
         return float(self._visainstrument.ask('FREQ:CW?'))
 
-    def _do_set_frequency(self, freq):
+    def do_set_frequency(self, freq):
         '''
         Set the frequency of the instrument
 
@@ -174,7 +174,7 @@ class Agilent_E8257D(Instrument):
         logging.debug(__name__ + ' : set frequency to %f' % freq)
         self._visainstrument.write('FREQ:CW %s' % freq)
 
-    def _do_get_status(self):
+    def do_get_status(self):
         '''
         Reads the output status from the instrument
 
@@ -195,7 +195,7 @@ class Agilent_E8257D(Instrument):
           raise ValueError('Output status not specified : %s' % stat)
         return
 
-    def _do_set_status(self, status):
+    def do_set_status(self, status):
         '''
         Set the output status of the instrument
 

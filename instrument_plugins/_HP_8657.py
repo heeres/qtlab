@@ -130,7 +130,7 @@ class HP_8657(Instrument):
         sleep(0.1)
 
     #Communication with device
-    def _do_set_frequency(self, frequency):
+    def do_set_frequency(self, frequency):
         '''
         Set frequency of device
 
@@ -144,7 +144,7 @@ class HP_8657(Instrument):
         # sending value to instrument
         self._visainstrument.write('FR%.0fHZ' % frequency)
 
-    def _do_set_power(self,power):
+    def do_set_power(self,power):
         '''
         Set output power of device
 
@@ -158,7 +158,7 @@ class HP_8657(Instrument):
         # sending value to instrument
         self._visainstrument.write('AP%.1fDM' % power)
 
-    def _do_set_status(self,status):
+    def do_set_status(self,status):
         '''
         Set status of output channel
 

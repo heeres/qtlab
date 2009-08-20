@@ -71,7 +71,7 @@ class Cryocon62(Instrument):
             channel_prefix='ch%d_',
             flags=Instrument.FLAG_GET, channels=(1,2))
 
-    def _do_get_temperature(self, channel):
+    def do_get_temperature(self, channel):
         '''
         Reads the temperature of the designated channel from the device.
 
@@ -95,7 +95,7 @@ class Cryocon62(Instrument):
             value = 0.0
         return value
 
-    def _do_get_units(self, channel):
+    def do_get_units(self, channel):
         '''
         Reads the units of the designated channel from the device
         in which the temperature is measured.
@@ -114,7 +114,7 @@ class Cryocon62(Instrument):
         else:
             raise ValueError('Channel %i does not exist' % channel)
 
-    def _do_get_sensor_index(self, channel):
+    def do_get_sensor_index(self, channel):
         '''
         Reads the index of the designated channel from the device.
 
@@ -132,7 +132,7 @@ class Cryocon62(Instrument):
         else:
             raise ValueError('Channel %i does not exist' % channel)
 
-    def _do_get_vbias(self, channel):
+    def do_get_vbias(self, channel):
         '''
         Reads the bias of the designated channel from the device.
 
@@ -150,7 +150,7 @@ class Cryocon62(Instrument):
         else:
             raise ValueError('Channel %i does not exist' % channel)
 
-    def _do_get_channel_name(self, channel):
+    def do_get_channel_name(self, channel):
         '''
         Reads the name of the designated channel from the device.
 
@@ -167,7 +167,7 @@ class Cryocon62(Instrument):
         else:
             raise ValueError('Channel %i does not exist' % channel)
 
-    def _do_get_sensor_name(self, channel):
+    def do_get_sensor_name(self, channel):
         '''
         Reads the name of the designated sensor from the device.
 
