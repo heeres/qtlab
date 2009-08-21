@@ -350,7 +350,7 @@ class _QTGnuPlot():
                 datadict[key] = val
 
         s = ''
-        if 'with' in datadict:
+        if 'with' in datadict and datadict['with'] != '':
             s += ' with %s' % datadict['with']
         if 'pointtype' in datadict:
             s += ' pt %d' % datadict['pointtype']
