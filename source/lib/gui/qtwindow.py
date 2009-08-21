@@ -18,7 +18,7 @@ class QTWindow(gtk.Window):
         self._title = title
         self._config = config.get_config()
 
-        winx, winy = self._config.get('%s_pos' % title, (10, 10))
+        winx, winy = self._config.get('%s_pos' % title, (250, 40))
         self.move(winx, winy)
 
         width, height = self._config.get('%s_size' % self._title, (200, 400))
