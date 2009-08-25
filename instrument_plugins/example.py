@@ -2,17 +2,9 @@
 from instrument import Instrument
 import types
 
-import sys,IPython.ultraTB
-sys.excepthook = IPython.ultraTB.FormattedTB(mode='Verbose',color_scheme='Linux', call_pdb=1)
-
 class example(Instrument):
 
-    READ_STRINGS = {
-    'speed': 'S?',
-    'trigger': 'T?'
-    }
-
-    def __init__(self, name, address=None):
+    def __init__(self, name, address=None, reset=False):
         Instrument.__init__(self, name, tags=['measure'])
 
         self.add_parameter('value', type=types.FloatType,
@@ -40,56 +32,75 @@ class example(Instrument):
                 minval=1, maxval=1e9,
                 format='%.02e')
 
-#        self.set_channel_bounds('output', 1, -1, 1)
-
         self.add_function('reset')
         self.add_function('step')
 
-        self.set_default_read_var('value')
-        self.set_default_write_var('value')
+        # dummy values for simulating instrument
+        self._dummy_value = 1
+        self._dummy_speed = 2
+        self._dummy_input = [1, 4, 9, 16]
+        self._dummy_output = [0, 1, 2, 3]
+        self._dummy_gain = 10
 
         if address == None:
-            raise ValueError('HP1234 requires an address parameter')
+            raise ValueError('Example Instrument requires an address parameter')
         else:
-            print 'HP1234 address %s' % address
+            print 'Example Instrument  address %s' % address
 
-        self.reset()
+        if reset:
+            self.reset()
+        else:
+            self.get_all()
 
-    def do_get_value(self):
-        return 1
+    def reset(self):
+        """Reset example instrument"""
 
-    def do_get_speed(self):
-        print 'Getting speed'
-        return 2
+        self.set_value(1)
+        self.set_speed('slow')
+        self.set_gain(20)
 
-    def do_set_speed(self, val):
-        print 'Set speed to %s' % val
+        self.set_ch1_output(0)
+        self.set_ch2_output(0)
+        self.set_ch3_output(0)
+        self.set_ch4_output(0)
+
         return True
 
-    def do_get_input(self, channel):
-        return channel * channel
+    def get_all(self):
 
-    def do_get_output(self, channel):
-        return 0
-
-    def do_set_output(self, val, channel, times2=False):
-        if times2:
-            val *= 2
-
-    def do_set_gain(self, val):
-        return val
-
-    def remove(self):
-        Instrument.remove(self)
-
-    def reset(self, **kwargs):
-        """Reset example instrument"""
+        self.get_value()
+        self.get_speed()
+        self.get_gain()
 
         self.get_ch1_output()
         self.get_ch2_output()
         self.get_ch3_output()
         self.get_ch4_output()
+
         return True
+
+    def do_get_value(self):
+        return self._dummy_value
+
+    def do_get_speed(self):
+        return self._dummy_speed
+
+    def do_set_speed(self, val):
+        self._dummy_speed = val
+
+    def do_get_input(self, channel):
+        return self._dummy_input[channel-1]
+
+    def do_get_output(self, channel):
+        return self._dummy_output[channel-1]
+
+    def do_set_output(self, val, channel, times2=False):
+        if times2:
+            val *= 2
+        self._dummy_output[channel-1] = val
+
+    def do_set_gain(self, val):
+        self._dummy_gain = val
 
     def step(self, channel, stepsize=0.1):
         '''Step channel <channel>'''
