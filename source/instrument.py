@@ -949,6 +949,21 @@ class Instrument(calltimer.ThreadSafeGObject):
 
         return result
 
+    def update_value(self, name, value):
+        '''
+        Update a parameter value if new information is obtained.
+        Barely any checking is performed and no type conversions,
+        so use with caution.
+        '''
+
+        if self._parameters.has_key(name):
+            p = self._parameters[name]
+        else:
+            return None
+
+        p['value'] = value
+        self._queue_changed({name: value})
+
     def add_function(self, name, **options):
         '''
         Inform the Instrument wrapper class to expose a function.
