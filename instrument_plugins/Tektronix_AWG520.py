@@ -706,7 +706,7 @@ class Tektronix_AWG520(Instrument):
         m = m1 + numpy.multiply(m2,2)
         ws = ''
         for i in range(0,len(w)):
-            ws = ws + struct.pack('<fB',w[i],m[i])
+            ws = ws + struct.pack('<fB', w[i], int(m[i]))
 
         s1 = 'MMEM:DATA "%s",' % filename
         s3 = 'MAGIC 1000\n'
