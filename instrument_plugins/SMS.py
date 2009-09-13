@@ -66,11 +66,16 @@ class SMS(Instrument):
         # Set parameters
 
         self._address = address
-        self.numdacs = numdacs
-        self.pol_num = range(self.numdacs)
-        self._values = {}
+        if numdacs % 4 == 0 and numdacs > 0:
+            self._numdacs = int(numdacs)
+        else:
+            logging.error(__name__ + ' : specified number of dacs needs to be multiple of 4')
+        self.dac_byte = range(self._numdacs)
+        self.pol_num = range(self._numdacs)
+
         self._config = config.get_config()
-        self._filepath = os.path.join(self._config['qtlabdir'], 'instrument_plugins/_SMS/')
+        self._filepath = os.path.join(self._config['qtlabdir'],
+                'instrument_plugins', '_SMS/')
         if not os.path.isdir(self._filepath):
             os.makedirs(self._filepath)
         self._filename = os.path.join(self._filepath, 'SMS_' + address + '.dat')
@@ -85,24 +90,30 @@ class SMS(Instrument):
         self.add_function('get_battvoltages')
 
         # Add parameters
-        self.add_parameter('dac', type=types.FloatType,
-            flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, self.numdacs),
-            minval=0, maxval=0,
-            maxstep=0.01, stepdelay=50,
-            units='Volts', format='%.6e')
-        self.add_parameter('pol_dac', type=types.StringType,
-            flags=Instrument.FLAG_GET, channels=(1, self.numdacs))
+        self.add_parameter('pol_dacrack',
+                type=types.StringType,
+                flags=Instrument.FLAG_GET,
+                channels=(1, self._numdacs/4))
+        self.add_parameter('dac',
+                type=types.FloatType,
+                flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
+                channels=(1, self._numdacs),
+                maxstep=0.01, stepdelay=50,
+                units='Volts', format='%.6e')
         self.add_parameter('battvoltage_pos', type=types.FloatType,
-            flags=Instrument.FLAG_GET, units='Volts')
+                flags=Instrument.FLAG_GET, units='Volts')
         self.add_parameter('battvoltage_neg', type=types.FloatType,
-            flags=Instrument.FLAG_GET, units='Volts')
+                flags=Instrument.FLAG_GET, units='Volts')
 
         self._open_serial_connection()
+
+        for j in range(numdacs/4):
+            self.get('pol_dacrack%d' % (j+1), getdacs=False)
 
         if reset:
             self.reset()
         else:
+            self._load_values_from_file()
             self.get_all()
 
     def __del__(self):
@@ -170,13 +181,9 @@ class SMS(Instrument):
         '''
         logging.debug(__name__ + ' : resetting instrument')
 
-        for i in range(1, self.numdacs, 4):
-            logging.debug(__name__ + ' : getting polarity for dacrack %d' % i)
-            self.get('pol_dac%d' % i)
+        self.set_dacs_zero()
+        self.get_all()
 
-        for i in range(1, self.numdacs+1):
-            logging.debug(__name__ + ' : setting value of dac %d to 0.0' % i)
-            self.set('dac%d' % i, 0.0)
 
     def get_all(self):
         '''
@@ -189,18 +196,12 @@ class SMS(Instrument):
         Output:
             None
         '''
-        logging.warning(__name__ + ' : WARNING! getting data from file, \
-          instrument does not support getting')
-
-        self._load_values_from_file()
-
-        for i in range(1, self.numdacs, 4):
-            logging.debug(__name__ + ' : getting polarity for dacrack %d' % i)
-            self.get('pol_dac%d' % i)
-
-        for i in range(self.numdacs):
-            logging.debug(__name__ + ' : getting value for dac %d' % (i+1))
+        for i in range(self._numdacs):
             self.get('dac%d' % (i+1))
+
+    def set_dacs_zero(self):
+        for i in range(self._numdacs):
+            self.set('dac%d' % (i+1), 0)
 
     # functions
     def measure_adc_on(self):
@@ -267,12 +268,10 @@ class SMS(Instrument):
             voltage (float) : dacvalue in Volts
         '''
         logging.debug(__name__ + ' : reading and converting to \
-            voltage from memory for dac%s' % channel)
-        self._load_values_from_file()
+            voltage from memory for dac%s' % (channel))
 
-        #print channel
-        byteval = self._ask_value('byteval_dac' + str(channel))
-        voltage = self._bytevalue_to_voltage(byteval) + self._ask_value('corr_dac' + str(channel))
+        byteval = self.dac_byte[channel-1]
+        voltage = self._bytevalue_to_voltage(byteval) + self.pol_num[channel-1]
         return voltage
 
     def do_set_dac(self, voltage, channel):
@@ -288,75 +287,60 @@ class SMS(Instrument):
         '''
         logging.debug(__name__ + ' : setting voltage of dac%s to \
             %s Volts' % (channel, voltage))
-        bytevalue = self._voltage_to_bytevalue(voltage -
-            self._ask_value('corr_dac' + str(channel)))
+
+        bytevalue = self._voltage_to_bytevalue(voltage - self.pol_num[channel-1])
         numtekst = '00'
         if (channel<10):
             numtekst = '0' + str(channel)
         elif (channel<100)&(channel>9):
             numtekst = str(channel)
 
-        # format string
         bytestring = str(bytevalue)
         while (len(bytestring)<5):
             bytestring = '0' + bytestring
 
         self._write_to_instrument('D' + numtekst + ',' + bytestring + ';')
-        self._store_value('byteval_dac' + str(channel), bytevalue)
+        self.dac_byte[channel-1] = bytevalue
         self._save_values_to_file()
 
-    # Base functions to handle the polarity
-    def do_get_pol_dac(self, channel, direct=True):
+    def do_get_pol_dacrack(self, channel, getdacs=True):
         '''
-        Updates the polarities in memory of the
-        rack containing the specified channel.
-        WARNING: Only use with direct=True
+        Gets the polarity of the specified set of dacs
 
         Input:
-            channel (int) : 1 based index of the dac for which the
-                            polarities of the rack need to be updated
+            channel (int) : 0 based index of the rack
 
         Output:
             polarity (string) : 'BIP', 'POS' or 'NEG'
         '''
-        logging.debug(__name__ + ' : Reading polarity of dac %d' % channel)
-        set = ((channel-1)/4)+1
+        logging.debug(__name__ + ' :  getting polarity of rack %d' % channel)
 
-        if (direct):
-            self._write_to_instrument('POLD' + str(set) + ';')
-            val = self._read_buffer()
-            logging.debug(__name__ + ' : received %s' % val)
-            if (val == '-4V ...  0V'):
-                polarity = 'NEG'
-                correction = -4.0
-            elif (val == '-2V ... +2V'):
-                polarity = 'BIP'
-                correction = -2.0
-            elif (val == ' 0V ... +4V'):
-                polarity = 'POS'
-                correction = 0.0
-            else:
-                logging.error(__name__ + ' : Received invalid polarity : %s' % val)
-                logging.error(__name__ + ' : Possibly caused by low battery.')
-                raise ValueError('Received invalid polarity: %s' % val)
-            logging.debug(__name__ + ' : polarity = %s (type = %s), correction = %f (type = %s)' % (polarity, type(polarity), correction, type(correction)))
+        self._write_to_instrument('POLD%d' % channel + ';')
+        val = self._read_buffer()
+        logging.debug(__name__ + ' : received %s' % val)
+        if (val == '-4V ...  0V'):
+            polarity = 'NEG'
+            correction = -4.0
+        elif (val == '-2V ... +2V'):
+            polarity = 'BIP'
+            correction = -2.0
+        elif (val == ' 0V ... +4V'):
+            polarity = 'POS'
+            correction = 0.0
+        else:
+            logging.error(__name__ + ' : Received invalid polarity : %s' % val)
+            logging.error(__name__ + ' : Possibly caused by low battery.')
+            raise ValueError('Received invalid polarity: %s' % val)
 
-            for i in range(1+(set-1)*4,1+set*4):
-                logging.debug(__name__ + ' : saving info for dac %d' % i)
-                self.set_parameter_bounds('dac' + str(i), correction,4.0+correction)
-                self._store_value('pol_dac' + str(i), polarity)
-                self._store_value('corr_dac' + str(i), correction)
+        for i in range(4*(channel-1),4*(channel)):
+            self.pol_num[i] = correction
+            self.set_parameter_bounds('dac%d' % (i+1),
+                    self.pol_num[i], self.pol_num[i] + 4.0)
 
-            logging.debug(__name__ + ' : saving info list to file')
-            self._save_values_to_file()
+        if getdacs:
+            self.get_all()
 
-            for i in range(1+(set-1)*4,1+set*4):
-                logging.debug(__name__ + ' : getting info from file for dac %d' % i)
-                getattr(self, 'get_pol_dac' + str(i))(direct=False)
-                getattr(self, 'get_dac' + str(i))
-
-        logging.debug(__name__ + ' : returning polarity for dac %d' % channel)
-        return self._ask_value('pol_dac' + str(channel))
+        return polarity
 
     def get_battvoltages(self):
         self.get_battvoltage_neg()
@@ -439,40 +423,7 @@ class SMS(Instrument):
         vpp43.write(self._vi, tekst)
         sleep(0.05)
 
-    # Keep track of data
-    def _store_value(self, name, val):
-        '''
-        Stores a value in local memory
-        self._values
-
-        Input:
-            name (string) : name of the variable
-            val (depends) : value of variable
-
-        Output:
-            None
-        '''
-        logging.debug(__name__ + ' : Store %s as %s' % (name, val))
-        self._values[name] = val
-
-    def _ask_value(self, name):
-        '''
-        Asks for a parameter stored in memory
-        self._values
-
-        Input:
-            name (string) : name of the variable
-
-        Output:
-            val (depends) : value of variable
-        '''
-        logging.debug(__name__ + ' : Ask for %s' % name)
-        if name in self._values:
-            return self._values[name]
-        else:
-            logging.error(__name__  + " : Try to read non-existing \
-                parameter from memory : " + name)
-
+    # Save data
     def _load_values_from_file(self):
         '''
         Loads the dacvalues from the local harddisk into memory
@@ -484,9 +435,12 @@ class SMS(Instrument):
             succesfull (bool) : false if loading failed
         '''
         logging.debug(__name__ + ' : Unpickling data')
+        logging.warning(__name__ + ' : WARNING! getting data from file, \
+          instrument does not support getting')
+
         try:
             file = open(self._filename,'r')
-            self._values = pickle.load(file)
+            self.dac_byte = pickle.load(file)
             file.close()
             return True
         except:
@@ -495,7 +449,7 @@ class SMS(Instrument):
 
     def _save_values_to_file(self):
         '''
-        Stores the dacvalues and polarities on the local harddisk
+        Stores the dacvalues on the local harddisk
 
         Input:
             None
@@ -505,7 +459,7 @@ class SMS(Instrument):
         '''
         logging.debug(__name__ + ' : Pickling data')
         file = open(self._filename,'w')
-        pickle.dump(self._values, file)
+        pickle.dump(self.dac_byte, file)
         file.close()
 
     # Conversion of data
