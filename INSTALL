@@ -24,9 +24,7 @@ A) python and python libraries.
     These always need to be installed separately by the user on the computer where QTlab will be running.
 
 B) other programs.
-    (If you plan to only use the official releases of QTlab, you can skip this)
-    These programs generally do not need to be installed by the user, but are shipped together with QTlab in a folder '3rd_party'. The location of the executables needs to be added to the PATH variable so QTlab can find them. This will be done automatically when QTlab is run with 'QTlab.bat' file.
-    The '3rd_party' folder does not exist in development 'git'-tree. It is only provided in official releases. When using the source from git, make sure to install this software yourself, or copy the '3rd_party' folder and 'QTlab.bat' file from a previous QTlab release. There is however a small chance this might not work if a newer version dependency is required. If you're not brave, stick to the releases.
+    These programs generally do not need to be installed, but just have to 'be there'. Adding their locations to the PATH will make sure that QTLab can find the necessary files. This you can do any way you like, below we will describe one way as an example.
 
 =group A=
 
@@ -56,7 +54,7 @@ B) other programs.
     libraries used for creating graphical interfaces.
     URL: pygtk.org
 
-11) pygtksourceview (2.2.0)
+11) pygtksourceview (x.x.x)
 
     library for syntax highlighting of text files.
     URL: ftp.gnome.org/pub/gnome/binaries/win32
@@ -97,14 +95,15 @@ B) other programs.
     gtksourceview depends on these 2
     URL: xmlsoft.org -> downloads -> win32
 
-These can be installed anywhere you like, but as an example lets look at how
-the 3rd_party folder in the release is made:
+To 'install' the programs of group B, we recommend the following.
 
-a) Both gnuplot and Console2 don't have an installer. They are just copied to the 3rd_party folder.
+a) Make a folder '3rd_party' inside the QTLab folder.
 
-b) GTK comes as a bundle, and is also just a collection of files and folders. Just put everything in a folder 'GTK'. Next copy the contents of gtksourceview, gtksourceview-dev, libxml2 and iconv into the GTK folder. They all have the same directory structure.
+b) Both gnuplot and Console2 don't have an installer. They are just copied to the 3rd_party folder.
 
-c) Lastly we have to make sure QTlab can find the executables. In stead of changing the PATH permanently (in system => advanced => system_variables), we prefer to add them on the commandline. Adjust the qtlab.bat file from the git-tree, by uncommenting the four 'SET' lines. This will add the following variables to the PATH:
+c) GTK comes as a bundle, and is also just a collection of files and folders. Just put everything in a folder 'GTK' in the '3rd_party' folder. Next copy the contents of gtksourceview, gtksourceview-dev, libxml2 and iconv into the GTK folder. They all have the same directory structure.
+
+d) Lastly we have to make sure QTlab can find the executables. In stead of changing the PATH permanently (in system => advanced => system_variables), we prefer to add them on the commandline. Adjust the qtlab.bat file to correspond to the location of your '3rd_party' folder. If you did it exactly as recommended here, you can just uncomment the four 'SET' lines. This will add the following variables to the PATH:
 
 <path_to_gnuplot_folder>\binaries
 <path_to_console2_folder>\
@@ -116,3 +115,5 @@ It is important to add them to the beginning of the list (of the PATH variable),
 Additionally the following variable is created (or overwritten):
 
 GTK_BASEPATH = <path_to_gtk_folder>
+
+This is it, your done. Happy measuring.
