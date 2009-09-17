@@ -22,7 +22,6 @@ import visa
 import types
 import logging
 import numpy
-import struct
 
 class Keithley_2700(Instrument):
     '''

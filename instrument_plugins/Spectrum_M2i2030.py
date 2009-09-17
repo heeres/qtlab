@@ -17,8 +17,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 from ctypes import *
-from instrument_plugins._Spectrum_M2i2030.errors import errors as _spcm_errors
-from instrument_plugins._Spectrum_M2i2030.regs import regs as _spcm_regs
+from _Spectrum_M2i2030.errors import errors as _spcm_errors
+from _Spectrum_M2i2030.regs import regs as _spcm_regs
 from instrument import Instrument
 import pickle
 from time import sleep, time

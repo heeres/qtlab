@@ -1,4 +1,4 @@
-from instrument_plugins._HP_8657 import HP_8657
+from _HP_8657 import HP_8657
 
 class HP_8657B(HP_8657):
 
