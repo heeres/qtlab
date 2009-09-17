@@ -278,5 +278,5 @@ class Zaber_TNM(Instrument):
         return pos
 
     def do_set_position(self, pos):
-        self.move(pos)
+        self.move_abs(pos)
 
