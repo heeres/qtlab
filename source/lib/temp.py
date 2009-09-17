@@ -8,13 +8,22 @@ class File():
     _files = []
     _dir = ''
 
-    def __init__(self, path=None, mode='w+'):
+    def __init__(self, path=None, mode='w+', **kwargs):
+        '''
+        Create a temporary file, optionally with a name given by <path>.
+
+        kwargs are options that will be set as properties of this object.
+        '''
+
         if path is None or len(path) == 0:
             self.name = self.create_name()
         else:
             self.name = path
 
         self._file = open(self.name, mode)
+
+        for key, val in kwargs.iteritems():
+            setattr(self, key, val)
 
         # Keep a weak reference
         File._files.append(weakref.ref(self))
@@ -50,6 +59,10 @@ class File():
 
     def flush(self):
         return self._file.flush()
+
+    def get_file(self):
+        '''Return the underlying file object.'''
+        return self._file
 
     @staticmethod
     def remove_all():

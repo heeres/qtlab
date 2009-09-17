@@ -72,6 +72,8 @@ class Plot(gobject.GObject):
             autoupdate (bool), default None, which means listen to global
             needtempfile (bool), default False. Whether the plot needs data
             in a temporary file.
+            supportbin (bool), default False. Whether the temporary file can
+            be in binary format.
         '''
 
         gobject.GObject.__init__(self)
@@ -81,6 +83,7 @@ class Plot(gobject.GObject):
         mintime = kwargs.get('mintime', 1)
         autoupdate = kwargs.get('autoupdate', None)
         needtempfile = kwargs.get('needtempfile', False)
+        supportbin = kwargs.get('supportbin', False)
         name = kwargs.get('name', '')
         self._name = Plot._plot_list.new_item_name(self, name)
 
@@ -95,6 +98,7 @@ class Plot(gobject.GObject):
         self._mintime = mintime
         self._autoupdate = autoupdate
         self._needtempfile = needtempfile
+        self._supportbin = supportbin
 
         self._last_update = 0
         self._update_hid = None
@@ -324,6 +328,10 @@ class Plot(gobject.GObject):
         '''Return whether this plot type needs temporary files.'''
         return self._needtempfile
 
+    def get_support_binary(self):
+        '''Return whether this plot supports binary files.'''
+        return self._supportbin
+
     def is_busy(self):
         '''Return whether the graph is being updated.'''
         return False
@@ -435,7 +443,8 @@ class Plot2D(Plot):
                     continue
 
                 tmp = self.get_needtempfile()
-                data = Data(data=data, tempfile=tmp)
+                kwargs['binary'] = self.get_support_binary()
+                data = Data(data=data, tempfile=tmp, binary=kwargs['binary'])
 
             else:
                 logging.warning('Unhandled argument: %r', args[i])
@@ -564,7 +573,7 @@ class Plot3D(Plot):
                         data = args[i]
                         i += 1
 
-                elif len(args[i].shape) == 2 and args[i].shape[1] == 3:
+                elif len(args[i].shape) == 2 and args[i].shape[1] >= 3:
                     data = args[i]
                     i += 1
 
@@ -575,7 +584,8 @@ class Plot3D(Plot):
                     continue
 
                 tmp = self.get_needtempfile()
-                data = Data(data=data, tempfile=tmp)
+                kwargs['binary'] = self.get_support_binary()
+                data = Data(data=data, tempfile=tmp, binary=kwargs['binary'])
 
             else:
                 logging.warning('Unhandled argument: %r', args[i])

@@ -21,6 +21,7 @@ import time
 import random
 import types
 import logging
+import numpy as np
 
 import qt
 from lib.namedlist import NamedList
@@ -61,6 +62,19 @@ class _QTGnuPlot():
         'jpeg',
         'svg',
     ]
+
+    _DATA_TYPES = {
+        np.dtype('int8'): 'int8',
+        np.dtype('int16'): 'int16',
+        np.dtype('int32'): 'int32',
+        np.dtype('int64'): 'int64',
+        np.dtype('uint8'): 'uint8',
+        np.dtype('uint16'): 'uint16',
+        np.dtype('uint32'): 'uint32',
+        np.dtype('uint64'): 'uint64',
+        np.dtype('float32'): 'float32',
+        np.dtype('float64'): 'float64',
+    }
 
     _gnuplot_list = _GnuPlotList()
 
@@ -350,6 +364,18 @@ class _QTGnuPlot():
                 datadict[key] = val
 
         s = ''
+        if 'binary' in datadict:
+            data = datadict['data']
+            dimsizes = [data.get_dimension_size(i) \
+                    for i in datadict['coorddims']]
+            dt = data.get_data().dtype
+            fmt = (r'%' + self._DATA_TYPES[dt]) * data.get_ndimensions()
+            s += " binary format='%s'" % fmt
+            if len(dimsizes) == 1:
+                s += " record=%d" % dimsizes[0]
+            else:
+                s += " record=%dx%d" % (dimsizes[0], dimsizes[1])
+
         if 'with' in datadict and datadict['with'] != '':
             s += ' with %s' % datadict['with']
         if 'pointtype' in datadict:
@@ -428,6 +454,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
+        kwargs['supportbin'] = True
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
@@ -539,9 +566,10 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             else:
                 first = False
 
-            s += '"%s" using %s every %s axes %s' % \
-                (str(filepath), using, every, axes)
+            s += '"%s" using %s every %s' % \
+                (str(filepath), using, every)
             s += self._get_trace_options(datadict)
+            s += ' axes %s' % axes
 
         if first:
             return ''
@@ -673,6 +701,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
+        kwargs['supportbin'] = True
         plot.Plot3D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 

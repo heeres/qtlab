@@ -636,6 +636,14 @@ class Data(ThreadSafeGObject):
             self._write_data_line(vals)
             lastvals = vals
 
+    def _write_binary(self):
+        if not self._inmem:
+            logging.warning('Unable to _write_binary() without having it memory')
+            return False
+
+        self._data.tofile(self._file.get_file())
+        return True
+
 ### High-level file writing
 
     def write_file(self, name=None, filepath=None):
@@ -649,19 +657,22 @@ class Data(ThreadSafeGObject):
         self._write_data()
         self.close_file()
 
-    def create_tempfile(self, path=None):
+    def create_tempfile(self, path=None, binary=True):
         '''
         Create a temporary file, optionally called <path>.
         '''
 
-        self._file = temp.File(path)
+        self._file = temp.File(path, binary=binary)
+        if 1:
+            if binary:
+                ret = self._write_binary()
+            else:
+                self._write_data()
 
-        try:
-            self._write_data()
             self._dir, self._filename = os.path.split(self._file.name)
             self._file.close()
             self._tempfile = True
-        except Exception, e:
+        else: #except Exception, e:
             logging.warning('Error creating temporary file: %s', e)
             self._dir = ''
             self._filename = ''
@@ -841,8 +852,25 @@ class Data(ThreadSafeGObject):
                 self.add_coordinate('Y')
                 self.add_value('Z')
             else:
-                for i in range(data.shape[1]):
-                    self.add_coordinate('col%d' % i)
+                for i in range(data.shape[1] - 1):
+                    self.add_coordinate('col%d' % (i + 1))
+                self.add_value('col%d' % data.shape[1])
+
+            self._detect_dimensions_size()
+
+            # For more than 2 dimensions also look at detected size
+            if len(self.get_ndimensions() > 2):
+                for info in reversed(self._dimensions[2:]):
+                    # More likely to be a value than a coordinate
+                    if 'size' in info:
+                        if info['size'] == 0:
+                            self._ncoordinates -= 1
+                            self._nvalues += 1
+                            info['type'] = 'value'
+                            del info['size']
+                        else:
+                            break
+
 
 ### File reading
 
