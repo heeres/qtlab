@@ -857,6 +857,9 @@ class Instrument(calltimer.ThreadSafeGObject):
         func = p['set_func']
         if 'maxstep' in p:
             curval = p['value']
+            if curval is None:
+                logging.warning('Current value not available, ignoring maxstep')
+                curval = value + 0.01 * p['maxstep']
 
             delta = curval - value
             if delta < 0:
