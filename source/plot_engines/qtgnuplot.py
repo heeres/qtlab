@@ -158,7 +158,7 @@ class _QTGnuPlot():
     def clear(self):
         '''Clear the plot.'''
         self.cmd('clear')
-        Plot.clear(self)
+        plot.Plot.clear(self)
 
     def get_first_filepath(self):
         '''Return filepath of first data item.'''
@@ -722,6 +722,13 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                 self._default_with = ''
 
         return _QTGnuPlot.set_property(self, prop, val, **kwargs)
+
+    def add_data(self, data, *args, **kwargs):
+        if 'palette' in kwargs:
+            gamma = kwargs.pop('gamma', 1.0)
+            self.set_palette(kwargs.pop('palette'), gamma, update=False)
+
+        plot.Plot3D.add_data(self, data, *args, **kwargs)
 
     def create_command(self, name, val):
         if name == 'style':

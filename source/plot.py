@@ -115,8 +115,18 @@ class Plot(gobject.GObject):
         '''Get plot name.'''
         return self._name
 
+    _ADD_DATA_PLOT_OPTS = set((
+        'xrange', 'yrange', 'zrange',
+    ))
+
     def add_data(self, data, **kwargs):
         '''Add a Data class with options to the plot list.'''
+
+        # Extract options that apply to the global plot
+        plot_opts = self._ADD_DATA_PLOT_OPTS & set(kwargs.keys())
+        for key in plot_opts:
+            val = kwargs.pop(key)
+            self.set_property(key, val)
 
         kwargs['data'] = data
         kwargs['new-data-point-hid'] = \
