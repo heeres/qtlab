@@ -859,7 +859,7 @@ class Data(ThreadSafeGObject):
             self._detect_dimensions_size()
 
             # For more than 2 dimensions also look at detected size
-            if len(self.get_ndimensions() > 2):
+            if self.get_ndimensions() > 2:
                 for info in reversed(self._dimensions[2:]):
                     # More likely to be a value than a coordinate
                     if 'size' in info:
