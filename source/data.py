@@ -1083,7 +1083,7 @@ class Data(ThreadSafeGObject):
         bs = self._dimensions[firstloopdim]['size']
         if bs > 0:
             if len(data) % bs == 0:
-                self._block_sizes = [bs] * len(data) / bs
+                self._block_sizes = [bs] * (len(data) / bs)
             else:
                 self._block_sizes = [bs] * (int(len(data) / bs) + 1)
 
