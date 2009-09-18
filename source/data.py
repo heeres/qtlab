@@ -839,6 +839,7 @@ class Data(ThreadSafeGObject):
         self._inmem = True
         self._infile = False
         self._npoints = len(self._data)
+        self._block_sizes = []
 
         # Add dimension information
         if len(data.shape) == 1:
@@ -1040,6 +1041,7 @@ class Data(ThreadSafeGObject):
         loopdims = []
         newshape = []
         mulsize = 1
+        firstloopdim = None
         for iter in range(ncoords):
             loopdim = None
             for colnum in range(ncoords):
@@ -1054,6 +1056,9 @@ class Data(ThreadSafeGObject):
 
             if loopdim is None:
                 break
+
+            if firstloopdim is None:
+                firstloopdim = loopdim
 
             i = 1
             while i * mulsize < len(data):
@@ -1073,6 +1078,14 @@ class Data(ThreadSafeGObject):
         self._loopdims = loopdims
         self._loopshape = newshape
         self._complete = complete
+
+        # Determine number of blocks
+        bs = self._dimensions[firstloopdim]['size']
+        if bs > 0:
+            if len(data) % bs == 0:
+                self._block_sizes = [bs] * len(data) / bs
+            else:
+                self._block_sizes = [bs] * (int(len(data) / bs) + 1)
 
         return complete
 
