@@ -373,7 +373,7 @@ class _QTGnuPlot():
             s += " binary format='%s'" % fmt
             if len(dimsizes) == 1:
                 s += " record=%d" % dimsizes[0]
-            else:
+            elif len(dimsizes) != 0:
                 s += " record=%dx%d" % (dimsizes[0], dimsizes[1])
 
         if 'with' in datadict and datadict['with'] != '':
