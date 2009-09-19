@@ -586,9 +586,9 @@ class Instrument(calltimer.ThreadSafeGObject):
 
         popts = self.get_parameter_options(param)
         text = ''
-        if 'maxstep' in popts:
+        if 'maxstep' in popts and popts['maxstep'] is not None:
             text += '%s' % popts['maxstep']
-            if 'stepdelay' in popts:
+            if 'stepdelay' in popts and popts['stepdelay'] is not None:
                 text += ' / %sms' % popts['stepdelay']
             else:
                 text += ' / 100ms'
@@ -855,7 +855,7 @@ class Instrument(calltimer.ThreadSafeGObject):
             base_name = name
 
         func = p['set_func']
-        if 'maxstep' in p:
+        if 'maxstep' in p and p['maxstep'] is not None:
             curval = p['value']
             if curval is None:
                 logging.warning('Current value not available, ignoring maxstep')
