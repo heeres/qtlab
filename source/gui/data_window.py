@@ -51,6 +51,7 @@ class DataWindow(qtwindow.QTWindow):
         self._plot_name = gtk.Entry()
         self._plot_name.set_text('databrowser')
         self._plot_style = gtk.Entry()
+        self._columns = gtk.Entry()
         self._clear_check = gtk.CheckButton()
         self._clear_check.set_active(True)
         self._clear_button = gtk.Button(_L('Clear'))
@@ -65,9 +66,12 @@ class DataWindow(qtwindow.QTWindow):
         hbox3 = gtk.HBox(spacing=10)
         hbox3.pack_start(gtk.Label(_L('Style')), False, False)
         hbox3.pack_start(self._plot_style, False, True)
+        hbox4 = gtk.HBox(spacing=10)
+        hbox4.pack_start(gtk.Label(_L('Columns')), False, False)
+        hbox4.pack_start(self._columns, False, True)
 
         self._plot_box = gui.pack_vbox([
-            hbox1, hbox2, hbox3,
+            hbox1, hbox2, hbox3, hbox4,
             gui.pack_hbox([self._plot2d_button, self._plot3d_button,
                 self._clear_button], True, True),
             ], True, True)
@@ -183,18 +187,36 @@ class DataWindow(qtwindow.QTWindow):
         style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
         files = self._get_selected_files()
+        cols = self._columns.get_text().split(',')
+        try:
+            coorddim = int(cols[0])
+            valdim = int(cols[1])
+        except:
+            coorddim = None
+            valdim = None
         for fn in files:
             fullfn = self._entry_map[fn].get_filename()
             d = qt.Data(fullfn)
-            qt.plot(d, style, name=name, clear=clear)
+            qt.plot(d, style, name=name,
+                    coorddim=coorddim, valdim=valdim,
+                    clear=clear)
 
     def _plot3d_clicked_cb(self, sender):
         name = self._plot_name.get_text()
         clear = self._clear_check.get_active()
         files = self._get_selected_files()
+        cols = self._columns.get_text().split(',')
+        try:
+            coorddims = (int(cols[0]), int(cols[1]))
+            valdim = int(cols[2])
+        except:
+            coorddims = None
+            valdim = None
         for fn in files:
             d = qt.Data(self._entry_map[fn].get_filename())
-            qt.plot3(d, name=name, clear=clear)
+            qt.plot3(d, name=name,
+                    coorddims=coorddims, valdim=valdim,
+                    clear=clear)
 
     def _clear_clicked_cb(self, sender):
         name = self._plot_name.get_text()
