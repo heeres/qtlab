@@ -19,6 +19,7 @@ import gtk
 import qt
 import os
 import types
+import logging
 
 from gettext import gettext as _L
 import lib.gui as gui
@@ -192,6 +193,8 @@ class DataWindow(qtwindow.QTWindow):
             coorddim = int(cols[0])
             valdim = int(cols[1])
         except:
+            if cols != [""]:
+                logging.warning('invalid column specification, use "x,x"')
             coorddim = None
             valdim = None
         for fn in files:
@@ -210,6 +213,8 @@ class DataWindow(qtwindow.QTWindow):
             coorddims = (int(cols[0]), int(cols[1]))
             valdim = int(cols[2])
         except:
+            if cols != [""]:
+                logging.warning('invalid column specification, use "x,x,x"')
             coorddims = None
             valdim = None
         for fn in files:
