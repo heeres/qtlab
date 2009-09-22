@@ -12,6 +12,8 @@ plot3(ravel(X), ravel(Y), ravel(Z),
         gamma=1.25,
         title='Example 3D plot',
         name='example_3d',
+        xrange=(-2 * np.pi, 2 * np.pi),
+        yrange=(-2 * np.pi, 2 * np.pi),
         clear=True)
 
 # Plot as image (only for complete NxM data sets!)
@@ -22,5 +24,22 @@ p = plot3(ravel(X), ravel(Y), ravel(Z),
         name='example_img',
         xrange=(-2 * np.pi, 2 * np.pi),
         yrange=(-2 * np.pi, 2 * np.pi),
+        clear=True)
+
+x = np.linspace(-np.pi, np.pi, 75)
+y = np.linspace(1, 3, 10)
+X, Y = meshgrid(x, y)
+Z = np.cos(X * Y)
+
+# Plot as points
+p = plot3(ravel(X), ravel(Y), ravel(Z), 'rv',
+        style='points',
+        name='example_points',
+        clear=True)
+
+# Plot as lines
+p = plot3(ravel(X), ravel(Y), ravel(Z), 'b',
+        style='lines',
+        name='example_lines',
         clear=True)
 
