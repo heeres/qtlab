@@ -19,6 +19,7 @@
 import inspect
 import types
 import qt
+import instrument
 
 class Proxy():
 
@@ -42,11 +43,15 @@ class Proxy():
             return
         self._setup_done = True
 
-        ins = qt.instruments.get(self._name, proxy=False)
-        members = inspect.getmembers(ins)
+        self._ins = qt.instruments.get(self._name, proxy=False)
+        members = inspect.getmembers(self._ins)
+
+        toadd = instrument.Instrument.__dict__.keys()
+        toadd += self._ins.__class__.__dict__.keys()
+        toadd += self._ins._added_methods
         for (name, item) in members:
             if type(item) in self._FUNCTION_TYPES \
-                    and not name.startswith('_'):
+                    and not name.startswith('_') and name in toadd:
                 self._proxy_names.append(name)
                 setattr(self, name, item)
 
@@ -55,6 +60,7 @@ class Proxy():
         for name in self._proxy_names:
             delattr(self, name)
         self._proxy_names = []
+        self._ins = None
 
     def _ins_added_cb(self, sender, ins):
         if ins.get_name() == self._name:

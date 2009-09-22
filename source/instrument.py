@@ -91,6 +91,7 @@ class Instrument(calltimer.ThreadSafeGObject):
 
         self._parameters = {}
         self._functions = {}
+        self._added_methods = []
         self._probe_ids = []
 
         self._default_read_var = None
@@ -304,6 +305,7 @@ class Instrument(calltimer.ThreadSafeGObject):
                 func.__doc__ += '\n%s' % options['doc']
 
             setattr(self, 'get_%s' % name,  func)
+            self._added_methods.append('get_%s' % name)
 
             # Set function to do_get_%s or _do_get_%s, whichever is available
             # (if no function specified)
@@ -328,6 +330,7 @@ class Instrument(calltimer.ThreadSafeGObject):
 
             func.__doc__ = 'Get variable %s (internal stored value)' % name
             setattr(self, 'get_%s' % name,  func)
+            self._added_methods.append('get_%s' % name)
 
         if options['flags'] & Instrument.FLAG_SET:
             if ch is not None:
@@ -339,6 +342,7 @@ class Instrument(calltimer.ThreadSafeGObject):
             if 'doc' in options:
                 func.__doc__ += '\n%s' % options['doc']
             setattr(self, 'set_%s' % name, func)
+            self._added_methods.append('set_%s' % name)
 
             # Set function to do_set_%s or _do_set_%s, whichever is available
             # (if no function specified)
