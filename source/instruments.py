@@ -26,6 +26,9 @@ import instrument
 from config import get_config
 from insproxy import Proxy
 
+from IPython.ultraTB import AutoFormattedTB
+TB = AutoFormattedTB()
+
 def _set_insdir():
     dir = os.path.join(_config['qtlabdir'], 'instrument_plugins')
     sys.path.append(dir)
@@ -68,10 +71,15 @@ def _get_driver_module(name):
     try:
         exec importstr
     except ImportError, e:
-        logging.warning('Instrument driver not available (or import failed): %s', e)
+        fields = str(e).split(' ')
+        if len(fields) > 0 and fields[-1] == name:
+            logging.warning('Instrument driver not available: %s', e)
+        else:
+            TB()
         return None
     except Exception, e:
         logging.error('Error loading instrument driver: %s', e)
+        TB()
         return None
 
     if name in sys.modules:
@@ -270,6 +278,7 @@ class Instruments(gobject.GObject):
             ins = insclass(name, **kwargs)
         except Exception, e:
             logging.error('Error creating instrument: %s', e)
+            TB()
             return None
 
         self.add(ins, create_args=kwargs)
