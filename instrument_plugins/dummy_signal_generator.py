@@ -13,7 +13,7 @@ class dummy_signal_generator(Instrument):
     def __init__(self, name, address=None):
         Instrument.__init__(self, name, tags=['measure', 'generate'])
 
-        self.add_parameter('type', type=types.StringType,
+        self.add_parameter('wave_type', type=types.StringType,
                 flags=Instrument.FLAG_GETSET,
                 option_list=(
                     'SIN',
@@ -49,16 +49,16 @@ class dummy_signal_generator(Instrument):
 
         self.add_function('reset')
 
-        self.set_type('SIN')
+        self.set_wave_type('SIN')
         self.set_amplitude(1)
         self.set_frequency(0.2)
 
         self._start_time = time.time()
 
-    def do_set_type(self, val):
+    def do_set_wave_type(self, val):
         self._type = val
 
-    def do_get_type(self):
+    def do_get_wave_type(self):
         return self._type
 
     def do_set_amplitude(self, val):

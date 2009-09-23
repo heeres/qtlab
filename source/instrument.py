@@ -73,6 +73,8 @@ class Instrument(calltimer.ThreadSafeGObject):
 
     USE_ACCESS_LOCK = False     # For now
 
+    RESERVED_NAMES = ('name', 'type')
+
     _lock_classes = {}
 
     def __init__(self, name, **kwargs):
@@ -249,6 +251,10 @@ class Instrument(calltimer.ThreadSafeGObject):
 
         if name in self._parameters:
             logging.error('Parameter %s already exists.', name)
+            return
+        elif name in self.RESERVED_NAMES:
+            logging.error("'%s' is a reserved name, not adding parameter",
+                    name)
             return
 
         options = kwargs
