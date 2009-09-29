@@ -857,7 +857,10 @@ class Data(ThreadSafeGObject):
                     self.add_coordinate('col%d' % (i + 1))
                 self.add_value('col%d' % data.shape[1])
 
-            self._detect_dimensions_size()
+            try:
+                self._detect_dimensions_size()
+            except Exception, e:
+                logging.warning('Error while detecting dimension size')
 
             # For more than 2 dimensions also look at detected size
             if self.get_ndimensions() > 2:
@@ -945,7 +948,10 @@ class Data(ThreadSafeGObject):
 
         self._npoints_last_block = blocksize
 
-        self._detect_dimensions_size()
+        try:
+            self._detect_dimensions_size()
+        except Exception, e:
+            logging.warning('Error while detecting dimension size')
 
         return True
 
@@ -1035,7 +1041,7 @@ class Data(ThreadSafeGObject):
         ncoords = self.get_ncoordinates()
         if len(data) < 2:
             for colnum in range(ncoords):
-                self._dimensions['size'] = len(data)
+                self._dimensions[colnum]['size'] = len(data)
             return
 
         loopdims = []
