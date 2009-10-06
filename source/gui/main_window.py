@@ -98,6 +98,7 @@ class MainWindow(qtwindow.QTWindow):
         return
 
     def _delete_event_cb(self, widget, event, data=None):
+        print 'Hiding main window. Type show_main() to get it back.'
         self.hide()
         return True
 
