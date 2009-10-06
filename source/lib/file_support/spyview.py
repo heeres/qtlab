@@ -1,4 +1,5 @@
 import os
+import logging
 
 class SpyView():
 
@@ -62,7 +63,11 @@ class SpyView():
         if len(self._meta_info) == 0:
             self.get_meta_info()
 
-        datafilename = self._data.get_filename()
+        if None in self._meta_info.values():
+            logging.warning('spyview: not enough info for making meta.txt file')
+            return
+
+        datafilename = self._data.get_filepath()
         name, ext = os.path.splitext(datafilename)
         metafilename = name + '.meta.txt'
         f = file(metafilename, 'w')
