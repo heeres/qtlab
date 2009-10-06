@@ -266,9 +266,14 @@ class Instruments(gobject.GObject):
             logging.error('Instrument type %s not supported', instype)
             return None
 
+        if name in self._instruments:
+            logging.warning('Instrument "%s" already exists, removing', name)
+            self.remove(name)
+
         module = _get_driver_module(instype)
         if module is None:
             return None
+        reload(module)
         insclass = getattr(module, instype, None)
         if insclass is None:
             logging.error('Driver does not contain instrument class')
