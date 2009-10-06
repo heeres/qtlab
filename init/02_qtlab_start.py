@@ -3,6 +3,7 @@ from instrument import Instrument
 from lib.gui.qtwindow import QTWindow
 from lib.misc import exact_time
 from lib import temp
+from time import sleep
 
 if False:
     import psyco
