@@ -799,7 +799,6 @@ class Data(ThreadSafeGObject):
         if self._infile:
             self._file.write('\n')
 
-        self._dimensions[self.get_ncoordinates() - 1]['size'] += 1
         self._block_sizes.append(self._npoints_last_block)
         self._npoints_last_block = 0
 
