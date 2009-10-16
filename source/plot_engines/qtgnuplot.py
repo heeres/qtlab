@@ -364,7 +364,7 @@ class _QTGnuPlot():
                 datadict[key] = val
 
         s = ''
-        if 'binary' in datadict:
+        if 'binary' in datadict and datadict['binary'] is True:
             data = datadict['data']
             dimsizes = [data.get_dimension_size(i) \
                     for i in datadict['coorddims']]
