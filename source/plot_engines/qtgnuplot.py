@@ -454,7 +454,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = True
+        kwargs['supportbin'] = False
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
@@ -701,7 +701,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = True
+        kwargs['supportbin'] = False
         plot.Plot3D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 

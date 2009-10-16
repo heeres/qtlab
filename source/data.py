@@ -657,7 +657,7 @@ class Data(ThreadSafeGObject):
         self._write_data()
         self.close_file()
 
-    def create_tempfile(self, path=None, binary=True):
+    def create_tempfile(self, path=None, binary=False):
         '''
         Create a temporary file, optionally called <path>.
         '''
