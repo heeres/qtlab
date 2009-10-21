@@ -171,6 +171,7 @@ class Data(ThreadSafeGObject):
             inmem (bool), default False if no file specified, True otherwise
             tempfile (bool), default False. If True create a temporary file
                 for the data.
+            binary (bool), default True. Whether tempfile should be binary.
         '''
 
         ThreadSafeGObject.__init__(self)
@@ -181,6 +182,7 @@ class Data(ThreadSafeGObject):
 
         self._inmem = inmem
         self._tempfile = kwargs.get('tempfile', False)
+        self._temp_binary = kwargs.get('binary', True)
         self._options = kwargs
         self._file = None
         self._stop_req_hid = None
@@ -657,14 +659,18 @@ class Data(ThreadSafeGObject):
         self._write_data()
         self.close_file()
 
-    def create_tempfile(self, path=None, binary=False):
+    def create_tempfile(self, path=None):
         '''
         Create a temporary file, optionally called <path>.
         '''
 
-        self._file = temp.File(path, binary=binary)
-        if 1:
-            if binary:
+        if self._temp_binary:
+            mode = 'wb'
+        else:
+            mode = 'w+'
+        self._file = temp.File(path, mode=mode, binary=self._temp_binary)
+        try:
+            if self._temp_binary:
                 ret = self._write_binary()
             else:
                 self._write_data()
@@ -672,7 +678,7 @@ class Data(ThreadSafeGObject):
             self._dir, self._filename = os.path.split(self._file.name)
             self._file.close()
             self._tempfile = True
-        else: #except Exception, e:
+        except Exception, e:
             logging.warning('Error creating temporary file: %s', e)
             self._dir = ''
             self._filename = ''

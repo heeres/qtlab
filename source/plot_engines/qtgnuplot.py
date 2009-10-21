@@ -364,7 +364,7 @@ class _QTGnuPlot():
                 datadict[key] = val
 
         s = ''
-        if 'binary' in datadict and datadict['binary'] is True:
+        if 'binary' in datadict and datadict['binary'] == True:
             data = datadict['data']
             dimsizes = [data.get_dimension_size(i) \
                     for i in datadict['coorddims']]
@@ -454,7 +454,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = False
+        kwargs['supportbin'] = qt.config.get('gnuplot_binary', True)
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
@@ -701,7 +701,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = False
+        kwargs['supportbin'] = qt.config.get('gnuplot_binary', True)
         plot.Plot3D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 

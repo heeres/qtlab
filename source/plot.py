@@ -453,7 +453,10 @@ class Plot2D(Plot):
                     continue
 
                 tmp = self.get_needtempfile()
-                kwargs['binary'] = self.get_support_binary()
+                if not self.get_support_binary():
+                    kwargs['binary'] = False
+                elif 'binary' not in kwargs:
+                    kwargs['binary'] = True
                 data = Data(data=data, tempfile=tmp, binary=kwargs['binary'])
 
             else:
@@ -594,7 +597,10 @@ class Plot3D(Plot):
                     continue
 
                 tmp = self.get_needtempfile()
-                kwargs['binary'] = self.get_support_binary()
+                if not self.get_support_binary():
+                    kwargs['binary'] = False
+                elif 'binary' not in kwargs:
+                    kwargs['binary'] = True
                 data = Data(data=data, tempfile=tmp, binary=kwargs['binary'])
 
             else:
@@ -672,6 +678,12 @@ def plot(*args, **kwargs):
     graph.add(*args, **kwargs)
 
     return graph
+
+def waterfall(*args, **kwargs):
+    '''
+    Create a waterfall plot, e.g. 3D data as offseted 2D lines.
+    '''
+    pass
 
 def plot3(*args, **kwargs):
     '''
