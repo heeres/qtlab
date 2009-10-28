@@ -1,5 +1,6 @@
 from instrument import Instrument
 from lib.network import remote_instrument as ri
+import logging
 
 class Remote_Instrument(Instrument):
 
