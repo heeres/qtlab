@@ -20,6 +20,7 @@ class File():
         else:
             self.name = path
 
+        self._mode = mode
         self._file = open(self.name, mode)
 
         for key, val in kwargs.iteritems():
@@ -41,6 +42,17 @@ class File():
         if self._file is not None:
             self._file.close()
         self._file = None
+
+    def reopen(self, mode=None):
+        '''
+        Reopen the temporary file.
+        If mode is None (default) the mode passed when creating the object
+        will be used.
+        '''
+
+        if mode is None:
+            mode = self._mode
+        self._file = open(self.name, mode)
 
     def remove(self):
         try:

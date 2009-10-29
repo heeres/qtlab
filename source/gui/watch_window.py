@@ -28,6 +28,8 @@ from lib.gui import dropdowns, qtwindow
 
 from lib.calltimer import GObjectThread, ThreadVariable
 
+import numpy as np
+
 class WatchThread(GObjectThread):
 
     __gsignals__ = {
@@ -93,11 +95,22 @@ class WatchWindow(qtwindow.QTWindow):
         self._param_combo = dropdowns.InstrumentParameterDropdown()
         self._param_combo.connect('changed', self._parameter_changed_cb)
 
+        label = gtk.Label(_L('Interval'))
         self._interval = gtk.SpinButton(climb_rate=1, digits=0)
         self._interval.set_range(10, 100000)
         self._interval.set_value(500)
-        interval = gui.pack_hbox([self._interval, gtk.Label('ms')], \
+        interval = gui.pack_hbox([label, self._interval, gtk.Label('ms')],
                 False, False)
+
+        self._graph_check = gtk.CheckButton('Graph')
+        self._graph_check.set_active(True)
+        self._graph_check.connect('toggled', self._graph_toggled_cb)
+        label = gtk.Label('Data points')
+        self._npoints = gtk.SpinButton(climb_rate=1, digits=0)
+        self._npoints.set_range(10, 1000)
+        self._npoints.set_value(100)
+        graph = gui.pack_hbox([self._graph_check, label, self._npoints],
+                True, False)
 
         self._add_button = gtk.Button(_L('Add'))
         self._add_button.connect('clicked', self._add_clicked_cb)
@@ -106,7 +119,7 @@ class WatchWindow(qtwindow.QTWindow):
         self._pause_button = gtk.ToggleButton(_L('Pause'))
         self._pause_button.set_active(False)
         self._pause_button.connect('clicked', self._toggle_pause_cb)
-        buttons = gui.pack_hbox([self._add_button, self._remove_button, \
+        buttons = gui.pack_hbox([self._add_button, self._remove_button,
                 self._pause_button], False, False)
 
         self._tree_model = gtk.ListStore(str, str, str)
@@ -120,6 +133,7 @@ class WatchWindow(qtwindow.QTWindow):
             self._ins_combo,
     		self._param_combo,
     		interval,
+            graph,
     		buttons,
     	], False, False)
         vbox.set_border_width(4)
@@ -165,6 +179,10 @@ class WatchWindow(qtwindow.QTWindow):
     def _parameter_changed_cb(self, widget):
         param = self._param_combo.get_parameter()
 
+    def _graph_toggled_cb(self, widget):
+        active = self._graph_check.get_active()
+        self._npoints.set_sensitive(active)
+
     def _add_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
         param = self._param_combo.get_parameter()
@@ -183,6 +201,8 @@ class WatchWindow(qtwindow.QTWindow):
             'delay': delay,
             'iter': iter,
             'thread': thread,
+            'graph': self._graph_check.get_active(),
+            'points': self._npoints.get_value(),
         }
 
         self._watch[ins_param] = info
@@ -200,6 +220,19 @@ class WatchWindow(qtwindow.QTWindow):
         param = info['parameter']
         strval = ins.format_parameter_value(param, val)
         self._tree_model.set(info['iter'], 2, strval)
+
+        if info.get('graph', False):
+            if 'data' not in info or info['data'] is None:
+                info['data'] = val * np.ones(info['points'])
+                info['qtdata'] = qt.Data(info['data'], tempfile=True)
+                name = 'watch_%s.%s' % (ins.get_name(), param)
+                info['plot'] = qt.Plot2D(name=name)
+                binary = info['qtdata']._temp_binary
+                info['plot'].add(info['qtdata'], binary=binary)
+
+            info['data'] = np.concatenate((info['data'][1:], (val,)))
+            info['qtdata'].update_data(info['data'])
+            info['plot'].update()
 
     def _set_delay_cb(self, sender, ins_param, delay):
         info = self._watch[ins_param]

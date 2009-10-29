@@ -667,7 +667,7 @@ class Data(ThreadSafeGObject):
         if self._temp_binary:
             mode = 'wb'
         else:
-            mode = 'w+'
+            mode = 'w'
         self._file = temp.File(path, mode=mode, binary=self._temp_binary)
         try:
             if self._temp_binary:
@@ -683,6 +683,22 @@ class Data(ThreadSafeGObject):
             self._dir = ''
             self._filename = ''
             self._tempfile = False
+
+    def rewrite_tempfile(self):
+        '''
+        Rewrite the temporary file with the current data.
+        '''
+
+        if not self._tempfile:
+            logging.warning('Data object has no temporary file to rewrite')
+            return
+
+        self._file.reopen()
+        if self._temp_binary:
+            self._write_binary()
+        else:
+            self._write_data()
+        self._file.close()
 
 ### Adding data
 
@@ -880,6 +896,15 @@ class Data(ThreadSafeGObject):
                         else:
                             break
 
+    def update_data(self, data):
+        '''
+        Update this Data object with a new data set.
+        No checks are performed on dimensions etc.
+        If the data is associated with a temporary file, it will be updated.
+        '''
+        self._data = data
+        if self._tempfile:
+            self.rewrite_tempfile()
 
 ### File reading
 
