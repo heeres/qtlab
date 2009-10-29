@@ -30,13 +30,13 @@ class Remote_Instrument(Instrument):
                 setattr(self, name, func)
                 self.add_function(name, **info)
             except Exception, e:
-                logging.warning('Failed to create function %s', name)
+                logging.warning('Failed to create function %s: %s', name, e)
 
     def create_lambda(self, funcname, argspec=None):
         if argspec is None:
             codestr = 'lambda *args, **kwargs: self._call("%s", *args, **kwargs)' % funcname
         else:
-            if len(argspec[0]) < 2:
+            if len(argspec[0]) < 1:
                 return None
             args = ','.join(argspec[0][1:])
             if argspec[1] is not None:

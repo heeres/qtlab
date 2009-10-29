@@ -44,6 +44,7 @@ class Proxy():
         toadd += ['connect', 'disconnect']
         toadd += self._ins.__class__.__dict__.keys()
         toadd += self._ins._added_methods
+        toadd += self._ins.get_function_names()
         for (name, item) in members:
             if callable(item) and not name.startswith('_') and name in toadd:
                 self._proxy_names.append(name)
