@@ -91,6 +91,21 @@ For example:
 
     qt.instruments.create('dmm1', 'Keithley_2700', address='GPIB::12')
 
+To get and set properties, you should use the automatically generated
+get_prop1() and set_prop1(val) functions. They will eventually call the
+lower-level do_get_prop1() and do_set_prop1(val) functions, which you
+should only use directly if you know what you're doing.
+
+To facilitate easy reloading of instruments, the actual instrument objects
+you normally deal with are 'proxies'. This basically means that you talk to
+the real instrument object indirectly. As a result of this, not all functions
+that are defined in the instrument driver are available: only functions from
+the driver that do not start with an underscore ('_') are included / proxied.
+A nice thing is that by doing this a whole bunch of non-relevant functions
+that are present in the real instrument object by default are not shown when
+typing ins.<tab> in IPython. If you ever need to access the real instrument
+object, you can use the '_ins' property (e.g. dmm1._ins).
+
 2.1.2. Writing an instrument
 There are many instrument drivers available in the standard distribution. They
 are quite good examples of most features.
@@ -126,7 +141,8 @@ the driver in two functions:
         return <value>
 
 These functions usually only perform the instrument communication, such as
-sending and reading of GPIB commands.
+sending and reading of GPIB commands. Note, once again, that in principle
+these functions should not be used directly.
 
 Additional options are available for added parameters; see the documentation
 of the add_parameter function for more details.
@@ -157,6 +173,10 @@ For the 'set' functions:
     the case an instrument cannot be read out.
     - Inform other components about updated values (only if fast=False,
     which is the default).
+
+Another nice thing is that instruments can be made available to remote
+instances of QTLab, e.g. you could you an instrument physically hooked up
+to one computer from another machine over the network.
 
 2.1.4. Tags
 Instruments and instrument parameters can have tags which can be used to
