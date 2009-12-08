@@ -18,6 +18,7 @@
 
 import gobject
 import os
+import os.path
 import time
 import numpy
 import types
@@ -32,44 +33,99 @@ from lib import namedlist, temp
 from lib.misc import dict_to_ordered_tuples, get_arg_type
 from lib.calltimer import ThreadSafeGObject
 
-def create_data_dir(datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
+# Filename generator classes
+
+class DateTimeGenerator:
     '''
-    Create and return a new data directory.
-
-    Input:
-        datadir (string): base directory
-        name (string): optional name of measurement
-        ts (time.localtime()): timestamp which will be used if timesubdir=True
-        datesubdir (bool): whether to create a subdirectory for the date
-        timesubdir (bool): whether to create a subdirectory for the time
-
-    Output:
-        The directory to place the new file in
+    Class to generate filenames / directories based on the date and time.
     '''
 
-    path = datadir
-    if ts is None:
-        ts = time.localtime()
-    if datesubdir:
-        path = os.path.join(path, time.strftime('%Y%m%d', ts))
-    if timesubdir:
-        tsd = time.strftime('%H%M%S', ts)
-        if name is not None:
-            tsd += '_' + name
-        path = os.path.join(path, tsd)
+    def __init__(self):
+        pass
 
-    if not os.path.isdir(path):
-        os.makedirs(path)
+    def create_data_dir(self, datadir, name=None, ts=None, datesubdir=True, timesubdir=True):
+        '''
+        Create and return a new data directory.
 
-    return path
+        Input:
+            datadir (string): base directory
+            name (string): optional name of measurement
+            ts (time.localtime()): timestamp which will be used if timesubdir=True
+            datesubdir (bool): whether to create a subdirectory for the date
+            timesubdir (bool): whether to create a subdirectory for the time
 
-def new_filename(name, ts=None):
-    '''Return a new filename, based on name and timestamp.'''
+        Output:
+            The directory to place the new file in
+        '''
 
-    if ts is None:
-        ts = time.localtime()
-    tstr = time.strftime('%H%M%S', ts)
-    return '%s_%s.dat' % (tstr, name)
+        path = datadir
+        if ts is None:
+            ts = time.localtime()
+        if datesubdir:
+            path = os.path.join(path, time.strftime('%Y%m%d', ts))
+        if timesubdir:
+            tsd = time.strftime('%H%M%S', ts)
+            if name is not None:
+                tsd += '_' + name
+            path = os.path.join(path, tsd)
+
+        return path
+
+    def new_filename(self, data_obj):
+        '''Return a new filename, based on name and timestamp.'''
+
+        dir = self.create_data_dir(qt.config['datadir'], name=data_obj._name,
+                ts=data_obj._localtime)
+        tstr = time.strftime('%H%M%S', data_obj._localtime)
+        filename = '%s_%s.dat' % (tstr, data_obj._name)
+
+        return os.path.join(dir, filename)
+
+
+class IncrementalGenerator:
+    '''
+    Class to generate filenames that are incrementally numbered.
+    '''
+
+    def __init__(self, basename, start=1):
+        self._basename = basename
+        self._counter = start
+        self._counter = self._check_last_number(self._counter)
+        logging.info('IncrementalGenerator: starting counter at %d',
+                self._counter)
+
+    def _fn(self, n):
+        return self._basename + ('_%d.dat' % n)
+
+    def _check_last_number(self, start=1):
+        if not os.path.exists(self._fn(1)):
+            return 1
+
+        curn = start
+        stepsize = 1
+        while os.path.exists(self._fn(curn)):
+            curn += stepsize
+            stepsize *= 2
+
+        dir = -1
+        stepsize /= 2
+        while stepsize != 0:
+            if os.path.exists(self._fn(curn)):
+                stepsize /= 2
+                curn += stepsize
+            else:
+                curn -= stepsize
+
+        return curn + 1
+
+    def new_filename(self, data_obj):
+        fn = self._fn(self._counter)
+        while os.path.exists(fn):
+            logging.warning('File "%s" exists, incrementing counter', fn)
+            self._counter += 1
+            fn = self._fn(self._counter)
+        self._counter += 1
+        return fn
 
 class _DataList(namedlist.NamedList):
     def __init__(self, time_name=False):
@@ -95,6 +151,7 @@ class Data(ThreadSafeGObject):
     '''
 
     _data_list = _DataList()
+    _filename_generator = DateTimeGenerator()
 
     __gsignals__ = {
         'new-data-point': (gobject.SIGNAL_RUN_FIRST,
@@ -403,6 +460,10 @@ class Data(ThreadSafeGObject):
 
 ### File info
 
+    @staticmethod
+    def set_filename_generator(generator):
+        Data._filename_generator = generator
+
     def get_filename(self):
         return self._filename
 
@@ -502,13 +563,11 @@ class Data(ThreadSafeGObject):
             name = self._name
 
         if filepath is None:
-            self._dir = create_data_dir(qt.config['datadir'], \
-                name=name, ts=self._localtime)
-            self._filename = new_filename(name, ts=self._localtime)
-        else:
-            self._dir, self._filename = os.path.split(filepath)
-            if not os.path.isdir(self._dir):
-                os.makedirs(self._dir)
+            filepath = self._filename_generator.new_filename(self)
+
+        self._dir, self._filename = os.path.split(filepath)
+        if not os.path.isdir(self._dir):
+            os.makedirs(self._dir)
 
         try:
             self._file = open(self.get_filepath(), 'w+')
