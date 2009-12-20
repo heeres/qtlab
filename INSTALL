@@ -72,6 +72,8 @@ B) other programs.
 
     an enhanced interface for the windows 'cmd'-terminal
     URL: sourceforge.net/projects/console
+    (Don't get the _src version, but just the
+    regular binary version from the files list.)
 
 3) GTK (2.14.7)
 
