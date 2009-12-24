@@ -147,11 +147,13 @@ class QTInstrumentFrame(gtk.VBox):
 
         return True
 
-    def update_parameter(self, param, val):
+    def update_parameter(self, param, val, force=False):
         """
         Set parameter to be updated on next refresh.
         """
         self._update_dict[param] = val
+        if force:
+            self._cur_val[param] = None
 
     def get_instrument(self):
         return self._instrument
@@ -176,6 +178,7 @@ class QTInstrumentFrame(gtk.VBox):
 
         self._label_range[param].set_text(self._instrument.format_range(param))
         self._label_rate[param].set_text(self._instrument.format_rate(param))
+        self.update_parameter(param, self._instrument.get(param), force=True)
 
     def show_table(self, show):
         '''Show or hide the parameter info table.'''
