@@ -15,11 +15,12 @@ def _setup_logging():
     logging.getLogger('').addHandler(console)
 
 def set_debug(enable):
+    logger = logging.getLogger()
     if enable:
-        logging.basicConfig(level=logging.DEBUG)
+        logger.setLevel(logging.DEBUG)
         logging.info('Set logging level to DEBUG')
     else:
-        logging.basicConfig(level=logging.INFO)
+        logger.setLevel(logging.INFO)
         logging.info('Set logging level to INFO')
 
 _setup_logging()
