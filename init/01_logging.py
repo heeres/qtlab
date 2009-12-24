@@ -2,8 +2,8 @@ import logging
 import config
 
 logging.basicConfig(level=logging.INFO,
-    format='%(asctime)s %(name)-12s: %(levelname)-8s %(message)s',
-    datefmt='%m-%d %H:%M',
+    format='%(asctime)s %(levelname)-8s: %(message)s (%(filename)s:%(lineno)d)',
+    datefmt='%Y-%m-%d %H:%M',
     filename=os.path.join(config.get_qtlabdir(), 'qtlab.log'),
     filemode='a+')
 
