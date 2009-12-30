@@ -1,16 +1,17 @@
 import os
 import sys
-import config
-from lib import temp
 from lib.misc import exit_ipython
 
 _remove_lock = True
 
 def get_lockfile():
+    import os, config
     return os.path.join(config.get_qtlabdir(), 'qtlab.lock')
 
 def qtlab_exit():
     print "\nClosing QTlab..."
+
+    import os, sys, lib.temp
 
     try:
         qt.flow.exit_request()
@@ -18,7 +19,7 @@ def qtlab_exit():
         pass
 
     # Remove temporary files
-    temp.File.remove_all()
+    lib.temp.File.remove_all()
 
     global _remove_lock
     if _remove_lock:
@@ -28,6 +29,7 @@ def qtlab_exit():
             pass
 
 def _check_lockfile():
+    import os, sys
     if os.path.exists(get_lockfile()):
         if '-f' not in sys.argv:
             print "QTlab already running, start with '-f' to force start."
