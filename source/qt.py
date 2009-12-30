@@ -40,3 +40,9 @@ def version():
         str = 'NO VERSION FILE'
     return str
 
+class qApp:
+    '''Class to fix a bug in matplotlib.pyplot back-end detection.'''
+    @staticmethod
+    def startingUp():
+        return True
+
