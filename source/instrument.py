@@ -1124,6 +1124,23 @@ class Instrument(calltimer.ThreadSafeGObject):
         if self._changed_hid is None:
             self._changed_hid = gobject.idle_add(self._do_emit_changed)
 
+class InvalidInstrument(Instrument):
+    '''
+    Placeholder class for instruments that fail to load, mainly to support
+    reloading.
+    '''
+
+    def __init__(self, name, instype, **kwargs):
+        self._instype = instype
+        self._kwargs = kwargs
+        Instrument.__init__(self, name)
+
+    def get_type(self):
+        return self._instype
+
+    def get_create_kwargs(self):
+        return self._kwargs
+
 class GPIBInstrument(Instrument):
     def __init__(self, *args, **kwargs):
         kwargs['lockclass'] = 'GPIB'

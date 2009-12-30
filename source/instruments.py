@@ -60,13 +60,16 @@ def _set_user_insdir():
         sys.path.insert(idx, absdir)
         return absdir
 
-def _get_driver_module(name):
+def _get_driver_module(name, do_reload=False):
 
-    if name in sys.modules:
+    if name in sys.modules and not do_reload:
         return sys.modules[name]
 
-    # Try to import
-    importstr = 'import %s' % name
+    # Try to import (and reload if requested)
+    if do_reload:
+        importstr = 'import %s\nreload(%s)' % (name, name)
+    else:
+        importstr = 'import %s' % (name)
     code.compile_command(importstr)
     try:
         exec importstr
@@ -78,7 +81,7 @@ def _get_driver_module(name):
             TB()
         return None
     except Exception, e:
-        logging.error('Error loading instrument driver: %s', e)
+        logging.exception('Error loading instrument driver: %s', e)
         TB()
         return None
 
@@ -249,6 +252,12 @@ class Instruments(gobject.GObject):
 
         return self._tags
 
+    def _create_invalid_ins(self, name, instype, **kwargs):
+        ins = instrument.InvalidInstrument(name, instype, **kwargs)
+        self.add(ins, create_args=kwargs)
+        self.emit('instrument-added', ins)
+        return self.get(name)
+
     def create(self, name, instype, **kwargs):
         '''
         Create an instrument called 'name' of type 'type'.
@@ -272,29 +281,27 @@ class Instruments(gobject.GObject):
 
         module = _get_driver_module(instype)
         if module is None:
-            return None
+            return self._create_invalid_ins(name, instype, **kwargs)
         reload(module)
         insclass = getattr(module, instype, None)
         if insclass is None:
             logging.error('Driver does not contain instrument class')
-            return None
+            return self._create_invalid_ins(name, instype, **kwargs)
 
         try:
             ins = insclass(name, **kwargs)
         except Exception, e:
-            logging.error('Error creating instrument: %s', e)
+            logging.exception('Error creating instrument: %s', e)
             TB()
-            return None
+            return self._create_invalid_ins(name, instype, **kwargs)
 
         self.add(ins, create_args=kwargs)
         self.emit('instrument-added', ins)
         return self.get(name)
 
     def reload_module(self, instype):
-        module = _get_driver_module(instype)
-        if module is not None:
-            logging.info('Reloading module %s', module)
-            reload(module)
+        module = _get_driver_module(instype, do_reload=True)
+        return module is not None
 
     def reload(self, ins):
         '''
@@ -321,10 +328,11 @@ class Instruments(gobject.GObject):
 
         logging.info('reloading %r, type: %r, kwargs: %r',
                 insname, instype, kwargs)
-        print 'Reloading %r (type %r)' % (insname, instype)
 
-        self.reload_module(instype)
         self.remove(insname)
+        reload_ok = self.reload_module(instype)
+        if not reload_ok:
+            return self._create_invalid_ins(insname, instype, **kwargs)
 
         return self.create(insname, instype, **kwargs)
 
