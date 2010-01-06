@@ -23,10 +23,15 @@ import instrument
 
 class Proxy():
 
-    def __init__(self, name):
+    def __init__(self, name, include_do=None):
         self._name = name
         self._proxy_names = []
         self._setup_done = False
+
+        if include_do is None:
+            self._include_do = qt.config.get('proxy_include_do', False)
+        else:
+            self._include_do = include_do
 
         self._setup_proxy()
         qt.instruments.connect('instrument-added', self._ins_added_cb)
@@ -46,6 +51,8 @@ class Proxy():
         toadd += self._ins._added_methods
         toadd += self._ins.get_function_names()
         for (name, item) in members:
+            if name.startswith('do_') and not self._include_do:
+                continue
             if callable(item) and not name.startswith('_') and name in toadd:
                 self._proxy_names.append(name)
                 setattr(self, name, item)
