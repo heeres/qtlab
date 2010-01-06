@@ -71,6 +71,9 @@ class FlowControl(ThreadSafeGObject):
             self._set_status('running')
             self.emit('measurement-start')
 
+            # Handle callbacks
+            self.run_mainloop(1, wait=False)
+
     def measurement_end(self, abort=False):
         '''
         Indicate the end of a measurement.
@@ -91,8 +94,14 @@ class FlowControl(ThreadSafeGObject):
             self._set_status('stopped')
             self.emit('measurement-end')
 
-    def run_mainloop(self, delay):
-        '''Run mainloop for a short time, sleep rest of the time.'''
+            # Handle callbacks
+            self.run_mainloop(1, wait=False)
+
+    def run_mainloop(self, delay, wait=True):
+        '''
+        Run mainloop for a maximum of <delay> seconds.
+        If wait is True (default), sleep until <delay> seconds have passed.
+        '''
         start = exact_time()
         dt = 0
         gtk.gdk.threads_enter()
@@ -101,7 +110,7 @@ class FlowControl(ThreadSafeGObject):
             dt = exact_time() - start
         gtk.gdk.threads_leave()
 
-        if delay > dt:
+        if delay > dt and wait:
             time.sleep(delay - dt)
 
     def measurement_idle(self, delay=0.0, exact=False, emit_interval=1):
