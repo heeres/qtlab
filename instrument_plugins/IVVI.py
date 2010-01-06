@@ -23,6 +23,7 @@ import pyvisa.vpp43 as vpp43
 from time import sleep
 import logging
 import numpy
+from lib import visafunc
 
 class IVVI(Instrument):
     '''
@@ -54,21 +55,23 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.info(__name__ + ' : Initializing instrument IVVI')
+        logging.info('Initializing instrument IVVI')
         Instrument.__init__(self, name, tags=['physical'])
-
+                
         # Set parameters
         self._address = address
         if numdacs % 4 == 0 and numdacs > 0:
             self._numdacs = int(numdacs)
         else:
-            logging.error(__name__ + ' : specified number of dacs needs to be multiple of 4')
+            logging.error('Number of dacs needs to be multiple of 4')
         self.pol_num = range(self._numdacs)
-
+        
+        
         # Add functions
         self.add_function('reset')
         self.add_function('get_all')
         self.add_function('set_dacs_zero')
+        self.add_function('get_numdacs')
 
         # Add parameters
         self.add_parameter('pol_dacrack',
@@ -77,16 +80,17 @@ class IVVI(Instrument):
             flags=Instrument.FLAG_SET)
         self.add_parameter('dac',
             type=types.FloatType,
-            flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
+            flags=Instrument.FLAG_GETSET,
             channels=(1, self._numdacs),
             maxstep=10, stepdelay=50,
             units='mV', format='%.02f',
             tags=['sweep'])
-
+        
         self._open_serial_connection()
 
+        # get_all calls are performed below (in reset or get_all)
         for j in range(numdacs / 4):
-            self.set('pol_dacrack%d' % (j+1), polarity[j])
+            self.set('pol_dacrack%d' % (j+1), polarity[j], getall=False)
 
         if reset:
             self.reset()
@@ -103,7 +107,7 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.info(__name__ + ' : Deleting IVVI instrument')
+        logging.info('Deleting IVVI instrument')
         self._close_serial_connection()
 
     # open serial connection
@@ -118,7 +122,7 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.debug(__name__ + ' : Opening serial connection')
+        logging.debug('Opening serial connection')
         self._session = vpp43.open_default_resource_manager()
         self._vi = vpp43.open(self._session, self._address)
 
@@ -142,7 +146,7 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.debug(__name__ + ' : Closing serial connection')
+        logging.debug('Closing serial connection')
         vpp43.close(self._vi)
 
     def reset(self):
@@ -155,7 +159,7 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.info(__name__ + ' : resetting instrument')
+        logging.info('Resetting instrument')
         self.set_dacs_zero()
         self.get_all()
 
@@ -170,7 +174,7 @@ class IVVI(Instrument):
         Output:
             None
         '''
-        logging.info(__name__ + ' : get all')
+        logging.info('Get all')
         for i in range(self._numdacs):
             self.get('dac%d' % (i+1))
 
@@ -190,7 +194,6 @@ class IVVI(Instrument):
         Output:
             (dataH, dataL) (int, int) : The high and low value byte equivalent
         '''
-        logging.debug(__name__ + ' : Converting %f mVolts to bytes' % mvoltage)
         bytevalue = int(round(mvoltage/4000.0*65535))
         dataH = int(bytevalue/256)
         dataL = bytevalue - dataH*256
@@ -201,7 +204,6 @@ class IVVI(Instrument):
         Converts a list of bytes to a list containing
         the corresponding mvoltages
         '''
-        logging.debug(__name__ + ' : Converting numbers to mvoltages')
         values = range(self._numdacs)
         for i in range(self._numdacs):
             values[i] = ((numbers[2 + 2*i]*256 + numbers[3 + 2*i])/65535.0*4000.0) + self.pol_num[i]
@@ -218,7 +220,7 @@ class IVVI(Instrument):
         Output:
             voltage (float) : dacvalue in mV
         '''
-        logging.debug(__name__ + ' : reading voltage from dac%s' % channel)
+        logging.debug('Reading dac%s', channel)
         mvoltages = self._get_dacs()
         return mvoltages[channel - 1]
 
@@ -233,8 +235,7 @@ class IVVI(Instrument):
         Output:
             reply (string) : errormessage
         '''
-        logging.debug(__name__ + ' : setting voltage of dac%s to %.01f mV' % \
-            (channel, mvoltage))
+        logging.debug('Setting dac%s to %.02f mV', channel, mvoltage)
         (DataH, DataL) = self._mvoltage_to_bytes(mvoltage - self.pol_num[channel-1])
         message = "%c%c%c%c%c%c%c" % (7, 0, 2, 1, channel, DataH, DataL)
         reply = self._send_and_read(message)
@@ -250,15 +251,15 @@ class IVVI(Instrument):
         Output:
             voltages (float[]) : list containing all dacvoltages (in mV)
         '''
-        logging.debug(__name__ + ' : getting dac voltages from instrument')
+        logging.debug('Getting dac voltages from instrument')
         message = "%c%c%c%c" % (4, 0, self._numdacs*2+2, 2)
         reply = self._send_and_read(message)
         mvoltages = self._numbers_to_mvoltages(reply)
         return mvoltages
-
+        
     def _send_and_read(self, message):
         '''
-        Performs the communication with the device
+        Send <message> to the device and read answer.
         Raises an error if one occurred
         Returns a list of bytes
 
@@ -268,44 +269,55 @@ class IVVI(Instrument):
         Output:
             data_out_numbers (int[]) : return message
         '''
-        logging.debug(__name__ + ' : do communication with instrument')
+        logging.debug('Sending %r', message)
+
+        # clear input buffer
+        visafunc.read_all(self._vi)
         vpp43.write(self._vi, message)
-        sleep(0.02)
-        data_out_string =  vpp43.read(self._vi, vpp43.get_attribute(self._vi, vpp43.VI_ATTR_ASRL_AVAIL_NUM))
-        sleep(0.02)
-        data_out_numbers = [ord(s) for s in data_out_string]
 
-        if (data_out_numbers[1] != 0) or (len(data_out_numbers) != data_out_numbers[0]):
-            logging.error(__name__ + ' : Error while reading : %s', data_out_numbers)
+# In stead of blocking, we could also poll, but it's a bit slower
+#        print visafunc.get_navail(self._vi)
+#        if not visafunc.wait_data(self._vi, 2, 0.5):
+#            logging.error('Failed to receive reply from IVVI rack')
+#            return False
 
-        return data_out_numbers
+        data1 = visafunc.readn(self._vi, 2)
+        data1 = [ord(s) for s in data1]
 
-    def do_set_pol_dacrack(self, flag, channel):
+        # 0 = no error, 32 = watchdog reset
+        if data1[1] not in (0, 32):
+            logging.error('Error while reading: %s', data1)
+
+        data2 = visafunc.readn(self._vi, data1[0] - 2)
+        data2 = [ord(s) for s in data2]
+
+        return data1 + data2
+
+    def do_set_pol_dacrack(self, flag, channel, getall=True):
         '''
         Changes the polarity of the specified set of dacs
 
         Input:
             flag (string) : 'BIP', 'POS' or 'NEG'
             channel (int) : 0 based index of the rack
+            getall (boolean): if True (default) perform a get_all
 
         Output:
             None
         '''
-        logging.debug(__name__ + ' :  setting polarity of rack %d to %s' % (channel, flag))
+        flagmap = {'NEG': -4000, 'BIP': -2000, 'POS': 0}
+        if flag.upper() not in flagmap:
+            logging.error('Tried to set invalid dac polarity %s', flag)
+            return
+
+        logging.debug('Setting polarity of rack %d to %s', channel, flag)
+        val = flagmap[flag.upper()]
         for i in range(4*(channel-1),4*(channel)):
-            if (flag.upper() == 'NEG'):
-                self.pol_num[i] = -4000
-            elif (flag.upper() == 'BIP'):
-                self.pol_num[i] = -2000
-            elif (flag.upper() == 'POS'):
-                self.pol_num[i] = 0
-            else:
-                logging.error(__name__ + ' : Try to set invalid dacpolarity')
+            self.pol_num[i] = val
+            self.set_parameter_bounds('dac%d' % (i+1), val, val + 4000.0)
 
-            self.set_parameter_bounds('dac' + str(i+1),
-                    self.pol_num[i], self.pol_num[i] + 4000.0)
-
-        self.get_all()
+        if getall:
+            self.get_all()
 
     def get_pol_dac(self, dacnr):
         '''
@@ -317,7 +329,7 @@ class IVVI(Instrument):
         Output:
             polarity (string) : 'BIP', 'POS' or 'NEG'
         '''
-        logging.debug(__name__ + ' : getting polarity of dac %d' % dacnr)
+        logging.debug('Getting polarity of dac %d' % dacnr)
         val = self.pol_num[dacnr-1]
 
         if (val == -4000):
@@ -348,10 +360,16 @@ class IVVI(Instrument):
         elif (pol.upper() == 'POS'):
             polnum = 0
         else:
-            logging.error(__name__ + ' : Try to set invalid dacpolarity')
+            logging.error('Try to set invalid dacpolarity')
 
         start_byte = int(round((start-polnum)/4000.0*65535))
         stop_byte = int(round((stop-polnum)/4000.0*65535))
         byte_vec = numpy.arange(start_byte, stop_byte+1, step)
         mvolt_vec = byte_vec/65535.0 * 4000.0 + polnum
         return mvolt_vec
+
+    def get_numdacs(self):
+        '''
+        Get the number of DACS.
+        '''
+        return self._numdacs
