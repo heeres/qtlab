@@ -50,12 +50,20 @@ class Proxy():
                 self._proxy_names.append(name)
                 setattr(self, name, item)
 
+        self._padd_hid = self.connect('parameter-added',
+                self._parameter_added_cb)
+        self._prem_hid = self.connect('parameter-removed',
+                self._parameter_removed_cb)
+
     def _remove_functions(self):
         self._setup_done = False
         for name in self._proxy_names:
             delattr(self, name)
         self._proxy_names = []
         self._ins = None
+
+        self.disconnect(self._padd_hid)
+        self.disconnect(self._prem_hid)
 
     def _ins_added_cb(self, sender, ins):
         if ins.get_name() == self._name:
@@ -64,4 +72,14 @@ class Proxy():
     def _ins_removed_cb(self, sender, insname):
         if insname == self._name:
             self._remove_functions()
+
+    def _parameter_added_cb(self, sender, name):
+        for func in ('get_%s' % name, 'set_%s' % name):
+            if hasattr(self._ins, func):
+                setattr(self, func, getattr(self._ins, func))
+
+    def _parameter_removed_cb(self, sender, name):
+        for func in ('get_%s' % name, 'set_%s' % name):
+            if hasattr(self, func):
+                delattr(self, func)
 

@@ -56,11 +56,14 @@ class QTInstrumentFrame(gtk.VBox):
         self._label_rate = {}
         self._update_dict = {}
         self._cur_val = {}
+        self._row_num = {}
+        self._reorder_hid = None
 
         self._add_parameters()
 
         ins.connect('parameter-added', self._parameter_added_cb)
         ins.connect('parameter-changed', self._parameter_changed_cb)
+        ins.connect('parameter-removed', self._parameter_removed_cb)
 
         self.show_table(True)
         self.show()
@@ -86,6 +89,7 @@ class QTInstrumentFrame(gtk.VBox):
 
         plabel.set_alignment(0, 0)
         plabel.show()
+        self._row_num[param] = nrows
         self._table.attach(plabel, 1, 2, nrows, nrows + 1)
 
         vlabel = gtk.Label()
@@ -131,6 +135,48 @@ class QTInstrumentFrame(gtk.VBox):
 
     def _parameter_added_cb(self, sender, name):
         self._add_parameter_by_name(name)
+        self._delayed_reorder()
+
+    def _reorder_table(self, ofs):
+        parameters = self._label_name.keys()
+        nrows = len(parameters) + ofs
+        self._table.resize(nrows + 1, 5)
+        parameters.sort()
+        for i, param in enumerate(parameters):
+            if self._row_num[param] == ofs + i:
+                continue
+
+            self._table.remove(self._label_name[param])
+            self._table.attach(self._label_name[param],
+                    1, 2, i + ofs, i + ofs + 1)
+            self._table.remove(self._label_val[param])
+            self._table.attach(self._label_val[param],
+                    2, 3, i + ofs, i + ofs + 1)
+            self._table.remove(self._label_range[param])
+            self._table.attach(self._label_range[param],
+                    3, 4, i + ofs, i + ofs + 1)
+            self._table.remove(self._label_rate[param])
+            self._table.attach(self._label_rate[param],
+                    4, 5, i + ofs, i + ofs + 1)
+
+        self._reorder_hid = None
+
+    def _delayed_reorder(self):
+        if self._reorder_hid is None:
+            self._reorder_hid = gobject.timeout_add(500,
+                    lambda: self._reorder_table(1))
+
+    def _parameter_removed_cb(self, sender, param):
+        for i in self._label_name, self._label_val, self._label_range, self._label_rate:
+            self._table.remove(i[param])
+            del i[param]
+
+        if param in self._update_dict:
+            del self._update_dict[param]
+        del self._cur_val[param]
+        del self._row_num[param]
+
+        self._reorder_table(1)
 
     def _do_update_parameters_timer(self):
         gtk.gdk.threads_enter()

@@ -53,6 +53,9 @@ class Instrument(calltimer.ThreadSafeGObject):
         'parameter-changed': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
                     ([gobject.TYPE_PYOBJECT])),
+        'parameter-removed': (gobject.SIGNAL_RUN_FIRST,
+                    gobject.TYPE_NONE,
+                    ([gobject.TYPE_PYOBJECT])),
         'reload': (gobject.SIGNAL_RUN_FIRST,
                     gobject.TYPE_NONE,
                     ([]))
@@ -92,6 +95,7 @@ class Instrument(calltimer.ThreadSafeGObject):
             self._options['tags'] = []
 
         self._parameters = {}
+        self._parameter_groups = {}
         self._functions = {}
         self._added_methods = []
         self._probe_ids = []
@@ -386,6 +390,13 @@ class Instrument(calltimer.ThreadSafeGObject):
                         param, options['get_func']))
             options['listed_hids'] = inshids
 
+        if 'group' in options:
+            g = options['group']
+            if g not in self._parameter_groups:
+                self._parameter_groups[g] = [name]
+            else:
+                self._parameter_groups[g].append(name)
+
         self.emit('parameter-added', name)
 
     def _remove_parameters(self):
@@ -399,6 +410,17 @@ class Instrument(calltimer.ThreadSafeGObject):
                 if hasattr(self, fname):
                     delattr(self, fname)
         self._parameters = {}
+
+    def remove_parameter(self, name):
+        if name not in self._parameters:
+            return
+
+        for func in ('get_%s' % name, 'set_%s' % name):
+            if hasattr(self, func):
+                delattr(self, func)
+
+        del self._parameters[name]
+        self.emit('parameter-removed', name)
 
     def has_parameter(self, name):
         '''
@@ -520,6 +542,12 @@ class Instrument(calltimer.ThreadSafeGObject):
         Ouput: Dictionary, keys are parameter names, values are the options.
         '''
         return self._parameters
+
+    def get_parameter_groups(self):
+        '''
+        Return a dictionary with parameter group name -> group members.
+        '''
+        return self._parameter_groups
 
     def format_parameter_value(self, param, val):
         opt = self.get_parameter_options(param)
