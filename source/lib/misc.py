@@ -49,28 +49,6 @@ def pil_to_pixbuf(pilimage):
 
     return pixbuf
 
-def visa_read_all(visains):
-    """
-    Read all available data from the input buffer.
-
-    Hopefully this will be included in the visa code soon.
-    """
-
-    import visa
-    import pyvisa.vpp43 as vpp43
-
-    visa.warnings.filterwarnings("ignore", "VI_SUCCESS_MAX_CNT")
-    try:
-        buf = ""
-        blen = vpp43.get_attribute(visains, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
-        while blen > 0:
-            chunk = vpp43.read(visains, blen)
-            buf += chunk
-            blen = vpp43.get_attribute(visains, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
-    finally:
-        visa._removefilter("ignore", "VI_SUCCESS_MAX_CNT")
-    return buffer
-
 def sign(val):
     '''Return the sign of a value.'''
     if val < 0:
@@ -107,6 +85,14 @@ def exact_time():
             _time_func = time.time
 
     return _time_func()
+
+def usleep(usec):
+    '''
+    Sleep for usec microseconds.
+    '''
+    start = exact_time()
+    while (exact_time() - start) * 1e6 < usec:
+        pass
 
 def exit_ipython():
     import IPython
