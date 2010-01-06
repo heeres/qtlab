@@ -121,6 +121,15 @@ class InstrumentClient(tcpclient.TCPClient):
     def ins_call(self, insname, funcname, *args, **kwargs):
         return self._call('ins_call', insname, funcname, *args, **kwargs)
 
+def create_all(host, port=PORT, prefix='remote_'):
+    ic = InstrumentClient(host, port=port)
+    inslist = ic.get_instruments()
+    for insname in inslist:
+        logging.info('Creating instrument: %s', insname)
+        localname = '%s%s' % (prefix, insname)
+        qt.instruments.create(localname, 'Remote_Instrument',
+                remote_name=insname, host=host, port=port)
+
 def start_server(port=PORT):
     try:
         qt.server_instruments = tcpserver.GlibTCPServer(('', port), \
