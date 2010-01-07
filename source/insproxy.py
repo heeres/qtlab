@@ -27,6 +27,8 @@ class Proxy():
         self._name = name
         self._proxy_names = []
         self._setup_done = False
+        self._padd_hid = None
+        self._prem_hid = None
 
         if include_do is None:
             self._include_do = qt.config.get('proxy_include_do', False)
@@ -63,14 +65,17 @@ class Proxy():
                 self._parameter_removed_cb)
 
     def _remove_functions(self):
+        if self._padd_hid is not None:
+            self.disconnect(self._padd_hid)
+            self.disconnect(self._prem_hid)
+        self._padd_hid = None
+        self._prem_hid = None
+
         self._setup_done = False
         for name in self._proxy_names:
             delattr(self, name)
         self._proxy_names = []
         self._ins = None
-
-        self.disconnect(self._padd_hid)
-        self.disconnect(self._prem_hid)
 
     def _ins_added_cb(self, sender, ins):
         if ins.get_name() == self._name:
