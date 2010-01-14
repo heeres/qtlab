@@ -864,7 +864,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                     dict(x='(gray**gamma)')
         else:
             return self._PALETTE_FUNCTIONS[abs(func_id)] % \
-                    dict(x='((1-gray)**gamma)')
+                    dict(x='(1-gray**gamma)')
 
     def _create_palette_commands(self, **kwargs):
         name = kwargs.get('name', 'default')
