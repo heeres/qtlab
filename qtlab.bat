@@ -9,7 +9,7 @@
 ::SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
 ::SET GTK_BASEPATH=%CD%\3rd_party\gtk
 ::
-::SET PATH=%CD%\3rd_party\gnuplot\binaries;%PATH%
+::SET PATH=%CD%\3rd_party\gnuplot\bin;%PATH%
 ::
 ::SET PATH=%CD%\3rd_party\Console2\;%PATH%
 
