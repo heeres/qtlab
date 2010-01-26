@@ -16,8 +16,12 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import time
-import visa
-from pyvisa import vpp43
+import logging
+try:
+    from visa import *
+    from pyvisa import vpp43
+except:
+    logging.warning('VISA not available')
 
 def get_navail(visains):
     '''
