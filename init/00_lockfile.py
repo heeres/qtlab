@@ -1,18 +1,12 @@
 import os
-import sys
-from lib.misc import exit_ipython
-
-_remove_lock = True
-
-def get_lockfile():
-    import os, config
-    return os.path.join(config.get_qtlabdir(), 'qtlab.lock')
+import config
+from lib import lockfile
+from lib.misc import register_exit
 
 def qtlab_exit():
     print "\nClosing QTlab..."
 
-    import os, sys, lib.temp
-
+    import lib.temp
     try:
         qt.flow.exit_request()
     except:
@@ -20,33 +14,12 @@ def qtlab_exit():
 
     # Remove temporary files
     lib.temp.File.remove_all()
+    lockfile.remove_lockfile()
 
-    global _remove_lock
-    if _remove_lock:
-        try:
-            os.remove(get_lockfile())
-        except:
-            pass
+_lockname = os.path.join(config.get_qtlabdir(), 'qtlab.lock')
+lockfile.set_filename(_lockname)
 
-def _check_lockfile():
-    import os, sys
-    if os.path.exists(get_lockfile()):
-        if '-f' not in sys.argv:
-            print "QTlab already running, start with '-f' to force start."
-            print "Press s<enter> to start anyway or just <enter> to quit."
-
-            line = sys.stdin.readline().strip()
-            if line != 's':
-                _remove_lock = False
-                exit_ipython()
-                sys.exit()
-
-    onkill = [qtlab_exit]
-    for cb in __IP.on_kill:
-        onkill.append(cb)
-    __IP.on_kill = onkill
-
-    f = file(get_lockfile(), 'w+')
-    f.close()
-
-_check_lockfile()
+msg = "QTlab already running, start with '-f' to force start.\n"
+msg += "Press s<enter> to start anyway or just <enter> to quit."
+lockfile.check_lockfile(msg)
+register_exit(qtlab_exit)

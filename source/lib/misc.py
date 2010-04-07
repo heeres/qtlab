@@ -94,8 +94,28 @@ def usleep(usec):
     while (exact_time() - start) * 1e6 < usec:
         pass
 
-def exit_ipython():
+def get_ipython():
     import IPython
-    ip = IPython.ipapi.get()
-    ip.magic('Exit')
+    return IPython.ipapi.get()
+
+def is_ipython():
+    return get_ipython() != None
+
+def exit_shell():
+    if is_ipython():
+        ip = get_ipython()
+        ip.magic('Exit')
+    sys.exit()
+
+def register_exit(func):
+    if is_ipython():
+        on_kill = [func]
+        ip = get_ipython()
+        for cb in ip.IP.on_kill:
+            on_kill.append(cb)
+        print 'Setting on_kill to %r' % (on_kill, )
+        ip.IP.on_kill = on_kill
+    else:
+        import atexit
+        atexit.register(func)
 
