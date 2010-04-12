@@ -9,7 +9,7 @@ except:
 
 import logging
 
-class QTConfig(gobject.GObject):
+class Config(gobject.GObject):
     '''
     Class to manage settings for the QTLab environment.
     '''
@@ -20,23 +20,40 @@ class QTConfig(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT])),
     }
 
-    CONFIG_FILE = 'qtlab.cfg'
-
-    def __init__(self):
+    def __init__(self, filename):
         gobject.GObject.__init__(self)
 
+        self._filename = filename
         self._config = {}
         self._defaults = {}
 
         self.load_defaults()
         self.load()
 
+    def load_userconfig(self):
+        filename = os.path.join(get_execdir(), 'userconfig.py')
+        if os.path.exists(filename):
+            execfile(filename, {'config': self})
+
+    def setup_tempdir(self):
+        '''Get directory for temporary files.'''
+
+        dir = self.get('tempdir', None)
+
+        if dir == None:
+            dir = os.path.join(get_execdir(), 'tmp')
+            self.set('tempdir', dir)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+        return dir
+
     def _get_filename(self):
-        return os.path.join(get_qtlabdir(), self.CONFIG_FILE)
+        return os.path.join(get_execdir(), self._filename)
 
     def load_defaults(self):
         self._defaults['test'] = True
-        self._defaults['datadir'] = os.path.join(get_qtlabdir(), 'data')
+        self._defaults['datadir'] = os.path.join(get_execdir(), 'data')
 
     def save_defaults(self):
         return
@@ -138,26 +155,17 @@ def get_config():
     '''Get configuration object.'''
     return _config
 
-def get_qtlabdir():
+_config = None
+
+def create_config(filename):
+    global _config
+    _config = Config(filename)
+    return _config
+
+_execdir = os.path.split(os.path.dirname(__file__))[0]
+
+def get_execdir():
     '''Get work directory we started in.'''
-    return _qtlab_dir
+    global _execdir
+    return _execdir
 
-def get_tempdir():
-    '''Get directory for temporary files.'''
-    dir = _config.get('tempdir', None)
-    if dir == None:
-        dir = os.path.join(get_qtlabdir(), 'tmp')
-        _config['tempdir'] = dir
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    return dir
-
-_qtlab_dir = os.path.split(os.path.dirname(__file__))[0]
-_config = QTConfig()
-_config['qtlabdir'] = _qtlab_dir
-
-# Load user defined configuration
-if os.path.exists(os.path.join(get_qtlabdir(), 'userconfig.py')):
-    execfile(os.path.join(get_qtlabdir(), 'userconfig.py'), {'config': _config})
-
-get_tempdir()
