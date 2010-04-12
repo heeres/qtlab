@@ -23,14 +23,14 @@ import os
 import logging
 import sys
 import instrument
-from config import get_config
+from lib.config import get_config
 from insproxy import Proxy
 
 from IPython.ultraTB import AutoFormattedTB
 TB = AutoFormattedTB()
 
 def _set_insdir():
-    dir = os.path.join(_config['qtlabdir'], 'instrument_plugins')
+    dir = os.path.join(_config['execdir'], 'instrument_plugins')
     sys.path.append(dir)
     return dir
 

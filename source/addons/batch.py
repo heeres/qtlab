@@ -4,7 +4,7 @@ import time
 
 import qt
 
-qtlab_dir = qt.config['qtlabdir']
+qtlab_dir = qt.config['execdir']
 todo_dir = os.path.join(qtlab_dir, 'batch','todo')
 done_dir = os.path.join(qtlab_dir, 'batch','done')
 

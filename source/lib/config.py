@@ -52,7 +52,7 @@ class Config(gobject.GObject):
         return os.path.join(get_execdir(), self._filename)
 
     def load_defaults(self):
-        self._defaults['test'] = True
+        self['execdir'] = get_execdir()
         self._defaults['datadir'] = os.path.join(get_execdir(), 'data')
 
     def save_defaults(self):
@@ -162,7 +162,7 @@ def create_config(filename):
     _config = Config(filename)
     return _config
 
-_execdir = os.path.split(os.path.dirname(__file__))[0]
+_execdir = os.getcwd()
 
 def get_execdir():
     '''Get work directory we started in.'''

@@ -4,7 +4,7 @@ import os
 import sys
 from qtflow import get_flowcontrol
 from instruments import get_instruments
-import config as _config
+from lib import config as _config
 from data import Data
 from plot import Plot, plot, plot3, replot_all
 from lib.gui.qtwindow import QTWindow
@@ -32,7 +32,7 @@ else:
 plots = Plot.get_named_list()
 
 def version():
-    version_file = os.path.join(config['qtlabdir'], 'VERSION')
+    version_file = os.path.join(config['execdir'], 'VERSION')
     try:
         f = file(version_file,'r')
         str = f.readline()

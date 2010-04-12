@@ -4,7 +4,7 @@ import gobject
 from gettext import gettext as _L
 
 from lib import namedlist
-import config
+from lib import config
 
 class QTWindow(gtk.Window):
 

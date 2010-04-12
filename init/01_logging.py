@@ -1,5 +1,5 @@
 import logging
-import config
+from lib import config
 
 logging.basicConfig(level=logging.INFO,
     format='%(asctime)s %(levelname)-8s: %(message)s (%(filename)s:%(lineno)d)',

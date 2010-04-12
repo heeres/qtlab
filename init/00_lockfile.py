@@ -1,4 +1,4 @@
-import config
+from lib import config
 _cfg = config.create_config('qtlab.cfg')
 _cfg.load_userconfig()
 _cfg.setup_tempdir()
