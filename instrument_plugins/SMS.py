@@ -74,7 +74,7 @@ class SMS(Instrument):
         self.pol_num = range(self._numdacs)
 
         self._config = config.get_config()
-        self._filepath = os.path.join(self._config['qtlabdir'],
+        self._filepath = os.path.join(self._config['execdir'],
                 'instrument_plugins', '_SMS/')
         if not os.path.isdir(self._filepath):
             os.makedirs(self._filepath)
