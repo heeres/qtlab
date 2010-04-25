@@ -26,6 +26,7 @@ class Config(gobject.GObject):
         self._filename = filename
         self._config = {}
         self._defaults = {}
+        self._save_hid = None
 
         self.load_defaults()
         self.load()
@@ -33,6 +34,7 @@ class Config(gobject.GObject):
     def load_userconfig(self):
         filename = os.path.join(get_execdir(), 'userconfig.py')
         if os.path.exists(filename):
+            logging.debug('Loading userconfig from %s', filename)
             execfile(filename, {'config': self})
 
     def setup_tempdir(self):
@@ -52,7 +54,7 @@ class Config(gobject.GObject):
         return os.path.join(get_execdir(), self._filename)
 
     def load_defaults(self):
-        self['execdir'] = get_execdir()
+        self._defaults['execdir'] = get_execdir()
         self._defaults['datadir'] = os.path.join(get_execdir(), 'data')
 
     def save_defaults(self):
@@ -64,6 +66,8 @@ class Config(gobject.GObject):
         '''
 
         try:
+            filename = self._get_filename()
+            logging.debug('Loading settings from %s', filename)
             f = file(self._get_filename(), 'r')
             self._config = json.load(f)
             f.close()
@@ -86,13 +90,25 @@ class Config(gobject.GObject):
         if save:
             self.save()
 
-    def save(self):
+    def save(self, delay=5):
         '''
         Save settings.
+
+        'delay' specifies the delay (in seconds) to use to avoid saving
+        too often.
         '''
 
+        if delay == 0:
+            self._do_save()
+        elif self._save_hid is None:
+            self._save_hid = gobject.timeout_add(delay * 1000, self._do_save)
+
+    def _do_save(self):
+        self._save_hid = None
         try:
-            f = file(self._get_filename(), 'w+')
+            filename = self._get_filename()
+            logging.debug('Saving settings to %s', filename)
+            f = file(filename, 'w+')
             json.dump(self._config, f, indent=4, sort_keys=True)
             f.close()
         except Exception, e:

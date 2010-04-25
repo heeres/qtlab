@@ -113,7 +113,6 @@ def register_exit(func):
         ip = get_ipython()
         for cb in ip.IP.on_kill:
             on_kill.append(cb)
-        print 'Setting on_kill to %r' % (on_kill, )
         ip.IP.on_kill = on_kill
     else:
         import atexit
