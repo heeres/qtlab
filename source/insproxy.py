@@ -77,8 +77,8 @@ class Proxy():
         self._proxy_names = []
         self._ins = None
 
-    def _ins_added_cb(self, sender, ins):
-        if ins.get_name() == self._name:
+    def _ins_added_cb(self, sender, insname):
+        if insname == self._name:
             self._setup_proxy()
 
     def _ins_removed_cb(self, sender, insname):

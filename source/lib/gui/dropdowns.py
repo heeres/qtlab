@@ -73,9 +73,12 @@ class InstrumentDropdown(QTComboBox):
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
 
-    def _instrument_added_cb(self, sender, instrument):
-        if len(self._types) == 0 or instrument.has_tag(self._types):
-            self._ins_list.append([instrument.get_name()])
+    def _instrument_added_cb(self, sender, insname):
+        ins = qt.get_instrument_proxy(insname)
+        if ins is None:
+            return
+        if len(self._types) == 0 or ins.has_tag(self._types):
+            self._ins_list.append([ins.get_name()])
 
     def _instrument_removed_cb(self, sender, insname):
         logging.debug('Instrument removed: %s', insname)
@@ -279,8 +282,10 @@ class AllParametersDropdown(QTComboBox):
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
         self._instruments.connect('instrument-changed', self._instrument_changed_cb)
 
-    def _instrument_added_cb(self, sender, ins):
-        self.add_instrument(ins)
+    def _instrument_added_cb(self, sender, insname):
+        ins = qt.get_instrument_proxy(insname)
+        if ins is not None:
+            self.add_instrument(ins)
 
     def _instrument_removed_cb(self, sender, name):
         self.remove_instrument(name)
@@ -293,25 +298,23 @@ class AllParametersDropdown(QTComboBox):
         inslist.sort()
         for insname in inslist:
             ins = helper.find_object('instrument_%s' % insname)
-            self.add_instrument(ins, insname=insname)
+            self.add_instrument(ins)
 
-    def add_instrument(self, ins, insname=None):
-        if insname is None:
-            insname = ins.get_name()
-        if insname in self._ins_names:
+    def add_instrument(self, ins):
+        insname = ins.get_name()
+        if ins.get_name() in self._ins_names:
             return
 
         self._ins_names.append(insname)
         ins.connect('parameter-added', self._parameter_added_cb)
         params = misc.dict_to_ordered_tuples(ins.get_shared_parameters())
         for param, options in params:
-            self.add_parameter(ins, param, options=options, insname=insname)
+            self.add_parameter(ins, param, options=options)
 
-    def add_parameter(self, ins, param, options=None, insname=None):
+    def add_parameter(self, ins, param, options=None):
         if options is None:
             options = ins.get_shared_parameter_options(param)
-        if insname is None:
-            insname = ins.get_name()
+        insname = ins.get_name()
 
         add_name = '%s.%s' % (insname, param)
         if add_name in self._param_info:

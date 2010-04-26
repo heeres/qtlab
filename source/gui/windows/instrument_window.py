@@ -331,8 +331,12 @@ class InstrumentWindow(qtwindow.QTWindow):
         self.hide()
         return True
 
-    def _instrument_added_cb(self, sender, instrument):
-        self._add_instrument(instrument)
+    def _instrument_added_cb(self, sender, insname):
+        ins = qt.get_instrument_proxy(insname)
+        if ins is not None:
+            self._add_instrument(ins)
+        else:
+            logging.warning('Unable to locate added instrument %s', insname)
 
     def _instrument_removed_cb(self, sender, insname):
         self._remove_instrument(insname)

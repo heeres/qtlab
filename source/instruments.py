@@ -258,7 +258,7 @@ class Instruments(SharedGObject):
     def _create_invalid_ins(self, name, instype, **kwargs):
         ins = instrument.InvalidInstrument(name, instype, **kwargs)
         self.add(ins, create_args=kwargs)
-        self.emit('instrument-added', ins)
+        self.emit('instrument-added', name)
         return self.get(name)
 
     def create(self, name, instype, **kwargs):
@@ -299,7 +299,7 @@ class Instruments(SharedGObject):
             return self._create_invalid_ins(name, instype, **kwargs)
 
         self.add(ins, create_args=kwargs)
-        self.emit('instrument-added', ins)
+        self.emit('instrument-added', name)
         return self.get(name)
 
     def reload_module(self, instype):
