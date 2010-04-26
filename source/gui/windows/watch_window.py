@@ -18,62 +18,19 @@
 import gtk
 import gobject
 import time
-import qt
+import logging
+import qtclient as qt
 
 from gettext import gettext as _L
 
 import lib.gui as gui
 from lib.gui.qttable import QTTable
 from lib.gui import dropdowns, qtwindow
+from lib.misc import register_exit
 
 from lib.calltimer import GObjectThread, ThreadVariable
 
 import numpy as np
-
-class WatchThread(GObjectThread):
-
-    __gsignals__ = {
-        'update': (gobject.SIGNAL_RUN_FIRST,
-                gobject.TYPE_NONE,
-                ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT])),
-        'set-delay': (gobject.SIGNAL_RUN_FIRST,
-                gobject.TYPE_NONE,
-                ([gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT])),
-    }
-
-    def __init__(self, id, ins, var, delay):
-        GObjectThread.__init__(self)
-
-        self._id = id
-        self._ins = ins
-        self._var = var
-        self._delay = delay
-
-        self.paused = ThreadVariable(False)
-
-    def run(self):
-        avgtime = self._delay
-
-        while not self.stop.get():
-            if self.paused.get():
-                time.sleep(delay)
-                continue
-
-            start = time.time()
-            val = self._ins.get(self._var)
-            stop = time.time()
-
-            self.emit('update', self._id, val)
-
-            # Update delay if we're querying too fast
-            avgtime = avgtime * 0.9 + (stop - start) * 0.1
-            if avgtime > self._delay:
-                self._delay *= 2
-                self.emit('set-delay', self._id, self._delay)
-
-            delay = self._delay - (stop - start)
-            if delay > 0:
-                time.sleep(delay)
 
 class WatchWindow(qtwindow.QTWindow):
 
@@ -147,18 +104,14 @@ class WatchWindow(qtwindow.QTWindow):
 
         vbox.show_all()
 
-        qt.flow.register_exit_handler(self._exit_handler)
-
     def _delete_event_cb(self, widget, event, data=None):
         self.hide()
         return True
 
     def set_paused(self, paused):
+        logging.info('Watch win: setting paused to %s', paused)
         self._pause_button.set_active(paused)
         self._paused = paused
-        for ins_param, info in self._watch.iteritems():
-            thread = info['thread']
-            thread.paused.set(paused)
 
     def get_paused(self):
         return self._paused
@@ -183,6 +136,30 @@ class WatchWindow(qtwindow.QTWindow):
         active = self._graph_check.get_active()
         self._npoints.set_sensitive(active)
 
+    def _receive_reply(self, ins_param, result):
+        # Update delay if we're querying too fast
+        info = self._watch[ins_param]
+        delta = time.time() - info['req_t']
+        info['avgtime'] = info['avgtime'] * 0.9 + delta * 0.1
+        if info['avgtime'] > info['delay'] / 1000.0:
+            self._set_delay(ins_param, info['delay'] * 2)
+        info['reply_received'] = True
+        self._update_cb(None, ins_param, result)
+
+    def _query_ins(self, ins_param):
+        info = self._watch[ins_param]
+        if not info['reply_received'] or self._paused:
+            logging.info('Not querying...')
+            return True
+
+        info['reply_received']= False
+        info['req_t']= time.time()
+        ins = info['instrument']
+        param = info['parameter']
+        ins.get(param, callback=lambda x: self._receive_reply(ins_param, x))
+
+        return True
+
     def _add_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
         param = self._param_combo.get_parameter()
@@ -192,21 +169,21 @@ class WatchWindow(qtwindow.QTWindow):
             return
 
         iter = self._tree_model.append((ins_param, '%d ms' % delay, ''))
-        thread = WatchThread(ins_param, ins, param, delay / 1000.0)
-        thread.connect('update', self._update_cb)
-        thread.connect('set-delay', self._set_delay_cb)
         info = {
             'instrument': ins,
             'parameter': param,
             'delay': delay,
+            'avgtime': delay / 1000.0,
+            'reply_received': True,
             'iter': iter,
-            'thread': thread,
+            'options': ins.get_shared_parameter_options(param),
             'graph': self._graph_check.get_active(),
             'points': self._npoints.get_value(),
         }
 
         self._watch[ins_param] = info
-        thread.start()
+        hid = gobject.timeout_add(int(delay), self._query_ins, ins_param)
+        self._watch[ins_param]['hid'] = hid
 
     def _update_cb(self, sender, ins_param, val):
         if not (self.flags() & gtk.VISIBLE):
@@ -218,7 +195,7 @@ class WatchWindow(qtwindow.QTWindow):
         info = self._watch[ins_param]
         ins = info['instrument']
         param = info['parameter']
-        strval = ins.format_parameter_value(param, val)
+        strval = qt.format_parameter_value(info['options'], val)
         self._tree_model.set(info['iter'], 2, strval)
 
         if info.get('graph', False):
@@ -234,9 +211,12 @@ class WatchWindow(qtwindow.QTWindow):
             info['qtdata'].update_data(info['data'])
             info['plot'].update()
 
-    def _set_delay_cb(self, sender, ins_param, delay):
+    def _set_delay(self, ins_param, delay):
         info = self._watch[ins_param]
-        strval = '%d ms' % (delay * 1000.0)
+        gobject.source_remove(info['hid'])
+        info['hid'] = gobject.timeout_add(int(delay), self._query_ins, ins_param)
+        info['delay'] = delay
+        strval = '%d ms' % (delay,)
         self._tree_model.set(info['iter'], 1, strval)
 
     def _remove_clicked_cb(self, widget):
@@ -246,14 +226,9 @@ class WatchWindow(qtwindow.QTWindow):
             ins_param = model.get_value(iter, 0)
             model.remove(iter)
 
-            thread = self._watch[ins_param]['thread']
-            thread.stop.set(True)
+            info = self._watch[ins_param]
+            gobject.source_remove(info['hid'])
             del self._watch[ins_param]
 
-    def _exit_handler(self):
-        print 'Closing watch threads...'
-        for ins_param, info in self._watch.iteritems():
-            thread = info['thread']
-            thread.stop.set(True)
-        self._watch = {}
+Window = WatchWindow
 

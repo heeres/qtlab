@@ -24,8 +24,9 @@ from gettext import gettext as _L
 from lib.calltimer import ThreadSafeGObject
 from lib.misc import exact_time
 from IPython import ultraTB
+from lib.network.object_sharer import SharedGObject
 
-class FlowControl(ThreadSafeGObject):
+class FlowControl(SharedGObject):
     '''
     Class for flow control of the QT measurement environment.
     '''
@@ -45,7 +46,7 @@ class FlowControl(ThreadSafeGObject):
     STATUS_RUNNING = 1
 
     def __init__(self):
-        ThreadSafeGObject.__init__(self)
+        SharedGObject.__init__(self, 'flow')
         self._status = 'stopped'
         self._measurements_running = 0
         self._abort = False
@@ -87,7 +88,7 @@ class FlowControl(ThreadSafeGObject):
 
         if abort:
             self._measurements_running = 0
-        else:
+        elif self._measurements_running > 0:
             self._measurements_running -= 1
 
         if self._measurements_running == 0:
@@ -195,6 +196,9 @@ class FlowControl(ThreadSafeGObject):
     def set_abort(self):
         '''Request an abort.'''
         self._abort = True
+
+    def is_paused(self):
+        return self._pause
 
     def set_pause(self, pause):
         '''Set / unset pause state.'''

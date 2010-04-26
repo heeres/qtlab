@@ -20,12 +20,11 @@ import gtk
 import logging
 from gettext import gettext as _L
 
-import qt
+import qtclient as qt
 import lib.gui as gui
 from lib.gui import dropdowns, qtwindow, frontpanel, slider
 from lib.gui.flexscale import FlexScale
 from lib.gui.functionframe import ArgumentTable, FunctionFrame
-from instrument import Instrument
 
 class QTManageInstrumentFrame(gtk.VBox):
 
@@ -228,11 +227,11 @@ class QTSetInstrumentFrame(gtk.VBox):
         param = self._param_combo.get_parameter()
         sget, sset = False, False
         if self._ins is not None:
-            opts = self._ins.get_parameter_options(param)
+            opts = self._ins.get_shared_parameter_options(param)
             if opts is not None:
                 sget = opts['flags'] & \
-                    (Instrument.FLAG_GET | Instrument.FLAG_SOFTGET)
-                sset = opts['flags'] & Instrument.FLAG_SET
+                    (qt.constants.FLAG_GET | qt.constants.FLAG_SOFTGET)
+                sset = opts['flags'] & qt.constants.FLAG_SET
         self._get_but.set_sensitive(sget)
         self._set_but.set_sensitive(sset)
         self._make_sl.set_sensitive(sset)
@@ -291,4 +290,5 @@ class ControlWindow(qtwindow.QTWindow):
         self.hide()
         return True
 
+Window = ControlWindow
 

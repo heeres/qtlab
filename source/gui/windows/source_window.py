@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
-import qt
+import qtclient as qt
 
 import os
 import tempfile
@@ -364,6 +364,8 @@ class SourceWindow(QTWindow):
         qtrun_thread(fn)
 
 #        os.remove(fn)
+
+Window = SourceWindow
 
 if __name__ == '__main__':
     win = SourceWindow()

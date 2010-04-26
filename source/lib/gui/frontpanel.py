@@ -19,11 +19,11 @@ import types
 import gobject
 import gtk
 
-from instrument import Instrument
 import qtwindow
-import qt
+import qtclient as qt
 
 from lib.misc import dict_to_ordered_tuples
+from lib.network.object_sharer import helper
 
 from gettext import gettext as _L
 
@@ -33,18 +33,19 @@ class StringLabel(gtk.Label):
         gtk.Label.__init__(self)
         self._instrument = ins
         self._parameter = param
+        self._param_opts = ins.get_shared_parameter_options(param)
 
         self._autoupdate = autoupdate
         if self._autoupdate:
             ins.connect('changed', self._parameter_changed_cb)
 
     def _update_value(self, val):
-        fmtval = self._instrument.format_parameter_value(self._parameter, val)
+        fmtval = qt.format_parameter_value(self._param_opts, val)
         self.set_text(fmtval)
 
     def do_get(self, query=True):
         ins = self._instrument
-        val = ins.get(self._parameter, query=query)
+        ins.get(self._parameter, query=query, callback=self._update_value)
 
     def do_set(self):
         return
@@ -74,8 +75,8 @@ class StringEntry(gtk.Entry):
         self.set_text(val)
 
     def do_get(self, query=True):
-        val = self._instrument.get(self._parameter, query=query)
-        self._update_value(val)
+        self._instrument.get(self._parameter, query=query,
+                callback=self._update_value)
 
     def do_set(self):
         self._dirty = False
@@ -128,8 +129,8 @@ class NumberEntry(gtk.SpinButton):
             self.set_value(val)
 
     def do_get(self, query=True):
-        val = self._instrument.get(self._parameter, query=query)
-        self._update_value(val)
+        self._instrument.get(self._parameter, query=query,
+                callback=self._update_value)
 
     def do_set(self):
         val = self.get_value()
@@ -187,8 +188,8 @@ class ComboEntry(gtk.ComboBox):
                 break
 
     def do_get(self, query=True):
-        val = self._instrument.get(self._parameter, query=query)
-        self._update_value(val)
+        self._instrument.get(self._parameter, query=query,
+                callback=self._update_value)
 
     def do_set(self):
         val = self._model[self.get_active()][0]
@@ -247,7 +248,7 @@ class FrontPanel(qtwindow.QTWindow):
         return True
 
     def _create_entry(self, param, opts):
-        if not opts['flags'] & Instrument.FLAG_SET:
+        if not opts['flags'] & qt.constants.FLAG_SET:
             entry = StringLabel(self._instrument, param, opts)
         elif 'format_map' in opts or 'option_list' in opts:
             entry = ComboEntry(self._instrument, param, opts)
@@ -262,7 +263,7 @@ class FrontPanel(qtwindow.QTWindow):
 
     def _add_parameters(self):
         rows = 0
-        parameters = self._instrument.get_parameters()
+        parameters = self._instrument.get_shared_parameters()
         for name, opts in dict_to_ordered_tuples(parameters):
             self._table.resize(rows + 1, 2)
 
@@ -277,12 +278,12 @@ class FrontPanel(qtwindow.QTWindow):
             }
 
             hbox = gtk.HBox()
-            if opts['flags'] & Instrument.FLAG_SET:
+            if opts['flags'] & qt.constants.FLAG_SET:
                 but = gtk.Button(_L('Set'))
                 but.connect('clicked', self._set_clicked, name)
                 hbox.pack_start(but)
-            if opts['flags'] & Instrument.FLAG_GET or \
-                    opts['flags'] & Instrument.FLAG_SOFTGET:
+            if opts['flags'] & qt.constants.FLAG_GET or \
+                    opts['flags'] & qt.constants.FLAG_SOFTGET:
                 but = gtk.Button(_L('Get'))
                 but.connect('clicked', self._get_clicked, name)
                 hbox.pack_start(but)

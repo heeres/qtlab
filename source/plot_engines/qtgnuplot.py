@@ -25,6 +25,7 @@ import numpy as np
 
 import qt
 from lib.namedlist import NamedList
+from lib.network.object_sharer import cache_result
 import plot
 
 import gnuplotpipe
@@ -32,7 +33,8 @@ import gnuplotpipe
 class _GnuPlotList(NamedList):
 
     def __init__(self):
-        NamedList.__init__(self, 'plot', type=NamedList.TYPE_ACTIVE)
+        NamedList.__init__(self, 'plot', type=NamedList.TYPE_ACTIVE,
+                shared_name='namedlist_gnuplot')
 
     def create(self, name):
         return gnuplotpipe.GnuplotPipe(termtitle=name)
@@ -225,8 +227,8 @@ class _QTGnuPlot():
         self._gnuplot.cmd('set output')
         self._gnuplot.cmd('replot')
 
-    @staticmethod
-    def get_save_as_types():
+    @cache_result
+    def get_save_as_types(self):
         return _QTGnuPlot._SAVE_AS_TYPES
 
     def save_ps(self, filepath=None, font='Helvetica', fontsize=14, **kwargs):
@@ -757,7 +759,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         self.set_property('style', style, update=update)
 
-    @staticmethod
+    @cache_result
     def get_palettes():
         '''Return available palettes.'''
         pals = Plot3D._PALETTE_MAP.keys()

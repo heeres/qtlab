@@ -1,9 +1,14 @@
 import types
 from instrument import Instrument
-from lib.gui.qtwindow import QTWindow
 from lib.misc import exact_time
 from lib import temp
 from time import sleep
+
+#set_debug(True)
+from lib.network.object_sharer import start_glibtcp_server, SharedObject
+start_glibtcp_server()
+SharedObject.server.add_allowed_ip('130.161.*.*')
+SharedObject.server.add_allowed_ip('145.94.*.*')
 
 if False:
     import psyco

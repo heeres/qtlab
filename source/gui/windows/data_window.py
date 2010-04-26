@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gtk
-import qt
+import qtclient as qt
 import os
 import types
 import logging
@@ -228,4 +228,6 @@ class DataWindow(qtwindow.QTWindow):
         plot = qt.plots[name]
         if plot is not None:
             plot.clear()
+
+Window = DataWindow
 

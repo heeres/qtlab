@@ -6,9 +6,11 @@ from gettext import gettext as _L
 from lib import namedlist
 from lib import config
 
+import qtclient as qt
+
 class QTWindow(gtk.Window):
 
-    _window_list = namedlist.NamedList()
+    _window_list = namedlist.NamedList(shared_name='namedlist_window')
     _name_counters = {}
 
     def __init__(self, name, title, add_to_main=True):
@@ -16,7 +18,7 @@ class QTWindow(gtk.Window):
 
         self._name = self.generate_name(name)
         self._title = title
-        self._config = config.get_config()
+        self._config = qt.config
 
         winx, winy = self._config.get('%s_pos' % title, (250, 40))
         self.move(winx, winy)

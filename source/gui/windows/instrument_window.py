@@ -21,10 +21,12 @@ import gobject
 import logging
 from gettext import gettext as _L
 
-import qt
 import lib.gui as gui
 from lib.gui import dropdowns, qtwindow
 
+from lib.network.object_sharer import helper
+
+import qtclient as qt
 
 class QTInstrumentFrame(gtk.VBox):
 
@@ -50,6 +52,7 @@ class QTInstrumentFrame(gtk.VBox):
         self.pack_start(self._table, False, False)
 
         self._instrument = ins
+        self._instrument_name = ins.get_name()
         self._label_name = {}
         self._label_val = {}
         self._label_range = {}
@@ -58,6 +61,9 @@ class QTInstrumentFrame(gtk.VBox):
         self._cur_val = {}
         self._row_num = {}
         self._reorder_hid = None
+
+        # For formatting
+        self._parameter_options = {}
 
         self._add_parameters()
 
@@ -77,7 +83,8 @@ class QTInstrumentFrame(gtk.VBox):
         if param in self._label_name:
             return
 
-        popts = self._instrument.get_parameter_options(param)
+        popts = self._instrument.get_shared_parameter_options(param)
+        self._parameter_options[param] = popts
         nrows = self._table.props.n_rows
         self._table.resize(nrows + 1, 5)
 
@@ -96,7 +103,7 @@ class QTInstrumentFrame(gtk.VBox):
         val = self._instrument.get(param, query=False)
         self._cur_val[param] = val
         vlabel.set_markup('<b>%s</b>' % \
-                self._instrument.format_parameter_value(param, val))
+                qt.format_parameter_value(self._parameter_options[param], val))
         vlabel.set_alignment(0, 0)
         vlabel.show()
         self._table.attach(vlabel, 2, 3, nrows, nrows + 1)
@@ -175,6 +182,7 @@ class QTInstrumentFrame(gtk.VBox):
             del self._update_dict[param]
         del self._cur_val[param]
         del self._row_num[param]
+        del self._parameter_options[param]
 
         self._reorder_table(1)
 
@@ -184,7 +192,8 @@ class QTInstrumentFrame(gtk.VBox):
         for param, val in self._update_dict.iteritems():
             if param in self._label_val and self._cur_val[param] != val:
                 self._label_val[param].set_markup('<b>%s</b>' % \
-                    self._instrument.format_parameter_value(param, val))
+                    qt.format_parameter_value(self._parameter_options[param],
+                        val))
                 self._cur_val[param] = val
 
         self._update_dict = {}
@@ -224,6 +233,7 @@ class QTInstrumentFrame(gtk.VBox):
 
         self._label_range[param].set_text(self._instrument.format_range(param))
         self._label_rate[param].set_text(self._instrument.format_rate(param))
+        self._parameter_options[param] = self._instrument.get_shared_parameter_options(param)
         self.update_parameter(param, self._instrument.get(param), force=True)
 
     def show_table(self, show):
@@ -231,11 +241,11 @@ class QTInstrumentFrame(gtk.VBox):
         if show:
             self._table.show()
             self._label.set_markup('<b>- %s</b> [?]' % \
-                    self._instrument.get_name())
+                    self._instrument_name)
         else:
             self._table.hide()
             self._label.set_markup('<b>+ %s</b> [?]' % \
-                    self._instrument.get_name())
+                    self._instrument_name)
 
     def _label_clicked_cb(self, sender, param):
         self.show_table(not self._table.props.visible)
@@ -310,14 +320,14 @@ class InstrumentWindow(qtwindow.QTWindow):
             self._ins_widgets[insname].remove()
             del self._ins_widgets[insname]
 
-    def _update_instrument(self, ins, changes):
-        name = ins.get_name()
-        if name in self._ins_widgets:
+    def _update_instrument(self, insname, changes):
+        if insname in self._ins_widgets:
             for (param, val) in changes.iteritems():
-                self._ins_widgets[name].update_parameter(param, val)
+                self._ins_widgets[insname].update_parameter(param, val)
 
     def _add_instruments(self):
-        for (name, ins) in self._instruments.get_instruments():
+        for name in self._instruments.get_instrument_names():
+            ins = helper.find_object('instrument_%s' % name)
             self._add_instrument(ins)
 
     def _delete_event_cb(self, widget, event, data=None):
@@ -351,4 +361,6 @@ class InstrumentWindow(qtwindow.QTWindow):
         state = self._rate_toggle.get_active()
         for name, widget in self._ins_widgets.iteritems():
             widget.show_rate_column(state)
+
+Window = InstrumentWindow
 

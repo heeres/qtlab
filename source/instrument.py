@@ -23,11 +23,12 @@ import math
 import inspect
 from gettext import gettext as _L
 from lib import calltimer
+from lib.network.object_sharer import SharedGObject, cache_result
 
 import logging
 import qt
 
-class Instrument(calltimer.ThreadSafeGObject):
+class Instrument(SharedGObject):
     """
     Base class for instruments.
 
@@ -81,7 +82,7 @@ class Instrument(calltimer.ThreadSafeGObject):
     _lock_classes = {}
 
     def __init__(self, name, **kwargs):
-        calltimer.ThreadSafeGObject.__init__(self)
+        SharedGObject.__init__(self, 'instrument_%s' % name)
 
         self._name = name
         self._initialized = False
@@ -113,6 +114,7 @@ class Instrument(calltimer.ThreadSafeGObject):
     def __str__(self):
         return "Instrument '%s'" % (self.get_name())
 
+    @cache_result
     def get_name(self):
         '''
         Returns the name of the instrument as a string
@@ -440,6 +442,22 @@ class Instrument(calltimer.ThreadSafeGObject):
         else:
             return None
 
+    def get_shared_parameter_options(self, name):
+        '''
+        Return list of options for paramter.
+
+        Input: name (string)
+        Output: dictionary of options
+        '''
+        if self._parameters.has_key(name):
+            options = dict(self._parameters[name])
+            for i in ('get_func', 'set_func'):
+                if i in options:
+                    del options[i]
+            return options
+        else:
+            return None
+
     def set_parameter_options(self, name, **kwargs):
         '''
         Change parameter options.
@@ -542,6 +560,19 @@ class Instrument(calltimer.ThreadSafeGObject):
         Ouput: Dictionary, keys are parameter names, values are the options.
         '''
         return self._parameters
+
+    def get_shared_parameters(self):
+        '''
+        Return the parameter dictionary, with non-shareable items stripped.
+
+        Input: None
+        Ouput: Dictionary, keys are parameter names, values are the options.
+        '''
+
+        params = {}
+        for key in self._parameters:
+            params[key] = self.get_shared_parameter_options(key)
+        return params
 
     def get_parameter_groups(self):
         '''
@@ -1143,7 +1174,8 @@ class Instrument(calltimer.ThreadSafeGObject):
         update_func()
 
     def _do_emit_changed(self):
-        self._idle_emit('changed', self._changed)
+        # was this a bug?
+        self.emit('changed', self._changed)
         self._changed = {}
         self._changed_hid = None
 

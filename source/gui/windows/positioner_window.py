@@ -18,7 +18,7 @@
 import gtk
 import gobject
 import logging
-import qt
+import qtclient as qt
 
 from gettext import gettext as _L
 
@@ -563,4 +563,6 @@ class PositionerWindow(QTWindow):
 
     def _stop_request_cb(self, sender):
         self._instrument.stop()
+
+Window = PositionerWindow
 

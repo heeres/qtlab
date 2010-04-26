@@ -7,14 +7,12 @@ from instruments import get_instruments
 from lib import config as _config
 from data import Data
 from plot import Plot, plot, plot3, replot_all
-from lib.gui.qtwindow import QTWindow
 from scripts import Scripts, Script
 
 config = _config.get_config()
 
 data = Data.get_named_list()
 instruments = get_instruments()
-windows = QTWindow.get_named_list()
 frontpanels = {}
 sliders = {}
 scripts = Scripts()

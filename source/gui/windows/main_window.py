@@ -17,10 +17,12 @@
 
 import gtk
 from gettext import gettext as _L
+import logging
 
-import qt
 import lib.gui as gui
 from lib.gui import qtwindow, stopbutton
+
+import qtclient as qt
 
 class MainWindow(qtwindow.QTWindow):
 
@@ -130,3 +132,6 @@ class MainWindow(qtwindow.QTWindow):
 
     def _toggle_replot_cb(self, widget):
         qt.replot_all()
+
+Window = MainWindow
+

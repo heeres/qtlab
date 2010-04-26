@@ -20,12 +20,13 @@ import gobject
 import logging
 import types
 
-from instrument import Instrument
 import lib.misc as misc
-import qt
 
 TEXT_ALL = '<All>'
 TEXT_NONE = '<None>'
+
+from lib.network.object_sharer import helper
+import qtclient as qt
 
 class QTComboBox(gtk.ComboBox):
 
@@ -63,9 +64,10 @@ class InstrumentDropdown(QTComboBox):
         self._types = types
         self._ins_list.append(['<None>'])
         self._instruments = qt.instruments
-        for name, ins in self._instruments.get_instruments().iteritems():
+        for insname in self._instruments.get_instrument_names():
+            ins = helper.find_object('instrument_%s' % insname)
             if len(types) == 0 or ins.has_tag(types):
-                self._ins_list.append([ins.get_name()])
+                self._ins_list.append([insname])
 
         self._instruments.connect('instrument-added', self._instrument_added_cb)
         self._instruments.connect('instrument-removed', self._instrument_removed_cb)
@@ -87,7 +89,7 @@ class InstrumentDropdown(QTComboBox):
         if item is None:
             return None
         ins_name = self._ins_list.get(item, 0)
-        return self._instruments[ins_name]
+        return qt.get_instrument_proxy(ins_name)
 
 class InstrumentTypeDropdown(QTComboBox):
     '''
@@ -120,7 +122,7 @@ class InstrumentParameterDropdown(QTComboBox):
     Dropdown to select a parameter from a given instrument.
     '''
 
-    def __init__(self, instrument=None, flags=Instrument.FLAG_GETSET, types=[]):
+    def __init__(self, instrument=None, flags=3, types=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._param_list)
 
@@ -159,7 +161,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
-            ins = qt.instruments[ins]
+            ins = helper.find_object('instruments_%s' % ins)
 
         if self._instrument == ins:
             return True
@@ -176,7 +178,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
             self._instrument.connect('parameter-added', self._parameter_added_cb)
 
-            for (name, options) in misc.dict_to_ordered_tuples(ins.get_parameters()):
+            for (name, options) in misc.dict_to_ordered_tuples(ins.get_shared_parameters()):
                 if len(self._types) > 0 and options['type'] not in self._types:
                     continue
 
@@ -219,7 +221,7 @@ class InstrumentFunctionDropdown(QTComboBox):
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
-            ins = qt.instruments[ins]
+            ins = qt.get_instrument_proxy(ins)
 
         if self._instrument == ins:
             return True
@@ -256,7 +258,7 @@ class AllParametersDropdown(QTComboBox):
     Dropdown to select a parameter from any instrument.
     '''
 
-    def __init__(self, flags=Instrument.FLAG_GETSET, types=[], tags=[]):
+    def __init__(self, flags=3, types=[], tags=[]):
         self._param_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._param_list)
 
@@ -268,6 +270,7 @@ class AllParametersDropdown(QTComboBox):
         self._param_info = {}
         self._ins_names = []
         self.add_instruments()
+        self.update_list()
 
         self._param_list.set_sort_column_id(0, gtk.SORT_ASCENDING)
 
@@ -286,25 +289,35 @@ class AllParametersDropdown(QTComboBox):
         return
 
     def add_instruments(self):
-        inslist = misc.dict_to_ordered_tuples(qt.instruments.get_instruments())
-        for (insname, ins) in inslist:
-            self.add_instrument(ins)
+        inslist = qt.instruments.get_instrument_names()
+        inslist.sort()
+        for insname in inslist:
+            ins = helper.find_object('instrument_%s' % insname)
+            self.add_instrument(ins, insname=insname)
 
-    def add_instrument(self, ins):
-        if ins.get_name() not in self._ins_names:
-            self._ins_names.append(ins.get_name())
-            ins.connect('parameter-added', self._parameter_added_cb)
-            for param in ins.get_parameter_names():
-                self.add_parameter(ins, param)
+    def add_instrument(self, ins, insname=None):
+        if insname is None:
+            insname = ins.get_name()
+        if insname in self._ins_names:
+            return
 
-    def add_parameter(self, ins, param):
-        params = misc.dict_to_ordered_tuples(ins.get_parameters())
-        options = ins.get_parameter_options(param)
-        add_name = '%s.%s' % (ins.get_name(), param)
+        self._ins_names.append(insname)
+        ins.connect('parameter-added', self._parameter_added_cb)
+        params = misc.dict_to_ordered_tuples(ins.get_shared_parameters())
+        for param, options in params:
+            self.add_parameter(ins, param, options=options, insname=insname)
+
+    def add_parameter(self, ins, param, options=None, insname=None):
+        if options is None:
+            options = ins.get_shared_parameter_options(param)
+        if insname is None:
+            insname = ins.get_name()
+
+        add_name = '%s.%s' % (insname, param)
         if add_name in self._param_info:
             return
         self._param_info[add_name] = {
-            'insname': ins.get_name(),
+            'insname': insname,
             'options': options,
             }
 
@@ -369,7 +382,7 @@ class AllParametersDropdown(QTComboBox):
             insname, dot, parname = selstr.partition('.')
             logging.debug('Selected instrument %s, parameter %s', insname, parname)
 
-            ins = self._instruments[insname]
+            ins = qt.get_instrument_proxy(insname)
             if ins is None:
                 return None
 
@@ -413,7 +426,7 @@ class NamedListDropdown(QTComboBox):
         self._namedlist.connect('item-removed', self._item_removed_cb)
 
         for item in self._namedlist.get_items():
-            self._items.append(item)
+            self._items.append([item])
 
     def _item_added_cb(self, sender, item):
         self._items.append([item])
@@ -429,7 +442,8 @@ class NamedListDropdown(QTComboBox):
         if item is None:
             return None
         name = self._items.get(item, 0)[0]
-        return self._namedlist[name]
+        objname = '%s_%s' % (self._namedlist.get_base_name(), name)
+        return helper.find_object(objname)
 
 class StringListDropdown(QTComboBox):
 

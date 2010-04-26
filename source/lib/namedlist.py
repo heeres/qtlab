@@ -16,17 +16,19 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import gobject
+from lib.network.object_sharer import SharedGObject
+from lib.misc import get_ipython
 
 def _clear_ipython():
     try:
-        import qt
-        qt._IP.ipmagic('clear out')
+        ip = get_ipython()
+        ip.IP.ipmagic('clear out')
         import gc
         gc.collect()
     except:
         pass
 
-class NamedList(gobject.GObject):
+class NamedList(SharedGObject):
 
     __gsignals__ = {
         'item-added': (gobject.SIGNAL_RUN_FIRST,
@@ -55,8 +57,8 @@ class NamedList(gobject.GObject):
                 created on the fly by calling the create() function
                 Passive lists simply return None if an item does not exist.
         '''
-
-        gobject.GObject.__init__(self)
+        shared_name = kwargs.get('shared_name', 'namedlist_%s' % base_name)
+        SharedGObject.__init__(self, shared_name)
 
         self._list = {}
         self._last_item = None
@@ -150,3 +152,7 @@ class NamedList(gobject.GObject):
     def get_last(self):
         '''Return last item added to the list.'''
         return self._last_item
+
+    def get_base_name(self):
+        return self._base_name
+

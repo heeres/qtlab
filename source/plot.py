@@ -27,6 +27,7 @@ import qt
 from data import Data
 from lib import namedlist
 from lib.misc import get_dict_keys
+from lib.network.object_sharer import SharedGObject, cache_result
 
 def _convert_arrays(args):
     args = list(args)
@@ -45,7 +46,7 @@ class _PlotList(namedlist.NamedList):
             self[name].clear()
         namedlist.NamedList.remove(self, name)
 
-class Plot(gobject.GObject):
+class Plot(SharedGObject):
     '''
     Base class / interface for plot implementations.
 
@@ -76,8 +77,6 @@ class Plot(gobject.GObject):
             be in binary format.
         '''
 
-        gobject.GObject.__init__(self)
-
         maxpoints = kwargs.get('maxpoints', 10000)
         maxtraces = kwargs.get('maxtraces', 5)
         mintime = kwargs.get('mintime', 1)
@@ -86,6 +85,7 @@ class Plot(gobject.GObject):
         supportbin = kwargs.get('supportbin', False)
         name = kwargs.get('name', '')
         self._name = Plot._plot_list.new_item_name(self, name)
+        SharedGObject.__init__(self, 'plot_%s' % self._name)
 
         self._config = qt.config
         self._data = []
@@ -373,6 +373,10 @@ class Plot2D(Plot):
     def __init__(self, *args, **kwargs):
         Plot.__init__(self, *args, **kwargs)
 
+    @cache_result
+    def get_ndimensions(self):
+        return 2
+
     def add_data(self, data, coorddim=None, valdim=None, **kwargs):
         '''
         Add Data object to 2D plot.
@@ -514,6 +518,10 @@ class Plot3D(Plot):
         if 'mintime' not in kwargs:
             kwargs['mintime'] = 2
         Plot.__init__(self, *args, **kwargs)
+
+    @cache_result
+    def get_ndimensions(self):
+        return 3
 
     def add_data(self, data, coorddims=None, valdim=None, **kwargs):
         '''

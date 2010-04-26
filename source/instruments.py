@@ -25,6 +25,7 @@ import sys
 import instrument
 from lib.config import get_config
 from insproxy import Proxy
+from lib.network.object_sharer import SharedGObject
 
 from IPython.ultraTB import AutoFormattedTB
 TB = AutoFormattedTB()
@@ -89,7 +90,7 @@ def _get_driver_module(name, do_reload=False):
         return sys.modules[name]
     return None
 
-class Instruments(gobject.GObject):
+class Instruments(SharedGObject):
 
     __gsignals__ = {
         'instrument-added': (gobject.SIGNAL_RUN_FIRST,
@@ -106,8 +107,10 @@ class Instruments(gobject.GObject):
                     ([gobject.TYPE_PYOBJECT]))
     }
 
+    __id = 1
     def __init__(self):
-        gobject.GObject.__init__(self)
+        SharedGObject.__init__(self, 'instruments%d' % Instruments.__id)
+        Instruments.__id += 1
 
         self._instruments = {}
         self._instruments_info = {}
@@ -389,7 +392,7 @@ class Instruments(gobject.GObject):
             None
         '''
         newins = self.reload(sender)
-        self.emit('instrument-changed', newins, {})
+        self.emit('instrument-changed', newins.get_name(), {})
 
     def _instrument_changed_cb(self, sender, changes):
         '''
@@ -403,7 +406,7 @@ class Instruments(gobject.GObject):
             None
         '''
 
-        self.emit('instrument-changed', sender, changes)
+        self.emit('instrument-changed', sender.get_name(), changes)
 
 _config = get_config()
 _insdir = _set_insdir()

@@ -1,4 +1,4 @@
 #!/bin/bash
 
 basedir=`dirname $0`
-ipython -gthread $basedir/source/qtlab_client_shell.py - $1 $2 $3 $4 $5 $6 $7 $8 $9
+ipython -gthread $basedir/source/qtlab_shell.py - $1 $2 $3 $4 $5 $6 $7 $8 $9

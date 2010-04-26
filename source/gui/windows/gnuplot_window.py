@@ -17,8 +17,8 @@
 
 import gtk
 import gobject
-import qt
-from plot_engines import qtgnuplot
+import qtclient as qt
+#from plot_engines import qtgnuplot
 
 from gettext import gettext as _L
 
@@ -136,8 +136,7 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._styles_dropdown = dropdowns.StringListDropdown([])
         self._styles_dropdown.connect('changed', self._style_changed_cb)
 
-        list = qtgnuplot.Plot3D.get_palettes()
-        self._palette_dropdown = dropdowns.StringListDropdown(list)
+        self._palette_dropdown = dropdowns.StringListDropdown([])
         self._palette_dropdown.connect('changed', self._palette_changed_cb)
 
         self._gamma_hid = None
@@ -149,9 +148,10 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._gamma_spin.connect('changed', self._gamma_changed_cb)
 
         self._save_as_frame = gtk.Frame(_L('Save as'))
-        list = qtgnuplot.Plot3D.get_save_as_types()
-        self._filename_entry = gtk.Entry()
+        list = ['']
         self._save_as_dropdown = dropdowns.StringListDropdown(list)
+
+        self._filename_entry = gtk.Entry()
         self._save_button = gtk.Button(_L('Save'))
         self._save_button.connect('clicked', self._save_clicked_cb)
         self._save_gp_button = gtk.Button(_L('Save .gp file'))
@@ -210,15 +210,29 @@ class GnuplotWindow(qtwindow.QTWindow):
 
     def _plot_changed_cb(self, widget):
         plot = self._plot_dropdown.get_item()
-        if isinstance(plot, qtgnuplot.Plot2D):
+
+        ndim = plot.get_ndimensions()
+        if ndim == 2:
             zactive = False
-        elif isinstance(plot, qtgnuplot.Plot3D):
+        elif ndim == 3:
             zactive = True
         else:
             self._current_plot = None
             return
 
         self._ignore_changes = True
+
+        try:
+            itemlist = plot.get_palettes()
+        except:
+            itemlist = []
+        self._palette_dropdown.set_items(itemlist)
+
+        try:
+            itemlist = plot.get_save_as_types()
+        except:
+            itemlist = []
+        self._save_as_dropdown.set_items(itemlist)
 
         self._current_plot = plot
         self._styles_dropdown.set_items(plot.get_styles())
@@ -291,4 +305,6 @@ class GnuplotWindow(qtwindow.QTWindow):
             self._axis_z._min_range.set_text('')
             self._axis_z._max_range.set_text('')
             self._current_plot.set_zrange()
+
+Window = GnuplotWindow
 

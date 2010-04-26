@@ -13,5 +13,5 @@
 ::
 ::SET PATH=%CD%\3rd_party\Console2\;%PATH%
 
-start Console -w "QTLab" -r "/k c:\python26\python c:\python26\scripts\ipython.py -gthread -p sh source/qtlab_client_shell.py"
+start Console -w "QTLab" -r "/k c:\python26\python c:\python26\scripts\ipython.py -gthread -p sh source/qtlab_shell.py"
 exit

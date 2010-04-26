@@ -22,8 +22,7 @@ import types
 import logging
 from gettext import gettext as _L
 
-import qt
-from instrument import Instrument
+import qtclient as qt
 from lib.gui.qtwindow import QTWindow
 from lib.gui.dropdowns import AllParametersDropdown
 import lib.gui as gui
@@ -75,7 +74,7 @@ class QTSweepVarSettings(gobject.GObject):
         self._vbox.set_border_width(4)
 
         self._variable_dropdown = AllParametersDropdown(
-                                    flags=Instrument.FLAG_SET,
+                                    flags=qt.constants.FLAG_SET,
                                     types=(types.IntType, types.FloatType),
                                     tags=['sweep'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
@@ -135,7 +134,7 @@ class QTSweepVarSettings(gobject.GObject):
             if ins is None:
                 return
 
-            opt = ins.get_parameter_options(varname)
+            opt = ins.get_shared_parameter_options(varname)
             if 'minval' in opt and 'maxval' in opt:
                 logging.debug('Setting range %s - %s', opt['minval'], opt['maxval'])
                 self._start_val.set_range(opt['minval'], opt['maxval'])
@@ -196,7 +195,7 @@ class QTMeasureVarSettings(gobject.GObject):
         self._vbox.set_border_width(4)
 
         self._variable_dropdown = AllParametersDropdown(
-                                    flags=Instrument.FLAG_GET,
+                                    flags=qt.constants.FLAG_GET,
                                     types=(types.IntType, types.FloatType),
                                     tags=['measure'])
         self._variable_dropdown.connect('changed', self._parameter_changed_cb)
@@ -225,7 +224,7 @@ class QTMeasureVarSettings(gobject.GObject):
             if ins is None:
                 return
 
-            opt = ins.get_parameter_options(varname)
+            opt = ins.get_shared_parameter_options(varname)
             if 'units' in opt:
                 self._units.set_text(opt['units'])
 
@@ -441,4 +440,6 @@ class MeasurementWindow(QTWindow):
 
     def _hold_toggled_cb(self, sender):
         self._hold = sender.get_active()
+
+Window = MeasurementWindow
 

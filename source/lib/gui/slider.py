@@ -31,12 +31,11 @@ class SliderWindow(qtwindow.QTWindow):
 
     def __init__(self, ins, param, delay=50):
         if type(ins) is types.StringType:
-            ins = qt.instruments[ins]
+            ins = qt.get_instrument_proxy(ins)
         self._instrument = ins
-
         self._parameter = param
-
-        if ins is not None and param in ins.get_parameters():
+        self._parameter_options = self._instrument.get_shared_parameter_options(param)
+        if ins is not None and param in ins.get_parameter_names():
             name = '%s.%s' % (ins.get_name(), param)
         else:
             name = 'Paramter undefined'
@@ -49,22 +48,22 @@ class SliderWindow(qtwindow.QTWindow):
         self._value_to_set = None
         self._set_hid = None
 
-        if self._instrument.get_parameter_options(param).has_key('minval'):
-            self._insmin = self._instrument.get_parameter_options(param)['minval']
+        if self._parameter_options.has_key('minval'):
+            self._insmin = self._parameter_options['minval']
             self._min = self._insmin
         else:
             logging.warning('Be careful! Parameter has no \
                     minimum defined!')
-            self._insmin = -1e100
+            self._insmin = -1e20
             self._min = self._instrument.get(param)
 
-        if self._instrument.get_parameter_options(param).has_key('maxval'):
-            self._insmax = self._instrument.get_parameter_options(param)['maxval']
+        if self._parameter_options.has_key('maxval'):
+            self._insmax = self._parameter_options['maxval']
             self._max = self._insmax
         else:
             logging.warning('Be careful! Parameter has no \
                     maximum defined!')
-            self._insmax = 1e100
+            self._insmax = 1e20
             self._max = self._instrument.get(param)
 
         self._range = self._max - self._min

@@ -3,7 +3,8 @@ import select
 
 class TCPClient():
 
-    def __init__(self, host, port):
+    def __init__(self, host, port, packet_len=False):
+        self._packet_len = packet_len
         self._socket = None
         self._connect(host, port)
 
@@ -20,5 +21,12 @@ class TCPClient():
         lists = select.select(rlist, elist, elist, timeout)
         if len(lists[0]) == 0:
             return None
-        data = self._socket.recv(maxsize)
+
+        if self._packet_len:
+            data = self._socket.recv(2)
+            datalen = ord(data[0]) * 256 + ord(data[1])
+            data = self._socket.recv(datalen)
+        else:
+            data = self._socket.recv(maxsize)
+
         return data
