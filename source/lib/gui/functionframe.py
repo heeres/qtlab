@@ -93,8 +93,6 @@ class FunctionFrame(gtk.Frame):
         self._doc_button = gtk.Button('Doc')
         self._doc_button.set_sensitive(False)
         self._doc_button.connect('clicked', self._doc_clicked_cb)
-        self._tips = gtk.Tooltips()
-        self._tips.enable()
 
         self._arg_table = ArgumentTable()
 
@@ -124,7 +122,7 @@ class FunctionFrame(gtk.Frame):
                 f = self._get_function(name)
                 if hasattr(f, '__doc__'):
                     self._doc_button.set_sensitive(True)
-                    self._tips.set_tip(self._doc_button, f.__doc__)
+                    self._doc_button.set_tooltip_text(f.__doc__)
                 else:
                     self._doc_button.set_sensitive(False)
 
