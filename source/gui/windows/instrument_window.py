@@ -33,11 +33,8 @@ class QTInstrumentFrame(gtk.VBox):
     def __init__(self, ins, show_range, show_rate, **kwargs):
         gtk.VBox.__init__(self, **kwargs)
 
-        self._tips = gtk.Tooltips()
-        self._tips.enable()
-
         self._label = gtk.Label()
-        self._tips.set_tip(self._label, _L('Click to expand / collapse info'))
+        self._label.set_tooltip_text(_L('Click to expand / collapse info'))
         self._label.set_alignment(0, 0)
         self._eventbox = gtk.EventBox()
         self._eventbox.add(self._label)
@@ -90,7 +87,7 @@ class QTInstrumentFrame(gtk.VBox):
 
         if 'doc' in popts:
             plabel = gtk.Label(param + ' [?]')
-            self._tips.set_tip(plabel, popts['doc'])
+            plabel.set_tooltip_text(popts['doc'])
         else:
             plabel = gtk.Label(param)
 
