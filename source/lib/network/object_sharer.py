@@ -45,6 +45,7 @@ class ObjectSharer():
         self._last_hid = 0
         self._last_call_id = 0
         self._return_cbs = {}
+        self._return_vals = {}
 
         # Store callback info indexed on hid and on signam__objname
         self._callbacks_hid = {}
@@ -240,6 +241,13 @@ class ObjectSharer():
 
         return True
 
+    def _call_cb(self, callid, val):
+        if callid in self._return_vals:
+            logging.warning('Call %d timed out', callid)
+            del self._return_vals[callid]
+        else:
+            self._return_vals[callid] = val
+
     def call(self, conn, objname, funcname, *args, **kwargs):
         '''
         Call a function through connection 'conn'
@@ -252,6 +260,8 @@ class ObjectSharer():
             cb = kwargs.pop('callback', None)
             if cb is not None:
                 self._return_cbs[callid] = cb
+            else:
+                self._return_cbs[callid] = lambda val: self._call_cb(callid, val)
 
             info = ('call', callid)
         else:
@@ -263,7 +273,6 @@ class ObjectSharer():
         callinfo = (objname, funcname, args, kwargs)
         cmd = self._pickle_packet(info, callinfo)
         start_time = time.time()
-        conn.setblocking(1)
         self.send_packet(conn, cmd)
 
         ret = None
@@ -271,40 +280,25 @@ class ObjectSharer():
         if cb is None and not is_signal:
             # Wait for return
             while time.time() - start_time < self.TIMEOUT:
+                if callid in self._return_vals:
+                    ret = self._return_vals[callid]
+                    del self._return_vals[callid]
+                    if isinstance(ret, Exception):
+                        raise Exception('Remote error: %s' % str(ret))
+                    return ret
 
-                # Seems we can be in non-blocking mode anyway
-                try:
+                import select
+                lists = select.select([conn], [], [])
+                if len(lists[0]) > 0:
                     data = self.recv_packet(conn)
-                except Exception, e:
-                    time.sleep(0.002)
-                    continue
-
-                try:
-                    info, tempret = self._unpickle_packet(data)
-                except Exception, e:
-                    logging.warning('Unable to decode data: %r', data)
-                    continue
-
-                logging.debug('Received packet (len=%d): %r, %r', len(data), info, data)
-                if info[0] == 'return' and info[1] == callid:
-                    ret = tempret
-                    return_ok = True
-                    break
-                else:
-                    logging.debug('Got extra packet (%r), handling', info)
                     self.handle(conn, data)
+                else:
+                    time.sleep(0.002)
 
-            if not return_ok:
-                logging.warning('Timeout while waiting for return of call %d', callid)
-            else:
-                logging.debug('Return for call %d: %r', callid, ret)
+            # Mark as timed-out
+            self._return_vals[callid] = None
 
-        conn.setblocking(0)
-
-        if isinstance(ret, Exception):
-            raise Exception('Remote error: %s' % str(ret))
-        else:
-            return ret
+        return None
 
     def connect(self, objname, signame, callback, *args):
         '''
