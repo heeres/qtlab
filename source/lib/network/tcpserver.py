@@ -98,12 +98,14 @@ class GlibTCPHandler():
         self.client_address = client_address
         self.server = server
 
+        self.socket.setblocking(0)
         self._in_hid = None
         self._hup_hid = gobject.io_add_watch(self.socket, \
-            gobject.IO_ERR | gobject.IO_HUP, self._handle_hup)
+        # There seems to be an issue on Windows with the following...
+        # self._hup_hid = gobject.io_add_watch(self.socket, \
+        #    gobject.IO_ERR | gobject.IO_HUP, self._handle_hup)
 
         self.enable_callbacks()
-        self.socket.setblocking(0)
 
     def enable_callbacks(self):
         if self._in_hid is not None:
@@ -152,13 +154,14 @@ class GlibTCPHandler():
 
         return True
 
-    def _handle_hup(self):
+    def _handle_hup(self, *args):
         if self._in_hid is not None:
             gobject.source_remove(self._in_hid)
             self._in_hid = None
         if self._hup_hid is not None:
             gobject.source_remove(self._hup_hid)
             self._hup_hid = None
+        return False
 
     def handle(self, data):
         '''Override this function to handle actual data.'''
