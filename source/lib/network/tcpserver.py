@@ -100,7 +100,7 @@ class GlibTCPHandler():
 
         self.socket.setblocking(0)
         self._in_hid = None
-        self._hup_hid = gobject.io_add_watch(self.socket, \
+        self._hup_hid = None
         # There seems to be an issue on Windows with the following...
         # self._hup_hid = gobject.io_add_watch(self.socket, \
         #    gobject.IO_ERR | gobject.IO_HUP, self._handle_hup)
