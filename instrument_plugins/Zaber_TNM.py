@@ -25,6 +25,7 @@ import pyvisa.vpp43 as vpp43
 import qt
 import logging
 import numpy
+import time
 
 class Zaber_TNM(Instrument):
     '''
@@ -142,7 +143,7 @@ class Zaber_TNM(Instrument):
                 return reply
 
             i += 1
-            qt.msleep(0.05)
+            time.sleep(0.05)
 
         return None
 
@@ -163,7 +164,7 @@ class Zaber_TNM(Instrument):
             tosend += "%c" % ch
             
         self._visa.write(tosend)
-        qt.msleep(0.01)
+        time.sleep(0.01)
         if get_reply:
             return self._read_reply()
 
