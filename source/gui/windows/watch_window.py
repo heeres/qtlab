@@ -26,11 +26,26 @@ from gettext import gettext as _L
 import lib.gui as gui
 from lib.gui.qttable import QTTable
 from lib.gui import dropdowns, qtwindow
-from lib.misc import register_exit
+from lib import temp
 
 from lib.calltimer import GObjectThread, ThreadVariable
 
 import numpy as np
+
+def gptime():
+    s = time.strftime('%Y-%m-%d %H:%M:%S')
+    return s
+
+_start = None
+def timesec():
+    global _start
+    if _start is None:
+        _start = time.time()
+    return time.time() - _start
+
+def save_gpdata(f, ar):
+    for row in ar:
+        f.write('%s %e\n' % (row[0], row[1]))
 
 class WatchWindow(qtwindow.QTWindow):
 
@@ -54,7 +69,7 @@ class WatchWindow(qtwindow.QTWindow):
 
         label = gtk.Label(_L('Interval'))
         self._interval = gtk.SpinButton(climb_rate=1, digits=0)
-        self._interval.set_range(10, 100000)
+        self._interval.set_range(0, 100000)
         self._interval.set_value(500)
         interval = gui.pack_hbox([label, self._interval, gtk.Label('ms')],
                 False, False)
@@ -137,6 +152,9 @@ class WatchWindow(qtwindow.QTWindow):
         self._npoints.set_sensitive(active)
 
     def _receive_reply(self, ins_param, result):
+        if ins_param not in self._watch:
+            return
+
         # Update delay if we're querying too fast
         info = self._watch[ins_param]
         delta = time.time() - info['req_t']
@@ -160,6 +178,12 @@ class WatchWindow(qtwindow.QTWindow):
 
         return True
 
+    def _ins_changed_cb(self, sender, changes, param, ins_param):
+        if ins_param not in self._watch or param not in changes:
+            return
+        info = self._watch[ins_param]
+        self._update_cb(None, ins_param, changes[param])
+
     def _add_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
         param = self._param_combo.get_parameter()
@@ -182,13 +206,15 @@ class WatchWindow(qtwindow.QTWindow):
         }
 
         self._watch[ins_param] = info
-        hid = gobject.timeout_add(int(delay), self._query_ins, ins_param)
+        if delay != 0:
+            hid = gobject.timeout_add(int(delay), self._query_ins, ins_param)
+        else:
+            hid = ins.connect('changed', lambda sender, changes: \
+                    self._ins_changed_cb(sender, changes, param, ins_param))
+
         self._watch[ins_param]['hid'] = hid
 
     def _update_cb(self, sender, ins_param, val):
-        if not (self.flags() & gtk.VISIBLE):
-            return
-
         if ins_param not in self._watch:
             return
 
@@ -199,17 +225,25 @@ class WatchWindow(qtwindow.QTWindow):
         self._tree_model.set(info['iter'], 2, strval)
 
         if info.get('graph', False):
+            plotname = 'watch_%s.%s' % (ins.get_name(), param)
             if 'data' not in info or info['data'] is None:
-                info['data'] = val * np.ones(info['points'])
-                info['qtdata'] = qt.Data(info['data'], tempfile=True)
-                name = 'watch_%s.%s' % (ins.get_name(), param)
-                info['plot'] = qt.Plot2D(name=name)
-                binary = info['qtdata']._temp_binary
-                info['plot'].add(info['qtdata'], binary=binary)
+                d = np.zeros(info['points'], dtype=[('a', np.float), ('b', np.float)])
+                d[0] = (timesec(), val)
+                info['data'] = d
+                info['tempfile'] = temp.File(mode='w')
+                cmd = 'qt.plot_file("%s", name="%s", clear=True)' % (info['tempfile'].name, plotname)
+                qt.cmd(cmd, callback=lambda *x: True)
+            else:
+                info['tempfile'].reopen()
 
-            info['data'] = np.concatenate((info['data'][1:], (val,)))
-            info['qtdata'].update_data(info['data'])
-            info['plot'].update()
+            t = timesec()
+            info['data'][0:-1] = info['data'][1:]
+            info['data'][-1] = np.array((t, val))
+            save_gpdata(info['tempfile'].get_file(), info['data'])
+#            np.savetxt(info['tempfile'].get_file(), info['data'])
+            info['tempfile'].close()
+            cmd = 'qt.plots["%s"].update()' % (plotname, )
+            qt.cmd(cmd)
 
     def _set_delay(self, ins_param, delay):
         info = self._watch[ins_param]
@@ -227,7 +261,10 @@ class WatchWindow(qtwindow.QTWindow):
             model.remove(iter)
 
             info = self._watch[ins_param]
-            gobject.source_remove(info['hid'])
+            if info['delay'] != 0:
+                gobject.source_remove(info['hid'])
+            else:
+                info['ins'].disconnect(info['hid'])
             del self._watch[ins_param]
 
 Window = WatchWindow
