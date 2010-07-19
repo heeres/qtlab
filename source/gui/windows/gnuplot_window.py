@@ -76,8 +76,8 @@ class AxisSettings(gtk.Frame):
 
         name = '%srange' % self._axis
         if name in info and len(info[name]) == 2:
-            self._min_range.set_text(info[name][0])
-            self._max_range.set_text(info[name][1])
+            self._min_range.set_text(str(info[name][0]))
+            self._max_range.set_text(str(info[name][1]))
         else:
             self._min_range.set_text('')
             self._max_range.set_text('')
@@ -136,6 +136,12 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._styles_dropdown = dropdowns.StringListDropdown([])
         self._styles_dropdown.connect('changed', self._style_changed_cb)
 
+        self._legend_check = gtk.CheckButton('Legend')
+        self._legend_check.set_active(False)
+        self._legend_check.connect('toggled', self._legend_toggled_cb)
+        self._legendpos_dropdown = dropdowns.StringListDropdown([])
+        self._legendpos_dropdown.connect('changed', self._legendpos_changed_cb)
+
         self._palette_dropdown = dropdowns.StringListDropdown([])
         self._palette_dropdown.connect('changed', self._palette_changed_cb)
 
@@ -185,6 +191,9 @@ class GnuplotWindow(qtwindow.QTWindow):
                 gtk.Label(_L('Style')),
                 self._styles_dropdown], True, True),
             gui.pack_hbox([
+                self._legend_check,
+                self._legendpos_dropdown], True, True),
+            gui.pack_hbox([
                 gtk.Label(_L('Palette')),
                 self._palette_dropdown], True, True),
             gui.pack_hbox([
@@ -210,6 +219,8 @@ class GnuplotWindow(qtwindow.QTWindow):
 
     def _plot_changed_cb(self, widget):
         plot = self._plot_dropdown.get_item()
+        if plot is None:
+            logging.info('Unable to find plot')
 
         ndim = plot.get_ndimensions()
         if ndim == 2:
@@ -234,11 +245,26 @@ class GnuplotWindow(qtwindow.QTWindow):
             itemlist = []
         self._save_as_dropdown.set_items(itemlist)
 
+        try:
+            itemlist = plot.get_legend_positions()
+        except:
+            itemlist = []
+        self._legendpos_dropdown.set_items(itemlist)
+
         self._current_plot = plot
         self._styles_dropdown.set_items(plot.get_styles())
         info = plot.get_properties()
         if 'style' in info:
             self._styles_dropdown.set_item(info['style'])
+
+        legend = info.get('legend', True)
+        self._legend_check.set_active(legend)
+        pos = info.get('legendpos', 'top right')
+        try:
+            self._legendpos_dropdown.set_item(pos)
+        except:
+            pass
+
         if 'palette' in info:
             if 'name' in info['palette']:
                 self._palette_dropdown.set_item(info['palette']['name'])
@@ -263,6 +289,19 @@ class GnuplotWindow(qtwindow.QTWindow):
         stylename = self._styles_dropdown.get_item()
         self._current_plot.set_style(stylename)
         self._plot_state['style'] = stylename
+
+    def _legendpos_changed_cb(self, widget):
+        if self._ignore_changes or self._current_plot is None:
+            return
+        pos = self._legendpos_dropdown.get_item()
+        self._current_plot.set_legend_position(pos)
+        self._plot_state['legendpos'] = pos
+
+    def _legend_toggled_cb(self, widget):
+        if self._ignore_changes or self._current_plot is None:
+            return
+        legend = self._legend_check.get_active()
+        self._current_plot.set_legend(legend, update=True)
 
     def _palette_changed_cb(self, widget):
         if self._ignore_changes or self._current_plot is None:
