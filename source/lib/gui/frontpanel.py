@@ -81,7 +81,7 @@ class StringEntry(gtk.Entry):
     def do_set(self):
         self._dirty = False
         val = self.get_text()
-        self._instrument.set(self._parameter, val)
+        self._instrument.set(self._parameter, val, callback=lambda *x: True)
 
     def _parameter_changed_cb(self, sender, params):
         if self._parameter in params and not self._dirty:
@@ -134,7 +134,7 @@ class NumberEntry(gtk.SpinButton):
 
     def do_set(self):
         val = self.get_value()
-        self._instrument.set(self._parameter, val)
+        self._instrument.set(self._parameter, val, callback=lambda *x: True)
 
     def _parameter_changed_cb(self, sender, params):
         if self._parameter in params and not self._dirty:
@@ -176,7 +176,7 @@ class ComboEntry(gtk.ComboBox):
         if val is None:
             return
 
-        if type(self._map) is types.DictType:
+        if type(self._map) is types.DictType and val in self._map:
             valstr = str(self._map[val])
         else:
             valstr = str(val)
@@ -254,6 +254,9 @@ class FrontPanel(qtwindow.QTWindow):
             entry = ComboEntry(self._instrument, param, opts)
         elif opts['type'] in (types.IntType, types.FloatType):
             entry = NumberEntry(self._instrument, param, opts)
+        elif opts['type'] is types.BooleanType:
+            opts['format_map'] = {False: 'False', True: 'True'}
+            entry = ComboEntry(self._instrument, param, opts)
         else:
             entry = StringEntry(self._instrument, param, opts)
 
