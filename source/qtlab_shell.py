@@ -29,7 +29,7 @@ def get_shell_files(path, ignore_list):
             continue
 
         if os.path.isdir(i):
-            subret = get_shell_files(path + '/' + i)
+            subret = get_shell_files(os.path.join(path, i))
             for j in subret:
                 insert_in_file_list(ret, j, ignore_list)
         else:
