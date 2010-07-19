@@ -65,6 +65,13 @@ class _QTGnuPlot():
         'svg',
     ]
 
+    _LEGEND_POSITIONS = [
+        'bottom left',
+        'bottom right',
+        'top left',
+        'top right',
+    ]
+
     _DATA_TYPES = {
         np.dtype('int8'): 'int8',
         np.dtype('int16'): 'int16',
@@ -111,6 +118,7 @@ class _QTGnuPlot():
         'grid': 'set grid\n',
         'datastyle': 'set style data %s\n',
         'legend': 'set key\n',
+        'legendpos': 'set key %s\n',
 
         'plottitle': 'set title "%s"\n',
     }
@@ -140,10 +148,10 @@ class _QTGnuPlot():
 
         return cmd
 
-    def set_property(self, name, val, update=False):
+    def set_property(self, name, val, update=False, **kwargs):
         '''Set a plot property value.'''
 
-        cmd = self.create_command(name, val)
+        cmd = self.create_command(name, val, **kwargs)
         if cmd is not None and cmd != '':
             self.cmd(cmd)
         return plot.Plot.set_property(self, name, val, update=update)
@@ -340,12 +348,22 @@ class _QTGnuPlot():
     def set_legend(self, on=True, update=True):
         self.set_property('legend', on, update=update)
 
+    @cache_result
+    def get_legend_positions(self):
+        pos = self._LEGEND_POSITIONS
+        pos.sort()
+        return pos
+
+    def set_legend_position(self, pos='top left', update=True):
+        self.set_property('legendpos', pos, update=update)
+
     def set_plottitle(self, text, update=True):
         self.set_property('plottitle', text)
 
     def set_datastyle(self, style):
         self.set_property('datastyle', style)
 
+    @cache_result
     def get_styles(self):
         styles = self._STYLES.keys()
         styles.sort()
@@ -514,6 +532,14 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             items = self._data
 
         for datadict in items:
+            if 'file' in datadict:
+                s += '"%s"' % datadict['file']
+                if not first:
+                    s += ', '
+                else:
+                    first = False
+                    continue
+
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
@@ -658,6 +684,8 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         'redwhiteblue': (-34, 13, 34),
         'bluewhitered': (34, 13, -34),
         'jet': (30, -13, -23),
+        'hsv': 'set palette model HSV functions (gray**gamma),1,1',
+        'byr': 'set palette model RGB defined ( 0 "blue", 0.5 "yellow", 1 "red")',
     }
 
     # Palette functions in gnuplot, so we can use them with custom gamma
@@ -732,6 +760,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         plot.Plot3D.add_data(self, data, *args, **kwargs)
 
+    def add_file(self, filename):
+        self._data.append({'file': filename})
+
     def create_command(self, name, val):
         if name == 'style':
             ret = '\n'.join(self._STYLES[val]['style']) + '\n'
@@ -760,7 +791,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         self.set_property('style', style, update=update)
 
     @cache_result
-    def get_palettes():
+    def get_palettes(self):
         '''Return available palettes.'''
         pals = Plot3D._PALETTE_MAP.keys()
         pals.sort()
@@ -800,6 +831,14 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             items = self._data
 
         for datadict in items:
+            if 'file' in datadict:
+                s += '"%s"' % datadict['file']
+                if not first:
+                    s += ', '
+                else:
+                    first = False
+                    continue
+
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
@@ -872,18 +911,20 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         name = kwargs.get('name', 'default')
         gamma = kwargs.get('gamma', 1.0)
 
-        map = self._PALETTE_MAP[name]
+        data = self._PALETTE_MAP[name]
         cmd = ''
-        if gamma == 1.0:
-            cmd += 'set palette rgbformulae %d,%d,%d\n' % \
-                (map[0], map[1], map[2])
+        if type(data) is types.TupleType and gamma == 1.0:
+            cmd += 'set palette model RGB rgbformulae %d,%d,%d\n' % \
+                (data[0], data[1], data[2])
         else:
             cmd += 'gamma = %f\n' % float(1/gamma)
-
-            cmd += 'rcol(gray) = %s\n' % (self._palette_func(map[0]))
-            cmd += 'gcol(gray) = %s\n' % (self._palette_func(map[1]))
-            cmd += 'bcol(gray) = %s\n' % (self._palette_func(map[2]))
-            cmd += 'set palette model RGB functions rcol(gray), gcol(gray), bcol(gray)\n'
+            if type(data) is types.TupleType:
+                cmd += 'rcol(gray) = %s\n' % (self._palette_func(data[0]))
+                cmd += 'gcol(gray) = %s\n' % (self._palette_func(data[1]))
+                cmd += 'bcol(gray) = %s\n' % (self._palette_func(data[2]))
+                cmd += 'set palette model RGB functions rcol(gray), gcol(gray), bcol(gray)\n'
+            else:
+                cmd += data
 
         return cmd
 
@@ -895,3 +936,14 @@ def get_gnuplot(name=None):
 
 def get_gnuplot_list():
     return _QTGnuPlot.get_named_list()
+
+def plot_file(filename, name='plot', update=True, clear=False):
+    p = plot.Plot.get(name)
+    if p is None:
+        p = Plot2D(name=name)
+    elif clear:
+        p.clear()
+    p.add_file(filename)
+    if update:
+        p.update()
+
