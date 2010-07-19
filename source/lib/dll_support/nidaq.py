@@ -18,6 +18,7 @@
 import ctypes
 import types
 import numpy
+import logging
 
 nidaq = ctypes.windll.nicaiu
 
@@ -28,10 +29,25 @@ float64 = ctypes.c_double
 TaskHandle = uInt32
 
 DAQmx_Val_Cfg_Default = int32(-1)
+
+DAQmx_Val_RSE = 10083   #RSE
+DAQmx_Val_NRSE = 10078  #NRSE
+DAQmx_Val_Diff = 10106  #Differential
+DAQmx_Val_PseudoDiff = 12529    #Pseudodifferential
+
+_config_map = {
+    'DEFAULT': DAQmx_Val_Cfg_Default,
+    'RSE': DAQmx_Val_RSE,
+    'NRSE': DAQmx_Val_NRSE,
+    'DIFF': DAQmx_Val_Diff,
+    'PSEUDODIFF': DAQmx_Val_PseudoDiff,
+}
+
 DAQmx_Val_Volts = 10348
 DAQmx_Val_Rising = 10280
 DAQmx_Val_FiniteSamps = 10178
 DAQmx_Val_GroupByChannel = 0
+DAQmx_Val_GroupByScanNumber = 1
 
 def CHK(err):
     '''Error checking routine'''
@@ -88,7 +104,7 @@ def get_physical_output_channels(dev):
     return buf_to_list(buf)
 
 def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
-            timeout=10.0):
+            timeout=10.0, config=DAQmx_Val_Cfg_Default):
     '''
     Read up to max_samples from a channel. Seems to have trouble reading
     1 sample!
@@ -100,11 +116,20 @@ def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
         minv (float): the minimum voltage
         maxv (float): the maximum voltage
         timeout (float): the time in seconds to wait for completion
-
+        config (string or int): the configuration of the channel
+        
     Output:
         A numpy.array with the data on success, None on error
     '''
 
+    if type(config) is types.StringType:
+        if config in _config_map:
+            config = _config_map[config]
+        else:
+            return None
+    if type(config) is not types.IntType:
+        return None
+    
     if samples == 1:
         retsamples = 1
         samples = 2
@@ -114,26 +139,33 @@ def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
     data = numpy.zeros(samples, dtype=numpy.float64)
 
     taskHandle = TaskHandle(0)
-    CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
-    CHK(nidaq.DAQmxCreateAIVoltageChan(taskHandle, devchan, "",
-                                       DAQmx_Val_Cfg_Default,
-                                       float64(minv), float64(maxv),
-                                       DAQmx_Val_Volts, None))
-
-    CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
-                                    DAQmx_Val_Rising, DAQmx_Val_FiniteSamps,
-                                    uInt64(samples)));
-
-    CHK(nidaq.DAQmxStartTask(taskHandle))
-
     read = int32()
-    CHK(nidaq.DAQmxReadAnalogF64(taskHandle, samples, float64(timeout),
-                                 DAQmx_Val_GroupByChannel, data.ctypes.data,
-                                 samples, ctypes.byref(read), None))
+    try:
+        CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
+        CHK(nidaq.DAQmxCreateAIVoltageChan(taskHandle, devchan, "",
+            config,
+            float64(minv), float64(maxv),
+            DAQmx_Val_Volts, None))
 
-    if taskHandle.value != 0:
-        nidaq.DAQmxStopTask(taskHandle)
-        nidaq.DAQmxClearTask(taskHandle)
+        if retsamples > 1:
+            CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
+                DAQmx_Val_Rising, DAQmx_Val_FiniteSamps,
+                uInt64(samples)));
+            CHK(nidaq.DAQmxStartTask(taskHandle))
+            CHK(nidaq.DAQmxReadAnalogF64(taskHandle, samples, float64(timeout),
+                DAQmx_Val_GroupByChannel, data.ctypes.data,
+                samples, ctypes.byref(read), None))
+        else:
+            CHK(nidaq.DAQmxReadAnalogScalarF64(taskHandle, float64(timeout),
+                data.ctypes.data, None))
+            read = int32(1)
+
+    except Exception, e:
+        logging.error('NI DAQ call failed: %s', str(e))
+    finally:
+        if taskHandle.value != 0:
+            nidaq.DAQmxStopTask(taskHandle)
+            nidaq.DAQmxClearTask(taskHandle)
 
     if read > 0:
         if retsamples == 1:
@@ -169,21 +201,29 @@ def write(devchan, data, freq=10000.0, minv=-10.0, maxv=10.0,
     samples = len(data)
 
     taskHandle = TaskHandle(0)
-    CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
-    CHK(nidaq.DAQmxCreateAOVoltageChan(taskHandle, devchan, "",
-        float64(minv), float64(maxv), DAQmx_Val_Volts, None))
-    CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
-        DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, uInt64(samples)))
-
-    CHK(nidaq.DAQmxStartTask(taskHandle))
     written = int32()
-    CHK(nidaq.DAQmxWriteAnalogF64(taskHandle, samples, 0, float64(timeout),
-        DAQmx_Val_GroupByChannel, data.ctypes.data,
-        ctypes.byref(written), None))
+    try:
+        CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
+        CHK(nidaq.DAQmxCreateAOVoltageChan(taskHandle, devchan, "",
+            float64(minv), float64(maxv), DAQmx_Val_Volts, None))
 
-    if taskHandle.value != 0:
-        nidaq.DAQmxStopTask(taskHandle)
-        nidaq.DAQmxClearTask(taskHandle)
+        if len(data) == 1:
+            CHK(nidaq.DAQmxWriteAnalogScalarF64(taskHandle, 1, float64(timeout),
+                float64(data[0]), None))
+            written = int32(1)
+        else:
+            CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
+                DAQmx_Val_Rising, DAQmx_Val_FiniteSamps, uInt64(samples)))
+            CHK(nidaq.DAQmxWriteAnalogF64(taskHandle, samples, 0, float64(timeout),
+                DAQmx_Val_GroupByChannel, data.ctypes.data,
+                ctypes.byref(written), None))
+            CHK(nidaq.DAQmxStartTask(taskHandle))
+    except Exception, e:
+        logging.error('NI DAQ call failed (correct channel configuration selected?): %s', str(e))
+    finally:
+        if taskHandle.value != 0:
+            nidaq.DAQmxStopTask(taskHandle)
+            nidaq.DAQmxClearTask(taskHandle)
 
     return written.value
 
