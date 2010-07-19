@@ -14,6 +14,7 @@ class constants():
 instruments = helper.find_object('instruments1')
 flow = helper.find_object('flow')
 plots = helper.find_object('namedlist_plot')
+interpreter = helper.find_object('python_server')
 frontpanels = {}
 sliders = {}
 
@@ -25,6 +26,10 @@ def get_instrument_proxy(name):
 
 def get_plot_proxy(name):
     return helper.find_object('plot_%s' % name)
+
+def cmd(cmd, callback=None):
+    '''Execute a python command in the server.'''
+    return interpreter.cmd(cmd, callback=callback)
 
 def format_parameter_value(opt, val):
     if val is None:
