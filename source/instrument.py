@@ -454,6 +454,8 @@ class Instrument(SharedGObject):
             for i in ('get_func', 'set_func'):
                 if i in options:
                     del options[i]
+            if 'type' in options and options['type'] is types.NoneType:
+                options['type'] = None
             return options
         else:
             return None
