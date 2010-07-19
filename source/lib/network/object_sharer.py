@@ -95,7 +95,6 @@ class ObjectSharer():
             return False
 
         self._objects[objname] = object
-
         if objname is not 'root':
             self._objects['root'].emit('object-added', objname)
 
@@ -471,7 +470,7 @@ class ObjectProxy():
 def cache_result(f):
     f._share_options = {'cache_result': True}
     return f
-    
+
 class RootObject(SharedObject):
 
     def __init__(self, name):
@@ -520,6 +519,16 @@ class RootObject(SharedObject):
 
     def hello_exception(self):
         1 / 0
+
+class PythonInterpreter(SharedObject):
+
+    def __init__(self, name, namespace={}):
+        SharedObject.__init__(self, name)
+        self._namespace = namespace
+
+    def cmd(self, cmd):
+        retval = eval(cmd, self._namespace, self._namespace)
+        return retval
 
 class _DummyHandler(tcpserver.GlibTCPHandler):
 
