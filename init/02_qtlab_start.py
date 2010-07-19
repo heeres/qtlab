@@ -5,10 +5,12 @@ from lib import temp
 from time import sleep
 
 #set_debug(True)
-from lib.network.object_sharer import start_glibtcp_server, SharedObject
+from lib.network.object_sharer import start_glibtcp_server, SharedObject, \
+        PythonInterpreter
 start_glibtcp_server()
 SharedObject.server.add_allowed_ip('130.161.*.*')
 SharedObject.server.add_allowed_ip('145.94.*.*')
+PythonInterpreter('python_server', globals())
 
 if False:
     import psyco
