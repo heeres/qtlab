@@ -55,9 +55,15 @@ class NI_DAQ(Instrument):
                 set_func=self.do_set_output,
                 channel=ch_out)
 
+        self.add_parameter('chan_config',
+            flags=Instrument.FLAG_SET|Instrument.FLAG_SOFTGET,
+            type=types.StringType,
+            option_list=('Default', 'RSE', 'NRSE', 'Diff', 'PseudoDiff'))
+
         self.add_function('reset')
 
         self.reset()
+        self.set_chan_config('RSE')
         self.get_all()
 
     def get_all(self):
@@ -76,11 +82,14 @@ class NI_DAQ(Instrument):
 
     def do_get_input(self, channel):
         devchan = '%s/%s' % (self._id, channel)
-        return nidaq.read(devchan)
+        return nidaq.read(devchan, config=self._chan_config)
 
     def do_set_output(self, val, channel):
         devchan = '%s/%s' % (self._id, channel)
         return nidaq.write(devchan, val)
+
+    def do_set_chan_config(self, val):
+        self._chan_config = val
 
 def detect_instruments():
     '''Refresh NI DAQ instrument list.'''
