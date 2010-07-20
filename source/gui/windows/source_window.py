@@ -53,7 +53,7 @@ class DirPane(gtk.VBox):
             False, False), False, False)
         self.entry.connect('activate', self._entry_activated_cb)
 
-        self.dir_browser = dirtree.DirectoryTree('/home/rwh/src/qtlab')
+        self.dir_browser = dirtree.DirectoryTree('.')
         self.dir_browser.set_size_request(200, -1)
 
         self.add(self.dir_browser)
@@ -169,7 +169,6 @@ class SourceWindow(QTWindow):
         # Directory and edit panes
         self._file_info = {}
         self._notebook = gtk.Notebook()
-        self.load_file('/home/rwh/src/qtlab/source/instrument.py')
 
         self._dir_pane = DirPane()
         self._dir_pane.dir_browser.connect('file-activated',
