@@ -25,7 +25,7 @@ mend = flow.measurement_end
 if config.get('plot_type', 'gnuplot') == 'matplotlib':
     from plot_engines.qtmatplotlib import Plot2D, Plot3D
 else:
-    from plot_engines.qtgnuplot import Plot2D, Plot3D
+    from plot_engines.qtgnuplot import Plot2D, Plot3D, plot_file
 
 plots = Plot.get_named_list()
 
