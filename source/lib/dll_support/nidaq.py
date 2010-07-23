@@ -19,6 +19,7 @@ import ctypes
 import types
 import numpy
 import logging
+import time
 
 nidaq = ctypes.windll.nicaiu
 
@@ -30,10 +31,10 @@ TaskHandle = uInt32
 
 DAQmx_Val_Cfg_Default = int32(-1)
 
-DAQmx_Val_RSE = 10083   #RSE
-DAQmx_Val_NRSE = 10078  #NRSE
-DAQmx_Val_Diff = 10106  #Differential
-DAQmx_Val_PseudoDiff = 12529    #Pseudodifferential
+DAQmx_Val_RSE               = 10083
+DAQmx_Val_NRSE              = 10078
+DAQmx_Val_Diff              = 10106
+DAQmx_Val_PseudoDiff        = 12529
 
 _config_map = {
     'DEFAULT': DAQmx_Val_Cfg_Default,
@@ -43,11 +44,15 @@ _config_map = {
     'PSEUDODIFF': DAQmx_Val_PseudoDiff,
 }
 
-DAQmx_Val_Volts = 10348
-DAQmx_Val_Rising = 10280
-DAQmx_Val_FiniteSamps = 10178
-DAQmx_Val_GroupByChannel = 0
+DAQmx_Val_Volts             = 10348
+DAQmx_Val_Rising            = 10280
+DAQmx_Val_FiniteSamps       = 10178
+DAQmx_Val_GroupByChannel    = 0
 DAQmx_Val_GroupByScanNumber = 1
+
+DAQmx_Val_CountUp           = 10128
+DAQmx_Val_CountDown         = 10124
+DAQmx_Val_ExtControlled     = 10326
 
 def CHK(err):
     '''Error checking routine'''
@@ -101,6 +106,14 @@ def get_physical_output_channels(dev):
     bufsize = 1024
     buf = ctypes.create_string_buffer('\000' * bufsize)
     nidaq.DAQmxGetDevAOPhysicalChans(dev, ctypes.byref(buf), bufsize)
+    return buf_to_list(buf)
+
+def get_physical_counter_channels(dev):
+    '''Return a list of physical counter channels on a device.'''
+
+    bufsize = 1024
+    buf = ctypes.create_string_buffer('\000' * bufsize)
+    nidaq.DAQmxGetDevCIPhysicalChans(dev, ctypes.byref(buf), bufsize)
     return buf_to_list(buf)
 
 def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
@@ -226,4 +239,51 @@ def write(devchan, data, freq=10000.0, minv=-10.0, maxv=10.0,
             nidaq.DAQmxClearTask(taskHandle)
 
     return written.value
+
+
+def read_counter(devchan="/Dev1/ctr0", samples=1, freq=1.0, timeout=1.0, src=""):
+    '''
+    Read counter 'devchan'.
+    Specify source pin with 'src'.
+    '''
+
+    taskHandle = TaskHandle(0)
+    try:
+        CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
+        initial_count = int32(0)
+        CHK(nidaq.DAQmxCreateCICountEdgesChan(taskHandle, devchan, "",
+                DAQmx_Val_Rising, initial_count, DAQmx_Val_CountUp))
+        if src is not None and src != "":
+            CHK(nidaq.DAQmxSetCICountEdgesTerm(taskHandle, devchan, src))
+
+        nread = int32()
+        data = numpy.zeros(samples, dtype=numpy.float64)
+        if samples > 1:
+            CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
+                DAQmx_Val_Rising, DAQmx_Val_FiniteSamps,
+                uInt64(samples)));
+            CHK(nidaq.DAQmxStartTask(taskHandle))
+            CHK(nidaq.DAQmxReadAnalogF64(taskHandle, int32(samples), float64(timeout),
+               DAQmx_Val_GroupByChannel, data.ctypes.data,
+               samples, ctypes.byref(read), None))
+        else:
+            CHK(nidaq.DAQmxStartTask(taskHandle))
+            time.sleep(1.0 / freq)
+            nread = int32(0)
+            CHK(nidaq.DAQmxReadCounterF64(taskHandle, int32(samples), float64(timeout),
+                data.ctypes.data, int32(samples), ctypes.byref(nread), None))
+            nread = int32(1)
+
+    except Exception, e:
+        logging.error('NI DAQ call failed: %s', str(e))
+
+    finally:
+        if taskHandle.value != 0:
+            nidaq.DAQmxStopTask(taskHandle)
+            nidaq.DAQmxClearTask(taskHandle)
+
+    if nread.value == 1:
+        return int(data[0])
+    else:
+        return data
 
