@@ -38,7 +38,10 @@ class Script():
         for line in f:
             line2 = line.strip(' \t')
             if len(line2) > 0 and line2[0] == '#':
-                self.__doc__ += line
+                self.__doc__ += line2
+            # End of header
+            elif len(line2.rstrip('\r\n')) != 0:
+                break
         f.close()
 
     def _set_return(self, retval):
