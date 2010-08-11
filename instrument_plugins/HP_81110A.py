@@ -20,11 +20,13 @@ from instrument import Instrument
 import visa
 import types
 import logging
+import time
 
 class HP_81110A(Instrument):
     '''
     This is the python driver for the HP 81110A
     pulse generator
+    Also works with the Agilent 81130A, the former HP 81130A.
 
     Usage:
     Initialize with
@@ -44,24 +46,26 @@ class HP_81110A(Instrument):
         Output:
             None
         '''
+
         Instrument.__init__(self, name, tags=['physical'])
 
         self._address = address
         self._visainstrument = visa.instrument(self._address)
+        self._channels = self._get_number_of_channels()
 
         self.add_parameter('delay', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, 2), minval=0.0, maxval=999, units='sec',channel_prefix='ch%d_')
+            channels=(1, self._channels), minval=0.0, maxval=999, units='sec',channel_prefix='ch%d_')
         self.add_parameter('width', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, 2), minval=-6.25e-9, maxval=999.5, units='sec',channel_prefix='ch%d_')
+            channels=(1, self._channels), minval=-6.25e-9, maxval=999.5, units='sec',channel_prefix='ch%d_')
         self.add_parameter('high', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, 2), minval=-9.90, maxval=10.0, units='Volts',channel_prefix='ch%d_')
+            channels=(1, self._channels), minval=-9.90, maxval=10.0, units='Volts',channel_prefix='ch%d_')
         self.add_parameter('low', type=types.FloatType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,
-            channels=(1, 2), minval=-10.0, maxval=9.90, units='Volts',channel_prefix='ch%d_')
-        self.add_parameter('status', type=types.StringType, channels=(1, 2),
+            channels=(1, self._channels), minval=-10.0, maxval=9.90, units='Volts',channel_prefix='ch%d_')
+        self.add_parameter('status', type=types.StringType, channels=(1, self._channels),
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET,channel_prefix='ch%d_')
         self.add_parameter('display', type=types.StringType,
             flags=Instrument.FLAG_GETSET | Instrument.FLAG_GET_AFTER_SET)
@@ -77,6 +81,7 @@ class HP_81110A(Instrument):
             self.get_all()
 
 
+
     def reset(self):
         '''
         Resets the instrument to default values
@@ -89,6 +94,9 @@ class HP_81110A(Instrument):
         '''
         logging.info(__name__ + ' : Resetting instrument')
         self._visainstrument.write('*RST')
+
+        """ Fix: The Agilent 81130A is kinda slow after a reset. """
+        time.sleep(2)
 
         self.get_all()
 
@@ -105,7 +113,7 @@ class HP_81110A(Instrument):
         '''
         logging.info(__name__ + ' : reading all settings from instrument')
 
-        for i in range(1,3):
+        for i in range(1,self._channels+1):
             self.get('ch%d_delay' % i)
             self.get('ch%d_width' % i)
             self.get('ch%d_low' % i)
@@ -318,3 +326,16 @@ class HP_81110A(Instrument):
         logging.debug(__name__ + ' : setting instrument to continuous mode')
         self._visainstrument.write(':ARM:SOUR IMM')
 
+    def _get_number_of_channels(self):
+        '''
+        asks the device for the options installed and derives the number of channels
+        Fixme: maybe there is a direct method to examine the number of channels.
+
+        Input:
+            None
+        Output:
+            Number of installed channels (int)
+
+        '''
+        opt = self._visainstrument.ask('*OPT?').split()
+        return int(len(opt)-opt.count(0))
