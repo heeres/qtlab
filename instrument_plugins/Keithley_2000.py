@@ -867,7 +867,7 @@ class Keithley_2100(Instrument):
         '''
         logging.debug('Set autozero to %s' % val)
         val = bool_to_str(val)
-        return self._visainstrument.write('SENS:ZERO:AUTO %s', val)
+        return self._visainstrument.write('SENS:ZERO:AUTO %s' % val)
 
     def do_set_averaging(self, val, mode=None):
         '''
