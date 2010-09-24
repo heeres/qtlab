@@ -94,8 +94,13 @@ class GnuplotPipe():
     _RE_LABEL = re.compile('.*label is "[\"]"')
 
     def __init__(self, termtitle='QTGnuplot', persist=False):
+        self._termtitle = termtitle
+        self._persist = persist
+        self._open_gnuplot()
+
+    def _open_gnuplot(self):
         args = ['gnuplot']
-        if persist:
+        if self._persist:
             args.append('-persist')
         self._popen = subprocess.Popen(args,
             stdin=subprocess.PIPE,
@@ -104,8 +109,6 @@ class GnuplotPipe():
 
         if subprocess.mswindows:
             self._winpipe = WinPipe(self._popen.stderr)
-
-        self._termtitle = termtitle
 
         self._wait_start()
 
@@ -165,18 +168,27 @@ class GnuplotPipe():
         '''Flush gnuplot stdout.'''
         self.get_output(timeout)
 
-    def cmd(self, cmd, retoutput=False, timeout=DEFAULT_TIMEOUT):
+    def cmd(self, cmd, retoutput=False, timeout=DEFAULT_TIMEOUT, retry=True):
         '''Execute a gnuplot command, optionally returning output.'''
 
         # End with newline
         if len(cmd) > 0 and cmd[-1] != '\n':
             cmd += '\n'
 
-        if retoutput:
-            self.flush_output()
-        ret = self._popen.stdin.write(cmd)
-        if retoutput:
-            return self.get_output(timeout)
+        try:
+            if retoutput:
+                self.flush_output()
+            ret = self._popen.stdin.write(cmd)
+            if retoutput:
+                return self.get_output(timeout)
+        except IOError, e:
+            if retry:
+                logging.error('Gnuplot communication failed; reopening')
+                self._open_gnuplot()
+                self.cmd(cmd, retoutput=retoutput, timeout=timeout, retry=False)
+            else:
+                logging.error('Gnuplot communication failed but not reopening')
+
         return None
 
     def is_responding(self, timeout=DEFAULT_TIMEOUT):
