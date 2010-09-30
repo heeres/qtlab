@@ -294,7 +294,18 @@ class FrontPanel(qtwindow.QTWindow):
             self._table.attach(hbox, 2, 3, rows, rows + 1)
             rows += 1
 
+    def _func_clicked_cb(self, sender, fname):
+        if not hasattr(self._instrument, fname):
+            logging.error('Instrument does not have function %s', fname)
+            return
+        func = getattr(self._instrument, fname)
+        try:
+            func()
+        except Exception, e:
+            logging.warning('Function call failed: %s', e)
+
     def _add_functions(self):
+        rows = self._table.props.n_rows
         functions = self._instrument.get_functions()
         for fname, fopts in dict_to_ordered_tuples(functions):
             anames = fopts['argspec'][0]
@@ -306,6 +317,11 @@ class FrontPanel(qtwindow.QTWindow):
                     default = adefaults[i - len(anames) + len(adefaults)]
                 else:
                     default = ''
+
+            but = gtk.Button(fname)
+            but.connect('clicked', self._func_clicked_cb, fname)
+            self._table.attach(but, 0, 3, rows, rows + 1)
+            rows += 1
 
     def _set_clicked(self, widget, param):
         val = self._param_info[param]['entry'].do_set()

@@ -1,5 +1,6 @@
 from instrument import Instrument
 import types
+import logging
 
 class example(Instrument):
 
@@ -77,6 +78,8 @@ class example(Instrument):
 
     def reset(self):
         """Reset example instrument"""
+
+        logging.info('Resetting example instrument')
 
         self.set_output1(1.5)
         self.set_status('off')
