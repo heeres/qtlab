@@ -74,16 +74,26 @@ class Scripts():
     def __getitem__(self, item):
         return self.get(item)
 
-    def get(self, name, verbose=True):
-        if name in self._cache:
-            return self._cache[name]
-
+    def _find_script(self, name):
         for dname in self._dirs:
             fn = os.path.join(dname, name)
             if os.path.exists(fn):
                 script = Script(fn)
                 self._cache[name] = script
                 return script
+        return None
+
+    def get(self, name, verbose=True):
+        if name in self._cache:
+            return self._cache[name]
+        elif ('%s.py' % name) in self._cache:
+            return self._cache['%s.py' % name]
+
+        s = self._find_script(name)
+        if s is None:
+            s = self._find_script('%s.py' % name)
+        if s is not None:
+            return s
 
         if verbose:
             logging.warning('Script not found: %s', name)
@@ -115,4 +125,9 @@ class Scripts():
         self._dirs.append(dirname)
         if autoscan:
             self._scan_dir(dirname)
+
+    def scripts_to_namespace(self, ns):
+        for name, func in self._cache.iteritems():
+            funcname, ext = os.path.splitext(name)
+            ns[funcname] = func
 
