@@ -18,6 +18,7 @@
 import types
 import gobject
 import gtk
+import logging
 
 import qtwindow
 import qtclient as qt
@@ -26,6 +27,10 @@ from lib.misc import dict_to_ordered_tuples
 from lib.network.object_sharer import helper
 
 from gettext import gettext as _L
+
+def _enable_widget(w):
+    if w is not None:
+        w.set_sensitive(True)
 
 class StringLabel(gtk.Label):
 
@@ -39,13 +44,15 @@ class StringLabel(gtk.Label):
         if self._autoupdate:
             ins.connect('changed', self._parameter_changed_cb)
 
-    def _update_value(self, val):
+    def _update_value(self, val, widget=None):
+        _enable_widget(widget)
         fmtval = qt.format_parameter_value(self._param_opts, val)
         self.set_text(fmtval)
 
-    def do_get(self, query=True):
+    def do_get(self, widget=None, query=True):
         ins = self._instrument
-        ins.get(self._parameter, query=query, callback=self._update_value)
+        ins.get(self._parameter, query=query,
+            callback=lambda x: self._update_value(x, widget=widget))
 
     def do_set(self):
         return
@@ -68,20 +75,22 @@ class StringEntry(gtk.Entry):
 
         self.connect('changed', self._entry_changed_cb)
 
-    def _update_value(self, val):
+    def _update_value(self, val, widget=None):
+        _enable_widget(widget)
         self._dirty = False
         if val is None:
             val = ''
         self.set_text(val)
 
-    def do_get(self, query=True):
+    def do_get(self, widget=None, query=True):
         self._instrument.get(self._parameter, query=query,
-                callback=self._update_value)
+                callback=lambda x: self._update_value(x, widget=widget))
 
-    def do_set(self):
+    def do_set(self, widget=None):
         self._dirty = False
         val = self.get_text()
-        self._instrument.set(self._parameter, val, callback=lambda *x: True)
+        self._instrument.set(self._parameter, val, \
+            callback=lambda x: _enable_widget(widget))
 
     def _parameter_changed_cb(self, sender, params):
         if self._parameter in params and not self._dirty:
@@ -121,20 +130,22 @@ class NumberEntry(gtk.SpinButton):
 
         self.connect('changed', self._spin_changed_cb)
 
-    def _update_value(self, val):
+    def _update_value(self, val, widget=None):
+        _enable_widget(widget)
         self._dirty = False
         if val is None:
             self.set_value(0)
         else:
             self.set_value(val)
 
-    def do_get(self, query=True):
+    def do_get(self, widget=None, query=True):
         self._instrument.get(self._parameter, query=query,
-                callback=self._update_value)
+                callback=lambda x: self._update_value(x, widget=widget))
 
-    def do_set(self):
+    def do_set(self, widget=None):
         val = self.get_value()
-        self._instrument.set(self._parameter, val, callback=lambda *x: True)
+        self._instrument.set(self._parameter, val, \
+            callback=lambda *x: _enable_widget(widget))
 
     def _parameter_changed_cb(self, sender, params):
         if self._parameter in params and not self._dirty:
@@ -172,7 +183,9 @@ class ComboEntry(gtk.ComboBox):
 
         self.connect('changed', self._combo_changed_cb)
 
-    def _update_value(self, val):
+    def _update_value(self, val, widget=None):
+        _enable_widget(widget)
+
         if val is None:
             return
 
@@ -187,11 +200,11 @@ class ComboEntry(gtk.ComboBox):
                 self._dirty = False
                 break
 
-    def do_get(self, query=True):
+    def do_get(self, widget=None, query=True):
         self._instrument.get(self._parameter, query=query,
-                callback=self._update_value)
+                callback=lambda x: self._update_value(x, widget=widget))
 
-    def do_set(self):
+    def do_set(self, widget=None):
         val = self._model[self.get_active()][0]
         if val is None:
             return
@@ -199,10 +212,12 @@ class ComboEntry(gtk.ComboBox):
         if type(self._map) is types.DictType:
             for k, v in self._map.iteritems():
                 if v == val:
-                    self._instrument.set(self._parameter, k)
+                    self._instrument.set(self._parameter, k, \
+                        callback=lambda *x: _enable_widget(widget))
                     return
         else:
-            self._instrument.set(self._parameter, val)
+            self._instrument.set(self._parameter, val, \
+                callback=lambda *x: _enable_widget(widget))
 
     def _parameter_changed_cb(self, sender, params):
         if self._parameter in params and not self._dirty:
@@ -277,7 +292,8 @@ class FrontPanel(qtwindow.QTWindow):
             self._table.attach(entry, 1, 2, rows, rows + 1)
 
             self._param_info[name] = {
-                'entry': entry
+                'entry': entry,
+                'flags': opts['flags'],
             }
 
             hbox = gtk.HBox()
@@ -294,17 +310,22 @@ class FrontPanel(qtwindow.QTWindow):
             self._table.attach(hbox, 2, 3, rows, rows + 1)
             rows += 1
 
+    def _enable_func(self, fname, enable):
+        self._func_buttons[fname].set_sensitive(enable)
+
     def _func_clicked_cb(self, sender, fname):
         if not hasattr(self._instrument, fname):
             logging.error('Instrument does not have function %s', fname)
             return
         func = getattr(self._instrument, fname)
+        self._enable_func(fname, False)
         try:
-            func()
+            func(callback=lambda x: self._enable_func(fname, True))
         except Exception, e:
             logging.warning('Function call failed: %s', e)
 
     def _add_functions(self):
+        self._func_buttons = {}
         rows = self._table.props.n_rows
         functions = self._instrument.get_functions()
         for fname, fopts in dict_to_ordered_tuples(functions):
@@ -319,17 +340,22 @@ class FrontPanel(qtwindow.QTWindow):
                     default = ''
 
             but = gtk.Button(fname)
+            self._func_buttons[fname] = but
             but.connect('clicked', self._func_clicked_cb, fname)
             self._table.attach(but, 0, 3, rows, rows + 1)
             rows += 1
 
     def _set_clicked(self, widget, param):
-        val = self._param_info[param]['entry'].do_set()
+        widget.set_sensitive(False)
+        val = self._param_info[param]['entry'].do_set(widget=widget)
 
     def _get_clicked(self, widget, param):
-        self._param_info[param]['entry'].do_get()
+        widget.set_sensitive(False)
+        self._param_info[param]['entry'].do_get(widget=widget)
 
     def _get_all_clicked_cb(self, sender):
         for key, info in self._param_info.iteritems():
-            info['entry'].do_get()
+            if info['flags'] & qt.constants.FLAG_GET or \
+                    info['flags'] & qt.constants.FLAG_SOFTGET:
+                info['entry'].do_get()
 
