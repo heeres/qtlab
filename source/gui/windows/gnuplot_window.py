@@ -19,6 +19,7 @@ import gtk
 import gobject
 import qtclient as qt
 #from plot_engines import qtgnuplot
+import logging
 
 from gettext import gettext as _L
 
