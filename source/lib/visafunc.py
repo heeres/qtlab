@@ -53,7 +53,7 @@ def read_all(visains):
     global _added_filter
 
     if not _added_filter:
-        visa.warnings.filterwarnings("ignore", "VI_SUCCESS_MAX_CNT")
+        warnings.filterwarnings("ignore", "VI_SUCCESS_MAX_CNT")
         _added_filter = True
 
     try:
