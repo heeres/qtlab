@@ -132,6 +132,9 @@ class ObjectSharer():
         # Full search
         for client in self._clients:
             names = client.list_objects()
+            if names is None:
+                return None
+
             self._client_cache[client] = names
             if objname in names:
                 return self._get_object_from(client, objname)
