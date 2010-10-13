@@ -1185,7 +1185,28 @@ class Data(ThreadSafeGObject):
         return complete
 
     def set_filepath(self, fp, inmem=True):
-        self._dir, self._filename = os.path.split(fp)
+        '''
+        Set the filepath associated with the data.
+        If inmem is True it will be loaded directly.
+        If fp is a directory, a file with extension .dat will be searched for.
+        '''
+
+        if os.path.isdir(fp):
+            files = os.listdir(fp)
+            foundfile = None
+            for fn in files:
+                if os.path.splitext(fn)[1] == '.dat':
+                    if foundfile is not None:
+                        raise ValueError('Multiple .dat files in directory, Unable to decide which one to load')
+                    foundfile = fn
+            if foundfile is None:
+                raise ValueError('No .dat file found in directory')
+
+            self._dir, self._filename = fp, foundfile
+
+        else:
+            self._dir, self._filename = os.path.split(fp)
+
         if inmem:
             if self._load_file():
                 self._inmem = True
