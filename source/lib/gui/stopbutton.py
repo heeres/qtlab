@@ -15,7 +15,7 @@ class StopButton(gtk.Button):
         qt.flow.connect('measurement-end', self._measurement_end_cb)
 
     def _toggle_stop_cb(self, sender):
-        qt.flow.set_abort()
+        qt.flow.set_abort(callback=lambda x: True)
 
     def _measurement_start_cb(self, widget):
         self.set_sensitive(True)
