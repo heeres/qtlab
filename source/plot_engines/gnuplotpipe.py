@@ -96,7 +96,11 @@ class GnuplotPipe():
     def __init__(self, termtitle='QTGnuplot', persist=False):
         self._termtitle = termtitle
         self._persist = persist
+        self._reopen_cb = None
         self._open_gnuplot()
+
+    def set_reopen_cb(self, cb):
+        self._reopen_cb = cb
 
     def _open_gnuplot(self):
         args = ['gnuplot']
@@ -119,6 +123,9 @@ class GnuplotPipe():
             else:
                 self._default_terminal = ('x11', '')
         self.reset_default_terminal()
+
+        if self._reopen_cb:
+            self._reopen_cb(self)
 
     def _wait_start(self):
         for i in range(50):

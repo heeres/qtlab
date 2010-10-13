@@ -126,6 +126,7 @@ class _QTGnuPlot():
     def __init__(self):
         name = self.get_name()
         self._gnuplot = self._gnuplot_list[name]
+        self._gnuplot.set_reopen_cb(lambda x: self.reset())
         self.cmd('reset')
         self.cmd('clear')
 
@@ -164,6 +165,12 @@ class _QTGnuPlot():
             if line is not None and line != '':
                 cmd += line
         return cmd
+
+    def reset(self):
+        self.cmd('reset')
+        self.cmd('clear')
+        self.cmd(self.get_commands())
+        self.update()
 
     def clear(self):
         '''Clear the plot.'''
