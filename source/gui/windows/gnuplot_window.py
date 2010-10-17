@@ -37,6 +37,7 @@ class AxisSettings(gtk.Frame):
         self._label_entry = gtk.Entry()
         self._label_but = gtk.Button(_L('Set'))
         self._label_but.connect('clicked', self._label_clicked_cb)
+        self._label_entry.connect('activate', self._label_clicked_cb)
 
         self._min_range = gtk.Entry()
         self._min_range.set_width_chars(10)
@@ -44,6 +45,8 @@ class AxisSettings(gtk.Frame):
         self._max_range.set_width_chars(10)
         self._range_but = gtk.Button(_L('Set'))
         self._range_but.connect('clicked', self._range_clicked_cb)
+        self._min_range.connect('activate', self._range_clicked_cb)
+        self._max_range.connect('activate', self._range_clicked_cb)
 
         self._logcheck = gtk.CheckButton('Log')
         self._logcheck.set_active(False)
@@ -65,7 +68,10 @@ class AxisSettings(gtk.Frame):
 
     def set_plot(self, plot):
         self._plot = plot
-        info = plot.get_properties()
+        if plot is None:
+            info = {}
+        else:
+            info = plot.get_properties()
 
         self._ignore_changes = True
 
@@ -222,6 +228,8 @@ class GnuplotWindow(qtwindow.QTWindow):
         plot = self._plot_dropdown.get_item()
         if plot is None:
             logging.info('Unable to find plot')
+            self._current_plot = None
+            return
 
         ndim = plot.get_ndimensions()
         if ndim == 2:
