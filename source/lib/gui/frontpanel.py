@@ -300,6 +300,8 @@ class FrontPanel(qtwindow.QTWindow):
             if opts['flags'] & qt.constants.FLAG_SET:
                 but = gtk.Button(_L('Set'))
                 but.connect('clicked', self._set_clicked, name)
+                if not isinstance(entry, ComboEntry):
+                   entry.connect('activate', self._set_clicked, name)
                 hbox.pack_start(but)
             if opts['flags'] & qt.constants.FLAG_GET or \
                     opts['flags'] & qt.constants.FLAG_SOFTGET:
