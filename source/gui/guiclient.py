@@ -44,7 +44,7 @@ def setup_windows():
         delta = time.time() - start
         logging.info('   Time = %.03s', delta)
 
-objsh.start_glibtcp_client('localhost')
+objsh.start_glibtcp_client('localhost', nretry=60)
 import qtclient as qt
 setup_windows()
 

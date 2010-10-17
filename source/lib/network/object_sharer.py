@@ -551,13 +551,19 @@ def start_glibtcp_server(port=PORT):
     except Exception, e:
         logging.warning('Failed to start sharing server: %s', str(e))
 
-def start_glibtcp_client(host, port=PORT):
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((host, port))
-        handler = _DummyHandler(sock, 'client', 'server')
-    except Exception, e:
-        logging.warning('Failed to start sharing client: %s', str(e))
+def start_glibtcp_client(host, port=PORT, nretry=1):
+    while nretry > 0:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((host, port))
+            handler = _DummyHandler(sock, 'client', 'server')
+            return True
+        except Exception, e:
+            logging.warning('Failed to start sharing client: %s', str(e))
+            if nretry > 0:
+                logging.info('Retrying in 2 seconds...')
+                time.sleep(2)
+    return False
 
 helper = ObjectSharer()
 RootObject('root')
