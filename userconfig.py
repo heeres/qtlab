@@ -10,7 +10,7 @@ config.remove([
             ])
 
 ## This sets a default location for data-storage
-#config['datadir'] = 'd:/data'
+config['datadir'] = 'd:/data'
 
 ## This sets a default directory for qtlab to start in
 #config['startdir'] = 'd:/scripts'
@@ -18,10 +18,17 @@ config.remove([
 ## This sets a default script to run after qtlab started
 #config['startscript'] = 'initscript.py'
 
+# Add directories containing scripts here. All scripts will be added to the
+# global namespace as functions.
+config['scriptdirs'] = [
+        'examples/scripts',
+        'd:/qtlab/scripts',
+]
+
 ## This sets a user instrument directory
 ## Any instrument drivers placed here will take
 ## preference over the general instrument drivers
-#config['user_insdir'] = 'd:/instruments'
+config['user_insdir'] = 'd:/qtlab/custom_instruments'
 
 ## For adding additional folders to the 'systm path'
 ## so python can find your modules

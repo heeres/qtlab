@@ -8,8 +8,9 @@ if qt.config['startscript'] is not None:
     else:
         logging.warning('Did not find startscript "%s", skipping' % qt.config['startscript'])
 
-# Add directories containing scripts here. All scripts will be added to the
-# global namespace as functions.
-qt.scripts.add_directory('examples/scripts')
-qt.scripts.scripts_to_namespace(globals())
+# Add script directories. Read index and put in namespace
+if qt.config['scriptdirs'] is not None:
+    for dirname in qt.config['scriptdirs']:
+        qt.scripts.add_directory(dirname)
+    qt.scripts.scripts_to_namespace(globals())
 
