@@ -81,6 +81,7 @@ class NI_DAQ(Instrument):
             units='s')
 
         self.add_function('reset')
+        self.add_function('digital_out')
 
         self.reset()
         self.set_chan_config('RSE')
@@ -125,8 +126,21 @@ class NI_DAQ(Instrument):
             src = '/%s/%s' % (self._id, src)
         return nidaq.read_counter(devchan, src=src, freq=1/self._count_time)
 
+    def read_counters(self, channels):
+        chans = []
+        srcs = []
+        for chan in channels:
+            chans.append('%s/%s' % (self._id, chan))
+            srcs.append(self.get(chan + "_src"))
+        return nidaq.read_counters(chans, src=srcs, freq=1.0/self._count_time)
+
+    # Dummy
     def do_set_counter_src(self, val, channel):
         return True
+
+    def digital_out(self, lines, val):
+        devchan = '%s/%s' % (self._id, lines)
+        return nidaq.write_dig_port8(devchan, val)
 
 def detect_instruments():
     '''Refresh NI DAQ instrument list.'''

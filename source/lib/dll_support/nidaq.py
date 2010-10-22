@@ -49,6 +49,8 @@ DAQmx_Val_Rising            = 10280
 DAQmx_Val_FiniteSamps       = 10178
 DAQmx_Val_GroupByChannel    = 0
 DAQmx_Val_GroupByScanNumber = 1
+DAQmx_Val_ChanPerLine       = 0
+DAQmx_Val_ChanForAllLines   = 1
 
 DAQmx_Val_CountUp           = 10128
 DAQmx_Val_CountDown         = 10124
@@ -108,6 +110,14 @@ def get_physical_output_channels(dev):
     nidaq.DAQmxGetDevAOPhysicalChans(dev, ctypes.byref(buf), bufsize)
     return buf_to_list(buf)
 
+def get_digital_output_channels(dev):
+    '''Return a list of physical output channels on a device.'''
+
+    bufsize = 1024
+    buf = ctypes.create_string_buffer('\000' * bufsize)
+    nidaq.DAQmxGetDevDOLines(dev, ctypes.byref(buf), bufsize)
+    return buf_to_list(buf)
+
 def get_physical_counter_channels(dev):
     '''Return a list of physical counter channels on a device.'''
 
@@ -130,7 +140,7 @@ def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
         maxv (float): the maximum voltage
         timeout (float): the time in seconds to wait for completion
         config (string or int): the configuration of the channel
-        
+
     Output:
         A numpy.array with the data on success, None on error
     '''
@@ -142,7 +152,7 @@ def read(devchan, samples=1, freq=10000.0, minv=-10.0, maxv=10.0,
             return None
     if type(config) is not types.IntType:
         return None
-    
+
     if samples == 1:
         retsamples = 1
         samples = 2
@@ -240,7 +250,6 @@ def write(devchan, data, freq=10000.0, minv=-10.0, maxv=10.0,
 
     return written.value
 
-
 def read_counter(devchan="/Dev1/ctr0", samples=1, freq=1.0, timeout=1.0, src=""):
     '''
     Read counter 'devchan'.
@@ -287,3 +296,102 @@ def read_counter(devchan="/Dev1/ctr0", samples=1, freq=1.0, timeout=1.0, src="")
     else:
         return data
 
+def create_counter_task(devchan, samples=1, freq=1, timeout=1, src=""):
+    taskHandle = TaskHandle(0)
+
+    try:
+        CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
+        initial_count = int32(0)
+        CHK(nidaq.DAQmxCreateCICountEdgesChan(taskHandle, devchan, "",
+                DAQmx_Val_Rising, initial_count, DAQmx_Val_CountUp))
+        if src is not None and src != "":
+            CHK(nidaq.DAQmxSetCICountEdgesTerm(taskHandle, devchan, src))
+
+        if samples > 1:
+            CHK(nidaq.DAQmxCfgSampClkTiming(taskHandle, "", float64(freq),
+                DAQmx_Val_Rising, DAQmx_Val_FiniteSamps,
+                uInt64(samples)));
+
+    except Exception, e:
+        logging.error('NI DAQ call failed: %s', str(e))
+        if taskHandle.value != 0:
+            nidaq.DAQmxStopTask(taskHandle)
+            nidaq.DAQmxClearTask(taskHandle)
+
+    return taskHandle
+
+def read_counters(devchans=["/Dev1/ctr0","/Dev1/ctr1"], samples=1, freq=1.0, timeout=1.0, src=None):
+    tasks = []
+    devsrc = None
+    ret = []
+    for i, dev in enumerate(devchans):
+        if src is not None:
+            devsrc = src[i]
+        result = create_counter_task(dev, samples, freq, timeout, devsrc)
+        if result != -1:
+            tasks.append(result)
+
+    try:
+        for task in tasks:
+            CHK(nidaq.DAQmxStartTask(task))
+
+        time.sleep(float(samples) / freq)
+
+        for task in tasks:
+            data = numpy.zeros(samples, dtype=numpy.float64)
+            if samples > 1:
+                CHK(nidaq.DAQmxReadAnalogF64(task, int32(samples), float64(timeout),
+                        DAQmx_Val_GroupByChannel, data.ctypes.data,
+                        samples, ctypes.byref(read), None))
+                ret.append(data)
+            else:
+                nread = int32(0)
+                CHK(nidaq.DAQmxReadCounterF64(task, int32(samples), float64(timeout),
+                    data.ctypes.data, int32(samples), ctypes.byref(nread), None))
+                nread = int32(1)
+                ret.append(data[0])
+
+    except Exception, e:
+        logging.error('NI DAQ call failed: %s', str(e))
+
+    finally:
+        for task in tasks:
+            if task.value != 0:
+                nidaq.DAQmxStopTask(task)
+                nidaq.DAQmxClearTask(task)
+
+    return ret
+
+def write_dig_port8(channel, val, timeout=1.0):
+    '''
+    Set digital output of channels.
+    The value is sent to the specified channels, LSB to MSB.
+    '''
+
+    taskHandle = TaskHandle(0)
+    try:
+        CHK(nidaq.DAQmxCreateTask("", ctypes.byref(taskHandle)))
+        CHK(nidaq.DAQmxCreateDOChan(taskHandle, channel, '', DAQmx_Val_ChanForAllLines))
+
+        nwritten = int32(0)
+
+#        val = numpy.array((val,), dtype=numpy.int16)
+#       This requires shifting bits if writing to part of a port
+#        CHK(nidaq.DAQmxWriteDigitalU16(taskHandle, int32(1), int32(1),
+#            float64(1.0), int32(DAQmx_Val_GroupByChannel), val.ctypes.data, ctypes.byref(nwritten), None))
+
+        vals = numpy.array([(val >> i) & 1 for i in range(8)], dtype=numpy.int8)
+        nbytes = int32(0)
+        CHK(nidaq.DAQmxGetWriteDigitalLinesBytesPerChan(taskHandle, ctypes.byref(nbytes)))
+        CHK(nidaq.DAQmxWriteDigitalLines(taskHandle, int32(1), int32(1),
+            float64(1.0), int32(DAQmx_Val_GroupByChannel), vals.ctypes.data, ctypes.byref(nwritten), None))
+
+        CHK(nidaq.DAQmxStartTask(taskHandle))
+
+    except Exception, e:
+        logging.error('NI DAQ call failed: %s', str(e))
+
+    finally:
+        if taskHandle.value != 0:
+            nidaq.DAQmxStopTask(taskHandle)
+            nidaq.DAQmxClearTask(taskHandle)
