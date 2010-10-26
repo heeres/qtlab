@@ -67,16 +67,31 @@ class Browser:
     def get_entries(self):
         return self._entries
 
-    def get_filenames(self, match=''):
+    def get_filenames(self, match='', starttime=None, endtime=None):
         '''
         Return filenames of entries matching 'match'. If match is an empty
         string it returns all filenames.
+        Optionally, the 'starttime' and 'endtime' can be specified to select
+        a specific range of the matched data files, based on the 6-digit
+        timestamp at the front of a filename. 'starttime' and 'endtime' must
+        be specified as a 6-digit string.
         '''
+
+        usetimes = False
+        if starttime is not None or endtime is not None:
+            usetimes = True
+            if starttime is None:
+                starttime = '000000'
+            if endtime is None:
+                endtime = '240000'
 
         ret = []
         for info in self._entries:
             fn = info.get_filename()
-            if fn.count(match) > 0:
+            fnr = os.path.split(fn)[1]
+            if not usetimes and fnr.count(match) > 0:
+                ret.append(fn)
+            elif usetimes and fnr.count(match) > 0 and starttime <= fnr[:6] <= endtime:
                 ret.append(fn)
         ret.sort()
         return ret
