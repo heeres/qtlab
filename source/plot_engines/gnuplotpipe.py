@@ -93,9 +93,10 @@ class GnuplotPipe():
     _RE_LOG = re.compile('(\w+) \(base ([^\)]*)\)')
     _RE_LABEL = re.compile('.*label is "[\"]"')
 
-    def __init__(self, termtitle='QTGnuplot', persist=False):
+    def __init__(self, termtitle='QTGnuplot', persist=False, noraise=True):
         self._termtitle = termtitle
         self._persist = persist
+        self._noraise = noraise
         self._reopen_cb = None
         self._open_gnuplot()
 
@@ -106,6 +107,8 @@ class GnuplotPipe():
         args = ['gnuplot']
         if self._persist:
             args.append('-persist')
+        if self._noraise:
+            args.append('-noraise')
         self._popen = subprocess.Popen(args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
@@ -217,6 +220,8 @@ class GnuplotPipe():
 
     def set_terminal(self, termtype, options=''):
         '''Set a terminal.'''
+        if self._noraise and termtype == 'wxt':
+            options += ' noraise'
         output = self.cmd('set terminal %s %s\n' % (termtype, options))
         return None
 
