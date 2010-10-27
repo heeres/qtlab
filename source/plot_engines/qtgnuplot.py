@@ -512,7 +512,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def set_style(self, style, update=True):
         '''Set plotting style.'''
 
-        if style is None:
+        if style is None or style == '':
             style = qt.config.get('gnuplot2d_style', 'lines')
 
         if style not in self._STYLES:
@@ -550,6 +550,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
+            ofs = datadict.get('ofs', datadict.get('offset', 0))
+            traceofs = datadict.get('traceofs', 0)
             self._check_style_options(datadict)
 
             if fullpath:
@@ -559,9 +561,9 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             filepath = filepath.replace('\\','/')
 
             if len(coorddims) == 0:
-                using = '%d' % (valdim + 1)
+                using = '($%d+%f+%f*column(-1))' % (valdim + 1, ofs, traceofs)
             elif len(coorddims) == 1:
-                using = '%d:%d' % (coorddims[0] + 1, valdim + 1)
+                using = '%d:($%d+%f+%f*column(-1))' % (coorddims[0] + 1, valdim + 1, ofs, traceofs)
             else:
                 logging.error('Need 0 or 1 coordinate dimensions!')
                 continue
@@ -788,7 +790,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
     def set_style(self, style, update=True):
         '''Set plotting style.'''
 
-        if style is None:
+        if style is None or style == '':
             style = qt.config.get('gnuplot_style', 'image3d')
 
         if style not in self._STYLES:
@@ -849,6 +851,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
+            ofs = datadict.get('ofs', datadict.get('offset', 0))
+            traceofs = datadict.get('traceofs', 0)
+            surfofs = datadict.get('surfofs', 0)
             self._check_style_options(datadict)
 
             if len(coorddims) != 2:
@@ -861,7 +866,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
                 filepath = data.get_filename()
             filepath = filepath.replace('\\','/')
 
-            using = '%d:%d:%d' % (coorddims[0] + 1, coorddims[1] + 1, valdim + 1)
+            using = '%d:%d:($%d+%f+%f*column(-1)+%f*column(-2))' % (coorddims[0] + 1, coorddims[1] + 1, valdim + 1, ofs, traceofs, surfofs)
 
             style = self.get_property('style')
             if style == self.STYLE_IMAGE:

@@ -104,7 +104,7 @@ class Plot(SharedGObject):
         self._update_hid = None
 
         data_args = get_dict_keys(kwargs, ('coorddim', 'coorddims', 'valdim',
-            'title'))
+            'title', 'offset', 'ofs', 'traceofs', 'surfofs'))
         data_args['update'] = False
         data_args['setlabels'] = False
         self.add(*args, **data_args)
@@ -676,22 +676,27 @@ def plot(*args, **kwargs):
         name (string): the plot name to use, defaults to 'plot'
         coorddim, valdim: specify coordinate and value dimension for Data
             object.
+        ret (bool): whether to return plot object (default: True).
     '''
 
     plotname = kwargs.pop('name', 'plot')
+    ret = kwargs.pop('ret', True)
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
 
     graph.add(*args, **kwargs)
 
-    return graph
+    if ret:
+        return graph
 
 def waterfall(*args, **kwargs):
     '''
     Create a waterfall plot, e.g. 3D data as offseted 2D lines.
     '''
-    pass
+    traceofs = kwargs.get('traceofs', 10)
+    kwargs['traceofs'] = traceofs
+    return plot(*args, **kwargs)
 
 def plot3(*args, **kwargs):
     '''
@@ -707,16 +712,19 @@ def plot3(*args, **kwargs):
         name (string): the plot name to use, defaults to 'plot'
         coorddims, valdim: specify coordinate and value dimensions for Data
             object.
+        ret (bool): whether to return plot object (default: True).
     '''
 
     plotname = kwargs.pop('name', 'plot3d')
+    ret = kwargs.pop('ret', True)
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot3D(name=plotname)
 
     graph.add(*args, **kwargs)
 
-    return graph
+    if ret:
+        return graph
 
 def replot_all():
     '''
