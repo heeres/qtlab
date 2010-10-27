@@ -57,22 +57,34 @@ class DataWindow(qtwindow.QTWindow):
         self._clear_check.set_active(True)
         self._clear_button = gtk.Button(_L('Clear'))
         self._clear_button.connect('clicked', self._clear_clicked_cb)
+        self._ofs_entry = gtk.Entry()
+        self._traceofs_entry = gtk.Entry()
 
-        hbox1 = gtk.HBox(spacing=10)
-        hbox1.pack_start(gtk.Label(_L('Name')), False, False)
-        hbox1.pack_start(self._plot_name, False, True)
-        hbox2 = gtk.HBox(spacing=10)
-        hbox2.pack_start(gtk.Label(_L('Clear')), False, False)
-        hbox2.pack_start(self._clear_check, False, True)
-        hbox3 = gtk.HBox(spacing=10)
-        hbox3.pack_start(gtk.Label(_L('Style')), False, False)
-        hbox3.pack_start(self._plot_style, False, True)
-        hbox4 = gtk.HBox(spacing=10)
-        hbox4.pack_start(gtk.Label(_L('Columns')), False, False)
-        hbox4.pack_start(self._columns, False, True)
+        vbox1 = gui.pack_vbox([
+            gui.pack_hbox([
+                gtk.Label(_L('Name')),
+                self._plot_name], False, False),
+            gui.pack_hbox([
+                gtk.Label(_L('Clear')),
+                self._clear_check], False, False),
+            gui.pack_hbox([
+                gtk.Label(_L('Style')),
+                self._plot_style], False, False),
+            gui.pack_hbox([
+                gtk.Label(_L('Columns')),
+                self._columns], False, False),
+            ], False, False)
+        vbox2 = gui.pack_vbox([
+            gui.pack_hbox([
+                gtk.Label(_L('Offset')),
+                self._ofs_entry], False, False),
+            gui.pack_hbox([
+                gtk.Label(_L('Trace offset')),
+                self._traceofs_entry], False, False),
+            ], False, False)
 
         self._plot_box = gui.pack_vbox([
-            hbox1, hbox2, hbox3, hbox4,
+            gui.pack_hbox([vbox1, vbox2], True, True),
             gui.pack_hbox([self._plot2d_button, self._plot3d_button,
                 self._clear_button], True, True),
             ], True, True)
@@ -183,10 +195,25 @@ class DataWindow(qtwindow.QTWindow):
             files.append(model[iter][0])
         return files
 
+    def _get_offsets(self):
+        ofs = self._ofs_entry.get_text()
+        try:
+            ofs = float(ofs)
+        except:
+            ofs = 0
+        traceofs = self._traceofs_entry.get_text()
+        try:
+            traceofs = float(traceofs)
+        except:
+            traceofs = 0
+        return ofs, traceofs
+
     def _plot2d_clicked_cb(self, sender):
+        self._plot2d_button.set_sensitive(False)
         name = self._plot_name.get_text()
         style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
+        ofs, traceofs = self._get_offsets()
         files = self._get_selected_files()
         cols = self._columns.get_text().split(',')
         try:
@@ -199,14 +226,15 @@ class DataWindow(qtwindow.QTWindow):
             valdim = None
         for fn in files:
             fullfn = self._entry_map[fn].get_filename()
-            d = qt.Data(fullfn)
-            qt.plot(d, style, name=name,
-                    coorddim=coorddim, valdim=valdim,
-                    clear=clear)
+            cmd = "qt.plot(qt.Data(%r), name=%r, style=%r, coorddim=%r, valdim=%r, ofs=%r, traceofs=%r, clear=%r, ret=False)" % (fullfn, name, style, coorddim, valdim, ofs, traceofs, clear);
+            qt.interpreter.cmd(cmd, callback=lambda x: self._plot2d_button.set_sensitive(True))
 
     def _plot3d_clicked_cb(self, sender):
+        self._plot3d_button.set_sensitive(False)
         name = self._plot_name.get_text()
+        style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
+        ofs, traceofs = self._get_offsets()
         files = self._get_selected_files()
         cols = self._columns.get_text().split(',')
         try:
@@ -218,10 +246,9 @@ class DataWindow(qtwindow.QTWindow):
             coorddims = None
             valdim = None
         for fn in files:
-            d = qt.Data(self._entry_map[fn].get_filename())
-            qt.plot3(d, name=name,
-                    coorddims=coorddims, valdim=valdim,
-                    clear=clear)
+            fullfn = self._entry_map[fn].get_filename()
+            cmd = "qt.plot3(qt.Data(%r), name=%r, style=%r, coorddim=%r, valdim=%r, ofs=%r, traceofs=%r, clear=%r, ret=False)" % (fullfn, name, style, coorddims, valdim, ofs, traceofs, clear);
+            qt.interpreter.cmd(cmd, callback=lambda x: self._plot3d_button.set_sensitive(True))
 
     def _clear_clicked_cb(self, sender):
         name = self._plot_name.get_text()
