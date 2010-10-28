@@ -27,6 +27,9 @@ import sys
 
 DEFAULT_TIMEOUT = 0.1
 
+def on_windows():
+    return sys.platform in ('win32', 'cygwin')
+
 class WinPipe():
     '''
     Class to perform line-based, non-blocking reads from a win32 file.
@@ -107,7 +110,7 @@ class GnuplotPipe():
         args = ['gnuplot']
         if self._persist:
             args.append('-persist')
-        if self._noraise:
+        if self._noraise and not on_windows():
             args.append('-noraise')
         self._popen = subprocess.Popen(args,
             stdin=subprocess.PIPE,
@@ -121,7 +124,7 @@ class GnuplotPipe():
 
         self._default_terminal = self.get_terminal()
         if self._default_terminal is None:
-            if sys.platform in ['win32', 'cygwin']:
+            if on_windows():
                 self._default_terminal = ('windows', '')
             else:
                 self._default_terminal = ('x11', '')
