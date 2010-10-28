@@ -209,7 +209,6 @@ class DataWindow(qtwindow.QTWindow):
         return ofs, traceofs
 
     def _plot2d_clicked_cb(self, sender):
-        self._plot2d_button.set_sensitive(False)
         name = self._plot_name.get_text()
         style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
@@ -224,13 +223,14 @@ class DataWindow(qtwindow.QTWindow):
                 logging.warning('invalid column specification, use "x,x"')
             coorddim = None
             valdim = None
+
+        self._plot2d_button.set_sensitive(False)
         for fn in files:
             fullfn = self._entry_map[fn].get_filename()
             cmd = "qt.plot(qt.Data(%r), name=%r, style=%r, coorddim=%r, valdim=%r, ofs=%r, traceofs=%r, clear=%r, ret=False)" % (fullfn, name, style, coorddim, valdim, ofs, traceofs, clear);
             qt.interpreter.cmd(cmd, callback=lambda x: self._plot2d_button.set_sensitive(True))
 
     def _plot3d_clicked_cb(self, sender):
-        self._plot3d_button.set_sensitive(False)
         name = self._plot_name.get_text()
         style = self._plot_style.get_text()
         clear = self._clear_check.get_active()
@@ -245,6 +245,8 @@ class DataWindow(qtwindow.QTWindow):
                 logging.warning('invalid column specification, use "x,x,x"')
             coorddims = None
             valdim = None
+
+        self._plot3d_button.set_sensitive(False)
         for fn in files:
             fullfn = self._entry_map[fn].get_filename()
             cmd = "qt.plot3(qt.Data(%r), name=%r, style=%r, coorddim=%r, valdim=%r, ofs=%r, traceofs=%r, clear=%r, ret=False)" % (fullfn, name, style, coorddims, valdim, ofs, traceofs, clear);
