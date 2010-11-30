@@ -18,7 +18,7 @@
 
 import gobject
 import gtk
-
+import logging
 import time
 from gettext import gettext as _L
 from lib.calltimer import ThreadSafeGObject
@@ -52,6 +52,7 @@ class FlowControl(SharedGObject):
         self._abort = False
         self._pause = False
         self._exit_handlers = []
+        self._callbacks = {}
 
     #########
     ### signals
@@ -169,6 +170,35 @@ class FlowControl(SharedGObject):
         '''Run all registered exit handlers.'''
         for func in self._exit_handlers:
             func()
+
+    def register_callback(self, time_msec, func, handle=None):
+        '''
+        Register a function to be called every time_msec miliseconds.
+
+        <handle> is a name you can use to refer to it when removing the
+        callback using 'remove_callback'. If you don't specify a specific
+        name, a handle will be generated.
+
+        Returns: callback handle
+        '''
+
+        hid = gobject.timeout_add(time_msec, func)
+        if handle is None:
+            handle = hid
+        self._callbacks[handle] = hid
+        return handle
+
+    def remove_callback(self, handle):
+        '''
+        Remove a callback that was created with 'register_callback'
+        '''
+        if handle not in self._callbacks:
+            logging.warning('Callback %s not found')
+            return False
+
+        gobject.source_remove(self._callbacks[handle])
+        del self._callbacks[handle]
+        return True
 
     ############
     ### status
