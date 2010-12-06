@@ -40,6 +40,8 @@ class FlowControl(SharedGObject):
                 gobject.TYPE_NONE,()),
             'stop-request': (gobject.SIGNAL_RUN_FIRST,
                 gobject.TYPE_NONE,()),
+            'close-gui': (gobject.SIGNAL_RUN_FIRST,
+                gobject.TYPE_NONE,()),
     }
 
     STATUS_STOPPED = 0
@@ -47,7 +49,7 @@ class FlowControl(SharedGObject):
 
     def __init__(self):
         SharedGObject.__init__(self, 'flow')
-        self._status = 'stopped'
+        self._status = 'starting'
         self._measurements_running = 0
         self._abort = False
         self._pause = False
@@ -205,11 +207,14 @@ class FlowControl(SharedGObject):
     ############
 
     def get_status(self):
-        '''Get status, one of "running", "stopped" '''
+        '''Get status, one of "running", "stopped", "starting" '''
         return self._status
     
     def _set_status(self, val):
         self._status = val
+
+    def finished_starting(self):
+        self._status = "stopped"
 
     def is_measuring(self):
         return self.get_status() == 'running'
@@ -233,6 +238,10 @@ class FlowControl(SharedGObject):
     def set_pause(self, pause):
         '''Set / unset pause state.'''
         self._pause = pause
+
+    def close_gui(self):
+        logging.info('Emitting close-gui signal')
+        self.emit('close-gui')
 
 def exception_handler(self, etype, value, tb):
     InteractiveTB = ultraTB.AutoFormattedTB(mode='Context',

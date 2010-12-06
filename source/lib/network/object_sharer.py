@@ -47,26 +47,58 @@ class ObjectSharer():
         self._return_cbs = {}
         self._return_vals = {}
 
+        self._client_timeout = 60
+
         # Store callback info indexed on hid and on signam__objname
         self._callbacks_hid = {}
         self._callbacks_name = {}
+        self._event_callbacks = {}
+
+    def set_client_timeout(self, timeout):
+        '''
+        Set time to wait for client interaction after connection.
+        '''
+        self._client_timeout = timeout
+
 
     def add_client(self, conn, handler):
         '''
         Add a client through connection 'conn'.
         '''
-        info = self.call(conn, 'root', 'get_object', 'root')
+        info = self.call(conn, 'root', 'get_object', 'root',
+            timeout=self._client_timeout)
         if info is None:
             logging.warning('Unable to get client root object')
             return None
         client = ObjectProxy(conn, info)
         self._clients.append(client)
         logging.info('Added client %r', client.get_id())
+        self._do_event_callbacks('connect', client)
         return client
+
+    def register_event_callback(self, event, cb):
+        '''
+        Register callback cb for event. Event is one of:
+        - connect: client connected
+        - disconnect: client disconnected
+        '''
+
+        if event in self._event_callbacks:
+            self._event_callbacks[event].append(cb)
+        else:
+            self._event_callbacks[event] = [cb]
+
+    def _do_event_callbacks(self, event, *args):
+        if event not in self._event_callbacks:
+            return
+        for func in self._event_callbacks[event]:
+            func(*args)
 
     def remove_client(self, client):
         if client in self._clients:
             del self._clients[self._clients.index(client)]
+
+        self._do_event_callbacks('disconnected', client)
 
     def _client_disconnected(self, conn):
         for client in self._clients:
@@ -256,6 +288,7 @@ class ObjectSharer():
         '''
 
         is_signal = kwargs.pop('signal', False)
+        timeout = kwargs.pop('timeout', self.TIMEOUT)
         if not is_signal:
             self._last_call_id += 1
             callid = self._last_call_id
@@ -281,7 +314,7 @@ class ObjectSharer():
         return_ok = False
         if cb is None and not is_signal:
             # Wait for return
-            while time.time() - start_time < self.TIMEOUT:
+            while time.time() - start_time < timeout:
                 if callid in self._return_vals:
                     ret = self._return_vals[callid]
                     del self._return_vals[callid]

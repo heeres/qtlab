@@ -1,4 +1,5 @@
 from lib.network.object_sharer import helper
+import time
 
 from lib import config
 config = config.get_config()
@@ -11,8 +12,15 @@ class constants():
     FLAG_SOFTGET = 0x08
     FLAG_PERSIST = 0x10
 
-instruments = helper.find_object('instruments1')
 flow = helper.find_object('flow')
+for i in range(100):
+    status = flow.get_status()
+    if not (status is None or status == "starting"):
+        break
+    print 'Status: %r, waiting...' % status
+    time.sleep(2)
+
+instruments = helper.find_object('instruments1')
 plots = helper.find_object('namedlist_plot')
 interpreter = helper.find_object('python_server')
 frontpanels = {}

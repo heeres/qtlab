@@ -44,8 +44,20 @@ def setup_windows():
         delta = time.time() - start
         logging.info('   Time = %.03s', delta)
 
+def _close_gui_cb(*args):
+    import gtk
+    import logging
+    logging.info('Closing GUI')
+    try:
+        gtk.main_quit()
+    except:
+        import sys
+        sys.exit()
+
 objsh.start_glibtcp_client('localhost', nretry=60)
+objsh.helper.register_event_callback('disconnected', _close_gui_cb)
 import qtclient as qt
+qt.flow.connect('close-gui', _close_gui_cb)
 setup_windows()
 
 if __name__ == "__main__":
