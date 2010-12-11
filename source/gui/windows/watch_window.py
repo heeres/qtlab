@@ -224,26 +224,28 @@ class WatchWindow(qtwindow.QTWindow):
         strval = qt.format_parameter_value(info['options'], val)
         self._tree_model.set(info['iter'], 2, strval)
 
-        if info.get('graph', False):
-            plotname = 'watch_%s.%s' % (ins.get_name(), param)
-            if 'data' not in info or info['data'] is None:
-                d = np.zeros(info['points'], dtype=[('a', np.float), ('b', np.float)])
-                d[0] = (timesec(), val)
-                info['data'] = d
-                info['tempfile'] = temp.File(mode='w')
-                cmd = 'qt.plot_file("%s", name="%s", clear=True)' % (info['tempfile'].name, plotname)
-                qt.cmd(cmd, callback=lambda *x: True)
-            else:
-                info['tempfile'].reopen()
+        if not info.get('graph', False):
+            return
 
-            t = timesec()
-            info['data'][0:-1] = info['data'][1:]
-            info['data'][-1] = np.array((t, val))
-            save_gpdata(info['tempfile'].get_file(), info['data'])
+        plotname = 'watch_%s.%s' % (ins.get_name(), param)
+        if 'data' not in info or info['data'] is None:
+            d = np.zeros(info['points'], dtype=[('a', np.float), ('b', np.float)])
+            d[0] = (timesec(), val)
+            info['data'] = d
+            info['tempfile'] = temp.File(mode='w')
+            cmd = 'qt.plot_file("%s", name="%s", clear=True)' % (info['tempfile'].name, plotname)
+            qt.cmd(cmd, callback=lambda *x: True)
+        else:
+            info['tempfile'].reopen()
+
+        t = timesec()
+        info['data'][0:-1] = info['data'][1:]
+        info['data'][-1] = np.array((t, val))
+        save_gpdata(info['tempfile'].get_file(), info['data'])
 #            np.savetxt(info['tempfile'].get_file(), info['data'])
-            info['tempfile'].close()
-            cmd = 'qt.plots["%s"].update()' % (plotname, )
-            qt.cmd(cmd)
+        info['tempfile'].close()
+        cmd = 'qt.plots["%s"].update()' % (plotname, )
+        qt.cmd(cmd)
 
     def _set_delay(self, ins_param, delay):
         info = self._watch[ins_param]

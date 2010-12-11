@@ -769,9 +769,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
         plot.Plot3D.add_data(self, data, *args, **kwargs)
 
-    def add_file(self, filename):
-        self._data.append({'file': filename})
-
     def create_command(self, name, val):
         if name == 'style':
             ret = '\n'.join(self._STYLES[val]['style']) + '\n'
