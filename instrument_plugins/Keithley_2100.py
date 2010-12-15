@@ -84,21 +84,15 @@ class Keithley_2100(Instrument):
         self.add_parameter('range',
             flags=Instrument.FLAG_GETSET,
             units='', minval=0.1, maxval=1000, type=types.FloatType)
-        self.add_parameter('trigger_continuous',
-            flags=Instrument.FLAG_GETSET,
-            type=types.BooleanType)
         self.add_parameter('trigger_count',
             flags=Instrument.FLAG_GETSET,
             units='#', type=types.IntType)
         self.add_parameter('trigger_delay',
             flags=Instrument.FLAG_GETSET,
-            units='s', minval=0, maxval=999999.999, type=types.FloatType)
+            units='s', minval=-1, maxval=999999.999, type=types.FloatType)
         self.add_parameter('trigger_source',
             flags=Instrument.FLAG_GETSET,
             units='')
-        self.add_parameter('trigger_timer',
-            flags=Instrument.FLAG_GETSET,
-            units='s', minval=0.001, maxval=99999.999, type=types.FloatType)
         self.add_parameter('mode',
             flags=Instrument.FLAG_GETSET,
             type=types.StringType, units='',
@@ -107,14 +101,6 @@ class Keithley_2100(Instrument):
             flags=Instrument.FLAG_GETSET,
             units='#', type=types.StringType)
         self.add_parameter('readval', flags=Instrument.FLAG_GET,
-            units='AU',
-            type=types.FloatType,
-            tags=['measure'])
-        self.add_parameter('readlastval', flags=Instrument.FLAG_GET,
-            units='AU',
-            type=types.FloatType,
-            tags=['measure'])
-        self.add_parameter('readnextval', flags=Instrument.FLAG_GET,
             units='AU',
             type=types.FloatType,
             tags=['measure'])
@@ -148,14 +134,11 @@ class Keithley_2100(Instrument):
         self.add_function('set_mode_temp')
         self.add_function('set_mode_freq')
         self.add_function('set_range_auto')
-        self.add_function('set_trigger_cont')
-        self.add_function('set_trigger_disc')
         self.add_function('reset_trigger')
         self.add_function('reset')
         self.add_function('get_all')
 
         self.add_function('read')
-        self.add_function('readlast')
 
         self.add_function('send_trigger')
         self.add_function('fetch')
@@ -164,10 +147,9 @@ class Keithley_2100(Instrument):
         qt.flow.connect('measurement-start', self._measurement_start_cb)
         qt.flow.connect('measurement-end', self._measurement_end_cb)
 
-        if reset:
-            self.reset()
-        else:
-            self.get_all()
+        self.reset()
+        self.get_all()
+        if not reset:
             self.set_defaults()
 
 # --------------------------------------
@@ -194,7 +176,6 @@ class Keithley_2100(Instrument):
         Output=data only
         Mode=Volt:DC
         Digits=7
-        Trigger=Continous
         Range=10 V
         NPLC=1
         Averaging=off
@@ -209,7 +190,6 @@ class Keithley_2100(Instrument):
 
         self.set_mode_volt_dc()
         self.set_resolution('MIN')
-        self.set_trigger_continuous(True)
         self.set_range(10)
         self.set_nplc(1)
         self.set_averaging(False)
@@ -227,7 +207,6 @@ class Keithley_2100(Instrument):
         logging.info('Get all relevant data from device')
         self.get_mode()
         self.get_range()
-        self.get_trigger_continuous()
         self.get_trigger_count()
         self.get_trigger_delay()
         self.get_trigger_source()
@@ -241,14 +220,6 @@ class Keithley_2100(Instrument):
         self.get_averaging_type()
         self.get_autorange()
 
-# Link old read and readlast to new routines:
-    # Parameters are for states of the machnine and functions
-    # for non-states. In principle the reading of the Keithley is not
-    # a state (it's just a value at a point in time) so it should be a
-    # function, technically. The GUI, however, requires an parameter to
-    # read it out properly, so the reading is now done as if it is a
-    # parameter, and the old functions are redirected.
-
     def read(self):
         '''
         Old function for read-out, links to get_readval()
@@ -256,51 +227,28 @@ class Keithley_2100(Instrument):
         logging.debug('Link to get_readval()')
         return self.get_readval()
 
-    def readlast(self):
-        '''
-        Old function for read-out, links to get_readlastval()
-        '''
-        logging.debug('Link to get_readlastval()')
-        return self.get_readlastval()
-
-    def readnext(self):
-        '''
-        Links to get_readnextval
-        '''
-        logging.debug('Link to get_readnextval()')
-        return self.get_readnextval()
-
     def send_trigger(self):
         '''
         Send trigger to Keithley, use when triggering is not continous.
         '''
-        trigger_status = self.get_trigger_continuous(query=False)
-        if (trigger_status):
-            logging.warning('Trigger is set to continous, sending trigger impossible')
-        elif (not trigger_status):
-            logging.debug('Sending trigger')
-            self._visainstrument.write('INIT')
-            self._trigger_sent = True
-        else:
-            logging.error('Error in retrieving triggering status, no trigger sent.')
+        logging.debug('Sending trigger')
+        self._visainstrument.write('INIT')
+        self._trigger_sent = True
 
     def fetch(self):
         '''
-        Get data at this instance, not recommended, use get_readlastval.
+        Get data at this instance, not recommended, use get_readval.
         Use send_trigger() to trigger the device.
         Note that Readval is not updated since this triggers itself.
         '''
 
-        trigger_status = self.get_trigger_continuous(query=False)
-        if self._trigger_sent and (not trigger_status):
+        if self._trigger_sent:
             logging.debug('Fetching data')
             reply = self._visainstrument.ask('FETCH?')
             self._trigger_sent = False
             return float(reply[0:15])
-        elif (not self._trigger_sent) and (not trigger_status):
-            logging.warning('No trigger sent, use send_trigger')
         else:
-            logging.error('Triggering is on continous!')
+            logging.warning('No trigger sent, use send_trigger')
 
     def set_mode_volt_ac(self):
         '''
@@ -413,32 +361,6 @@ class Keithley_2100(Instrument):
         logging.debug('Redirect to set_autorange')
         self.set_autorange(True)
 
-    def set_trigger_cont(self):
-        '''
-        Set trigger mode to continuous, old function, uses set_Trigger_continuous(True).
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug('Set Trigger to continuous mode')
-        self.set_trigger_continuous(True)
-
-    def set_trigger_disc(self):
-        '''
-        Set trigger mode to Discrete
-
-        Input:
-            None
-
-        Output:
-            None
-        '''
-        logging.debug('Set Trigger to discrete mode')
-        self.set_trigger_continuous(False)
-
     def reset_trigger(self):
         '''
         Reset trigger status
@@ -457,7 +379,7 @@ class Keithley_2100(Instrument):
 #           parameters
 # --------------------------------------
 
-    def do_get_readnextval(self):
+    def do_get_readval(self):
         '''
         Waits for the next value available and returns it as a float.
         Note that if the reading is triggered manually, a trigger must
@@ -470,72 +392,9 @@ class Keithley_2100(Instrument):
             value(float) : last triggerd value on input
         '''
         logging.debug('Read next value')
-
-        trigger_status = self.get_trigger_continuous(query=False)
-        if (not trigger_status) and (not self._trigger_sent):
-            logging.error('No trigger has been send, return 0')
-            return float(0)
-        self._trigger_sent = False
-
         #FIXME: correct for 2100?
         text = self._visainstrument.ask('READ?')
-            # Changed the query to from Data?
-            # to Data:FRESH? so it will actually wait for the
-            # measurement to finish.
         return float(text[0:15])
-
-    def do_get_readlastval(self):
-        '''
-        Returns the last measured value available and returns it as a float.
-        Note that if this command is send twice in one integration time it will
-        return the same value.
-
-        Example:
-        If continually triggering at 1 PLC, don't use the command within 1 PLC
-        again, but wait 20 ms. If you want the Keithley to wait for a new
-        measurement, use get_readnextval.
-
-        Input:
-            None
-
-        Output:
-            value(float) : last triggerd value on input
-        '''
-        logging.debug('Read last value')
-
-        text = self._visainstrument.ask('DATA?')
-        return float(text[0:15])
-
-    def do_get_readval(self, ignore_error=False):
-        '''
-        Aborts current trigger and sends a new trigger
-        to the device and reads float value.
-        Do not use when trigger mode is 'CONT'
-        Instead use readlastval
-
-        Input:
-            ignore_error (boolean): Ignore trigger errors, default is 'False'
-
-        Output:
-            value(float) : currrent value on input
-        '''
-        trigger_status = self.get_trigger_continuous(query=False)
-        if trigger_status:
-            if ignore_error:
-                logging.debug('Trigger=continuous, can\'t trigger, return 0')
-            else:
-                logging.error('Trigger=continuous, can\'t trigger, return 0')
-            text = '0'
-            return float(text[0:15])
-        elif not trigger_status:
-            logging.debug('Read current value')
-            text = self._visainstrument.ask('READ?')
-            self._trigger_sent = False
-            return float(text[0:15])
-        else:
-            logging.error('Error in retrieving triggering status, no trigger sent.')
-
-
 
     def do_set_range(self, val, mode=None):
         '''
@@ -630,33 +489,6 @@ class Keithley_2100(Instrument):
         logging.debug('Read integration time in PLCs')
         return float(self._get_func_par(mode, 'NPLC'))
 
-    def do_set_trigger_continuous(self, val):
-        '''
-        Set trigger mode to continuous.
-
-        Input:
-            val (boolean) : Trigger on or off
-
-        Output:
-            None
-        '''
-        val = bool_to_str(val)
-        logging.debug('Set trigger mode to %s' % val)
-        self._set_func_par_value('TRIG', 'DEL:AUTO', bool_to_str(val))
-
-    def do_get_trigger_continuous(self):
-        '''
-        Get trigger mode from instrument
-
-        Input:
-            None
-
-        Output:
-            val (bool) : returns if triggering is continuous.
-        '''
-        logging.debug('Read trigger mode from instrument')
-        return bool(int(self._get_func_par('TRIG', 'DEL:AUTO')))
-
     def do_set_trigger_count(self, val):
         '''
         Set trigger count
@@ -697,13 +529,17 @@ class Keithley_2100(Instrument):
         Set trigger delay to the specified value
 
         Input:
-            val (float) : Trigger delay in seconds
+            val (float) : Trigger delay in seconds or -1 for auto
 
         Output:
             None
         '''
-        logging.debug('Set trigger delay to %s' % val)
-        self._set_func_par_value('TRIG', 'DEL', val)
+        if val == -1:
+            logging.debug('Set trigger delay to auto')
+            self._set_func_par_value('TRIG', 'DEL:AUTO', 'OFF')
+        else:
+            logging.debug('Set trigger delay to %s sec', val)
+            self._set_func_par_value('TRIG', 'DEL', '%s' % val)
 
     def do_get_trigger_delay(self):
         '''
@@ -713,10 +549,14 @@ class Keithley_2100(Instrument):
             None
 
         Output:
-            delay (float) : Delay in seconds
+            delay (float) : Delay in seconds, or -1 for auto
         '''
-        logging.debug('Get trigger delay')
-        return float(self._get_func_par('TRIG', 'DEL'))
+        logging.debug('Read trigger delay from instrument')
+        val = self._get_func_par('TRIG', 'DEL:AUTO')
+        if val == '1':
+            return -1
+        else:
+            return self._get_func_par('TRIG', 'DEL')
 
     def do_set_trigger_source(self, val):
         '''
@@ -993,8 +833,6 @@ class Keithley_2100(Instrument):
 
     def _change_units(self, unit):
         self.set_parameter_options('readval', units=unit)
-        self.set_parameter_options('readlastval', units=unit)
-        self.set_parameter_options('readnextval', units=unit)
 
     def _determine_mode(self, mode):
         '''
