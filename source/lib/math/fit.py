@@ -1,5 +1,6 @@
-# fit.py, 
-# Reinier Heeres <reinier@heeres.eu>, 2008
+# fit.py, functions for fitting including uncertainty estimation
+# and option to keep parameters fixed.
+# Reinier Heeres <reinier@heeres.eu>, 2011
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +20,7 @@ import numpy as np
 from scipy.optimize import leastsq
 from numpy.random import rand
 import code
+import copy
 
 WEIGHT_EQUAL    = 0
 WEIGHT_10PCT    = 1
@@ -26,7 +28,7 @@ WEIGHT_20PCT    = 2
 WEIGHT_SQRTN    = 3
 WEIGHT_SQRTN2   = 4
 WEIGHT_N        = 5
-WEIGHT_LOG      = 6
+WEIGHT_LOGN     = 6
 
 # Symbolic description of functions for the future.
 def eval_func(codestr, **kwargs):
@@ -35,7 +37,21 @@ def eval_func(codestr, **kwargs):
 
 class Function:
     def __init__(self, xdata=None, ydata=None, xerr=None, yerr=None,
-                    weight=WEIGHT_EQUAL, minerr=None):
+                    weight=WEIGHT_EQUAL, minerr=None, nparams=None):
+        '''
+        Fitting function class.
+
+        Parameters:
+        - xdata, ydata: data vectors
+        - xerr, yerr: error vectors; xerr is not used
+        - weight: weighting mechanism
+        - minerr: minimum absolute error value in case of automatic weight
+        generation using e.g. WEIGHT_SQRTN
+        - nparams: number of parameters, not checked if not specified
+        '''
+
+        self._fixed = {}
+        self._nparams = nparams
         self._weight = weight
         self._minerr = minerr
         self.set_data(xdata, ydata, xerr, yerr)
@@ -64,32 +80,84 @@ class Function:
             self._yerr = 0.5 * np.sqrt(np.abs(self._ydata))
         elif self._weight == WEIGHT_N:
             self._yerr = np.abs(self._ydata)
-        elif self._weight == WEIGHT_LOG:
+        elif self._weight == WEIGHT_LOGN:
             self._yerr = np.log(np.abs(self._ydata))
 
         # Set minimum errors
         if self._yerr is not None and self._minerr is not None:
             self._yerr[self._yerr < self._minerr] = self._minerr
 
+    def set_nparams(self, n):
+        if self._nparams not in (n, None):
+            raise ValueError('Different number of parameters expected')
+        self._nparams = n
+
+    def get_parameters(self, p):
+        '''
+        Return set of parameters including fixed parameters when given
+        either a complete set or a reduced set of only free parameters.
+        '''
+        if len(p) == self._nparams:
+            return p
+
+        p = copy.copy(p)
+        for i, v in self._fixed.iteritems():
+            p = np.insert(p, i, v)
+        return p
+
+    def get_px(self, p, x=None):
+        '''
+        Return tuple of parameter and x value vector
+        '''
+        p = self.get_parameters(p)
+        if x is None:
+            x = self._xdata
+        return p, x
+
     def func(self, p, x=None):
+        '''
+        Should be implemented in derived classes.
+        '''
         pass
 
     def err_func(self, p):
         residuals = np.abs(self._ydata - self.func(p)) / self._yerr
         return residuals
 
-    def fit(self, p0):
-        out = leastsq(self.err_func, p0, full_output=1)
+    def fit(self, p0, fixed=[]):
+        '''
+        Fit the function using p0 as starting parameters.
+
+        Fixed is a list of numbers specifying which parameter to keep fixed.
+        '''
+
+        self.set_nparams(len(p0))
+
+        # Get free parameters
+        p1 = []
+        for i in range(len(p0)):
+            if i not in fixed:
+                p1.append(p0[i])
+
+        # Store fixed parameters
+        for i in fixed:
+            self._fixed[i] = p0[i]
+
+        out = leastsq(self.err_func, p1, full_output=1)
         params = out[0]
         covar = out[1]
-        self._fit_params = params
+        self._fit_params = self.get_parameters(params)
         self._fit_err = np.zeros_like(params)
 
         if covar is not None:
-            dof = len(self._xdata) - len(p0)
+            dof = len(self._xdata) - len(p1)
             chisq = np.sum(self.err_func(params)**2)
             for i in range(len(params)):
                 self._fit_err[i] = np.sqrt(covar[i][i]) * np.sqrt(chisq / dof)
+
+        # Set error of fixed parameters to 0
+        for i in fixed:
+            self._fit_err = np.insert(self._fit_err, i, 0)
 
         return self._fit_params
 
@@ -177,15 +245,11 @@ class Polynomial(Function):
 
     def __init__(self, *args, **kwargs):
         self._order = kwargs.pop('order', 2)
+        kwargs.setdefault('nparams', self._order + 1)
         Function.__init__(self, *args, **kwargs)
 
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
-
-        if len(p) != self._order + 1:
-            return None
-
+        p, x = self.get_px(p, x)
         ret = np.ones_like(x) * p[0]
         for n in range(1, self._order + 1):
             ret += p[n] * x**n
@@ -213,21 +277,20 @@ class Gaussian(Function):
     '''
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault('nparams', 4)
         Function.__init__(self, *args, **kwargs)
 
     def get_fwhm(self, p=None):
         if p is None:
             p = self._fit_params
-        return 2.35482 * p[3]
+        return np.sqrt(2 * np.log(2)) * p[3]
 
     def get_height(self, p):
         return p[1]
 
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
-#        ret = np.ones_like(x) * p[0] + p[1] * np.exp(-(x - p[2])**2 / 2 / p[3]**2)
-        ret = np.ones_like(x) * p[0] + p[1] / p[3] / np.sqrt(np.pi / 2) * np.exp(-2*(x - p[2])**2 / p[3]**2)
+        p, x = self.get_px(p, x)
+        ret = p[0] + p[1] / p[3] / np.sqrt(np.pi / 2) * np.exp(-2*(x - p[2])**2 / p[3]**2)
         return ret
 
 class Lorentzian(Function):
@@ -242,6 +305,7 @@ class Lorentzian(Function):
     '''
 
     def __init__(self, *args, **kwargs):
+        kwargs.setdefault('nparams', 4)
         Function.__init__(self, *args, **kwargs)
 
     def get_fwhm(self, p=None):
@@ -253,8 +317,7 @@ class Lorentzian(Function):
         return 2 / np.pi / p[3] * p[1]
 
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
+        p, x = self.get_px(p, x)
         ret = np.ones_like(x) * p[0] + 2 * p[1] / np.pi * p[3] / (4*(x - p[2])**2 + p[3]**2)
         return ret
 
@@ -271,11 +334,11 @@ class Exponential(Function):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('weight', WEIGHT_SQRTN)
+        kwargs.setdefault('nparams', 4)
         Function.__init__(self, *args, **kwargs)
 
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
+        p, x = self.get_px(p, x)
         ret = np.ones_like(x) * p[0] + p[1] * np.exp(-(x - p[2]) * p[3])
         return ret
 
@@ -292,27 +355,53 @@ class Sine(Function):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('weight', WEIGHT_EQUAL)
+        kwargs.setdefault('nparams', 4)
         Function.__init__(self, *args, **kwargs)
 
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
+        p, x = self.get_px(p, x)
         ret = np.ones_like(x) * p[0] + p[1] * np.sin(x * p[2] + p[3])
         return ret
 
 class NISTRationalHahn(Function):
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
+        p, x = self.get_px(p, x)
         ret = (p[0] + p[1] * x + p[2] * x**2 + p[3] * x**3) / (1 + p[4] * x + p[5] * x**2 + p[6] * x**3)
         return ret
 
 class NISTGauss(Function):
     def func(self, p, x=None):
-        if x is None:
-            x = self._xdata
+        p, x = self.get_px(p, x)
+        p = self.get_parameters(p)
         ret = p[0] * np.exp(-p[1] * x) + p[2] * np.exp(-(x-p[3])**2/p[4]**2) +p[5] * np.exp(-(x - p[6])**2/p[7]**2)
         return ret
+
+class FunctionFit(Function):
+
+    def __init__(self, func, *args, **kwargs):
+        self._func = func
+        Function.__init__(self, *args, **kwargs)
+
+    def func(self, p, x=None):
+        p, x = self.get_px(p, x)
+        return self._func(p, x)
+
+def fit(f, xdata, ydata, p0, fixed=[], yerr=None, weight=WEIGHT_EQUAL):
+    '''
+    Fit function 'f' using p0 as starting parameters. The function should
+    take a parameter vector and an x data vector as input, e.g.:
+
+        lambda p, x: p[0] + p[1] * x
+
+    Fixed is a list of numbers specifying which parameter to keep fixed.
+    weight specifies the weithing method if no y error vector is specified.
+
+    Returns the fitting class.
+    '''
+
+    ff = FunctionFit(f, xdata=xdata, ydata=ydata, yerr=yerr, weight=weight)
+    result = ff.fit(p0, fixed)
+    return ff
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -347,9 +436,17 @@ if __name__ == "__main__":
     plt.figure()
     data = np.loadtxt('data/gauss_ref.dat')
     print 'Gauss ref:'
-    gauss = Gaussian(data[:,0], data[:,1], weight=WEIGHT_20PCT)
-    p0 = [0, 10, 2, 0.7]
-    p = gauss.fit(p0)
+    gauss = Gaussian(data[:,0], data[:,1], weight=WEIGHT_EQUAL)
+    p0 = [-1, 10, 2, 0.7]
+    p = gauss.fit(p0, fixed=(0,))
+    print '\tStart par: %s' % (p0, )
+    s = ''
+    for val, err in zip(p, gauss.get_fit_errors()):
+        print '\t\t%e (+-%e)' % (val, err)
+
+    f = lambda p, x: p[0] + p[1] / p[3] / np.sqrt(np.pi / 2) * np.exp(-2*(x - p[2])**2 / p[3]**2)
+    fc = fit(f, data[:,0], data[:,1], p0)
+    p = fc.get_fit_params()
     print '\tStart par: %s' % (p0, )
     s = ''
     for val, err in zip(p, gauss.get_fit_errors()):
