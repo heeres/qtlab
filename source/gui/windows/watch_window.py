@@ -43,9 +43,8 @@ def timesec():
         _start = time.time()
     return time.time() - _start
 
-def save_gpdata(f, ar):
-    for row in ar:
-        f.write('%s %e\n' % (row[0], row[1]))
+def do_print(r):
+    print 'ret: %r' % (r, )
 
 class WatchWindow(qtwindow.QTWindow):
 
@@ -81,7 +80,20 @@ class WatchWindow(qtwindow.QTWindow):
         self._npoints = gtk.SpinButton(climb_rate=1, digits=0)
         self._npoints.set_range(10, 1000)
         self._npoints.set_value(100)
+        self._npoints.set_increments(1, 10)
         graph = gui.pack_hbox([self._graph_check, label, self._npoints],
+                True, False)
+
+        self._ma_check = gtk.CheckButton('Moving average')
+        self._ma_check.set_active(False)
+        self._ma_check.connect('toggled', self._ma_toggled_cb)
+        label = gtk.Label('Constant')
+        self._ma_const = gtk.SpinButton(climb_rate=0.01, digits=2)
+        self._ma_const.set_sensitive(False)
+        self._ma_const.set_range(0, 1.0)
+        self._ma_const.set_increments(0.01, 0.1)
+        self._ma_const.set_value(0.95)
+        ma = gui.pack_hbox([self._ma_check, label, self._ma_const],
                 True, False)
 
         self._add_button = gtk.Button(_L('Add'))
@@ -106,6 +118,7 @@ class WatchWindow(qtwindow.QTWindow):
     		self._param_combo,
     		interval,
             graph,
+            ma,
     		buttons,
     	], False, False)
         vbox.set_border_width(4)
@@ -151,6 +164,10 @@ class WatchWindow(qtwindow.QTWindow):
         active = self._graph_check.get_active()
         self._npoints.set_sensitive(active)
 
+    def _ma_toggled_cb(self, widget):
+        active = self._ma_check.get_active()
+        self._ma_const.set_sensitive(active)
+
     def _receive_reply(self, ins_param, result):
         if ins_param not in self._watch:
             return
@@ -187,6 +204,8 @@ class WatchWindow(qtwindow.QTWindow):
     def _add_clicked_cb(self, widget):
         ins = self._ins_combo.get_instrument()
         param = self._param_combo.get_parameter()
+        if ins is None or param is None:
+            return
         delay = int(self._interval.get_value())
         ins_param = ins.get_name() + "." + param
         if ins_param in self._watch:
@@ -203,6 +222,8 @@ class WatchWindow(qtwindow.QTWindow):
             'options': ins.get_shared_parameter_options(param),
             'graph': self._graph_check.get_active(),
             'points': self._npoints.get_value(),
+            'ma': self._ma_check.get_active(),
+            'ma_const': self._ma_const.get_value(),
         }
 
         self._watch[ins_param] = info
@@ -213,6 +234,37 @@ class WatchWindow(qtwindow.QTWindow):
                     self._ins_changed_cb(sender, changes, param, ins_param))
 
         self._watch[ins_param]['hid'] = hid
+
+    def _get_ncols(self, info, val):
+        nvals = 1
+        try:
+            nvals = len(val)
+        except:
+            pass
+        if info['ma']:
+            nvals *= 2
+        return nvals + 1
+
+    def _get_row(self, info, val, prevrow=None):
+        row = [timesec()]
+        mac = info['ma_const']
+        try:
+            for i, v in enumerate(val):
+                row.append(v)
+                if info['ma']:
+                    if prevrow is not None and info['ma']:
+                        row.append(prevrow[2*i+2] * mac + (1 - mac) * v)
+                    else:
+                        row.append(v)
+        except:
+            row.append(val)
+            if info['ma']:
+                if prevrow is not None:
+                    row.append(prevrow[2] * mac + (1 - mac) * val)
+                else:
+                    row.append(val)
+
+        return row
 
     def _update_cb(self, sender, ins_param, val):
         if ins_param not in self._watch:
@@ -229,20 +281,26 @@ class WatchWindow(qtwindow.QTWindow):
 
         plotname = 'watch_%s.%s' % (ins.get_name(), param)
         if 'data' not in info or info['data'] is None:
-            d = np.zeros(info['points'], dtype=[('a', np.float), ('b', np.float)])
-            d[0] = (timesec(), val)
+            cols = self._get_ncols(info, val)
+            d = np.zeros([info['points'], cols], dtype=np.float)
+            r = self._get_row(info, val)
+            d[0,:] = self._get_row(info, val)
             info['data'] = d
             info['tempfile'] = temp.File(mode='w')
+
             cmd = 'qt.plot_file("%s", name="%s", clear=True)' % (info['tempfile'].name, plotname)
-            qt.cmd(cmd, callback=lambda *x: True)
+            qt.cmd(cmd, callback=lambda *x: do_print(x))
+            for i in range(cols - 2):
+                cmd = 'qt.plot_file("%s", name="%s", valdim=%d)' % (info['tempfile'].name, plotname, i+2)
+                qt.cmd(cmd, callback=lambda *x: do_print(x))
+
         else:
             info['tempfile'].reopen()
 
-        t = timesec()
-        info['data'][0:-1] = info['data'][1:]
-        info['data'][-1] = np.array((t, val))
-        save_gpdata(info['tempfile'].get_file(), info['data'])
-#            np.savetxt(info['tempfile'].get_file(), info['data'])
+        info['data'][0:-1,:] = info['data'][1:,:]
+        r = self._get_row(info, val, prevrow=info['data'][-2,:])
+        info['data'][-1,:] = self._get_row(info, val, prevrow=info['data'][-2,:])
+        np.savetxt(info['tempfile'].get_file(), info['data'])
         info['tempfile'].close()
         cmd = 'qt.plots["%s"].update()' % (plotname, )
         qt.cmd(cmd)
