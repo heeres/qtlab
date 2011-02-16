@@ -545,8 +545,9 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
                 else:
                     first = False
                 s += '"%s"' % datadict['file']
+                coorddim = datadict.get('coorddim', 0)
                 valdim = datadict.get('valdim', 1)
-                s += ' using %d:%d' % (0, valdim + 1)
+                s += ' using %d:%d' % (coorddim + 1, valdim + 1)
                 continue
 
             data = datadict['data']
