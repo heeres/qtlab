@@ -146,8 +146,9 @@ class Plot(SharedGObject):
 
         self._data.append(kwargs)
 
-    def add_file(self, filename):
-        self._data.append({'file': filename})
+    def add_file(self, filename, **kwargs):
+        kwargs['file'] = filename
+        self._data.append(kwargs)
 
     def set_property(self, prop, val, update=False):
         self._properties[prop] = val

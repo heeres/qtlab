@@ -540,12 +540,14 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
         for datadict in items:
             if 'file' in datadict:
-                s += '"%s"' % datadict['file']
                 if not first:
                     s += ', '
                 else:
                     first = False
-                    continue
+                s += '"%s"' % datadict['file']
+                valdim = datadict.get('valdim', 1)
+                s += ' using %d:%d' % (0, valdim + 1)
+                continue
 
             data = datadict['data']
             coorddims = datadict['coorddims']
@@ -946,13 +948,13 @@ def get_gnuplot(name=None):
 def get_gnuplot_list():
     return _QTGnuPlot.get_named_list()
 
-def plot_file(filename, name='plot', update=True, clear=False):
+def plot_file(filename, name='plot', update=True, clear=False, **kwargs):
     p = plot.Plot.get(name)
     if p is None:
         p = Plot2D(name=name)
     elif clear:
         p.clear()
-    p.add_file(filename)
+    p.add_file(filename, **kwargs)
     if update:
         p.update()
 
