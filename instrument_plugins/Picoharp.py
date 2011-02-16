@@ -86,7 +86,7 @@ class Picoharp(Instrument):
         if self._dev:
             return self._dev.get_count_rate(channel)
 
-    def set_inttime(self, time):
+    def do_set_inttime(self, time):
         self._inttime = time
 
     def start(self):
@@ -99,5 +99,6 @@ class Picoharp(Instrument):
         if not self._dev:
             return
         x, trace = self._dev.get_block()
+        import qt
         qt.plot(trace, name='picoharp')
 
