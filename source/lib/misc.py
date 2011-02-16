@@ -109,11 +109,8 @@ def exit_shell():
 
 def register_exit(func):
     if is_ipython():
-        on_kill = [func]
         ip = get_ipython()
-        for cb in ip.IP.on_kill:
-            on_kill.append(cb)
-        ip.IP.on_kill = on_kill
+        ip.IP.hooks.shutdown_hook.add(func, 1)
     else:
         import atexit
         atexit.register(func)

@@ -271,3 +271,16 @@ except NameError:
 def get_flowcontrol():
     global _flowcontrol
     return _flowcontrol
+
+def qtlab_exit():
+    print "Closing QTlab..."
+
+    from lib import temp, lockfile
+    try:
+        qt.flow.exit_request()
+    except:
+        pass
+
+    # Remove temporary files
+    temp.File.remove_all()
+    lockfile.remove_lockfile()
