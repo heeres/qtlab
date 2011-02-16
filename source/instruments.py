@@ -66,28 +66,25 @@ def _get_driver_module(name, do_reload=False):
     if name in sys.modules and not do_reload:
         return sys.modules[name]
 
-    # Try to import (and reload if requested)
-    if do_reload:
-        importstr = 'import %s\nreload(%s)' % (name, name)
-    else:
-        importstr = 'import %s' % (name)
-    code.compile_command(importstr)
     try:
-        exec importstr
+        mod = __import__(name)
+        if do_reload:
+            reload(mod)
     except ImportError, e:
         fields = str(e).split(' ')
         if len(fields) > 0 and fields[-1] == name:
-            logging.warning('Instrument driver not available: %s', e)
+            logging.warning('Instrument driver %s not available', name)
         else:
             TB()
         return None
     except Exception, e:
-        logging.exception('Error loading instrument driver: %s', e)
         TB()
+        logging.error('Error loading instrument driver %s', name)
         return None
 
     if name in sys.modules:
         return sys.modules[name]
+
     return None
 
 class Instruments(SharedGObject):
@@ -294,8 +291,8 @@ class Instruments(SharedGObject):
         try:
             ins = insclass(name, **kwargs)
         except Exception, e:
-            logging.exception('Error creating instrument: %s', e)
             TB()
+            logging.error('Error creating instrument %s', name)
             return self._create_invalid_ins(name, instype, **kwargs)
 
         self.add(ins, create_args=kwargs)
