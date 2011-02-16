@@ -28,4 +28,5 @@ del _lockname
 msg = "QTlab already running, start with '-f' to force start.\n"
 msg += "Press s<enter> to start anyway or just <enter> to quit."
 lockfile.check_lockfile(msg)
-register_exit(qtlab_exit)
+import qtflow
+register_exit(qtflow.qtlab_exit)
