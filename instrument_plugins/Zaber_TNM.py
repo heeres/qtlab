@@ -74,7 +74,7 @@ class Zaber_TNM(Instrument):
             self.reset()
         else:
             self.get_all()
- 
+
     # Open serial connection
     def _open_serial_connection(self):
         '''
@@ -109,7 +109,7 @@ class Zaber_TNM(Instrument):
         '''
         logging.debug(__name__ + ' : Closing serial connection')
         self._visa.close()
-    
+
     # LOW LEVEL FUNCTIONS : communication, conversions
 
     def convert_number(self, n):
@@ -126,6 +126,11 @@ class Zaber_TNM(Instrument):
             ret = ret << 8
             ret += b
         return ret
+
+    def _clear_buffer(self):
+        navail = vpp43.get_attribute(self._visa.vi, vpp43.VI_ATTR_ASRL_AVAIL_NUM)
+        if navail > 0:
+            reply = vpp43.read(self._visa.vi, navail)
 
     def _read_reply(self, max_sleeps=100):
         '''
@@ -157,12 +162,14 @@ class Zaber_TNM(Instrument):
             5: data, msb
         '''
 
+        self._clear_buffer()
+
         tosend = "%c" % self._deviceid
         if len(data) != 5:
             print "Data should contain 5 elements"
         for ch in data:
             tosend += "%c" % ch
-            
+
         self._visa.write(tosend)
         time.sleep(0.01)
         if get_reply:
@@ -184,11 +191,11 @@ class Zaber_TNM(Instrument):
         return None
 
     # FUNCTIONS CORRESPONDING TO DEVICE COMMANDS
-        
+
     def reset(self):
         logging.info(__name__ + ' : resetting instrument')
         self.send_cmd(0, 0, get_reply=False)
-        
+
     def home(self):
         pos = self.send_cmd(1, 0)
         if pos is not None:
@@ -198,7 +205,7 @@ class Zaber_TNM(Instrument):
         newid = self.send_cmd(2, newnumber)
         if newid is not None:
             self.update_value('position', newid)
-    
+
     def store_pos(self, store_address):
         if store_address < 1 or store_address > 16:
             print 'Storage address should be an integer between 1 to 16'
@@ -246,7 +253,7 @@ class Zaber_TNM(Instrument):
         if newpos is not None:
             self.update_value('position', newpos)
         return newpos
-        
+
     def get_all(self):
         logging.info(__name__ + ' : get all')
         self.get_firmware()
@@ -265,7 +272,7 @@ class Zaber_TNM(Instrument):
     def do_set_speed(self, val):
         speed = self.send_cmd(42, val)
         return speed
-        
+
     def do_get_acceleration(self):
         accel = self.send_cmd(53, 43)
         return accel
@@ -273,7 +280,7 @@ class Zaber_TNM(Instrument):
     def do_set_acceleration(self, val):
         accel = self.send_cmd(43, val)
         return accel
-        
+
     def do_get_position(self):
         pos = self.send_cmd(53, 45)
         return pos
