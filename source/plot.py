@@ -150,6 +150,12 @@ class Plot(SharedGObject):
         kwargs['file'] = filename
         self._data.append(kwargs)
 
+    def set_maxtraces(self, n):
+        self._maxtraces = n
+
+    def set_maxpoints(self, n):
+        self._maxpoints = n
+
     def set_property(self, prop, val, update=False):
         self._properties[prop] = val
         if update:
@@ -666,6 +672,12 @@ def _get_plot_options(i, *args):
             return {'style': args[i]}
     return {}
 
+def set_global_plot_options(graph, kwargs):
+    if 'maxtraces' in kwargs:
+        graph.set_maxtraces(kwargs.pop('maxtraces'))
+    if 'maxpoints' in kwargs:
+        graph.set_maxpoints(kwargs.pop('maxpoints'))
+
 def plot(*args, **kwargs):
     '''
     Plot items.
@@ -688,6 +700,8 @@ def plot(*args, **kwargs):
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
+
+    set_global_plot_options(graph, kwargs)
 
     graph.add(*args, **kwargs)
 
@@ -724,6 +738,8 @@ def plot3(*args, **kwargs):
     graph = qt.plots[plotname]
     if graph is None:
         graph = qt.Plot3D(name=plotname)
+
+    set_global_plot_options(graph, kwargs)
 
     graph.add(*args, **kwargs)
 
