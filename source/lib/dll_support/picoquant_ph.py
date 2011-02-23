@@ -130,7 +130,7 @@ class PHDevice():
         '''
         Set CFD level 0 cross level (in mV) for channel chan.
         '''
-        ret = phlib.PH_SetCFSZeroCross(self._devid, chan, int(val))
+        ret = phlib.PH_SetCFDZeroCross(self._devid, chan, int(val))
         return ph_check(ret)
 
     def set_sync_div(self, div):
