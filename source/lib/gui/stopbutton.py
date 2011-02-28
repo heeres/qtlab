@@ -29,25 +29,25 @@ class PauseButton(gtk.ToggleButton):
         gtk.ToggleButton.__init__(self)
 
         self.set_sensitive(qt.flow.is_measuring())
-        self._pause = qt.flow.is_paused()
-        self.set_active(self._pause)
+        self.set_active(qt.flow.is_paused())
+        self._update_label()
 
         self.connect('clicked', self._toggle_cb)
 
         qt.flow.connect('measurement-start', self._measurement_start_cb)
         qt.flow.connect('measurement-end', self._measurement_end_cb)
 
-    def _update_label(self, pause):
+    def _update_label(self, pause=None):
+        if pause is None:
+            pause = qt.flow.is_paused()
         if pause:
             self.set_label(_L('Continue'))
         else:
             self.set_label(_L('Pause'))
 
-    def set_pause(self, pause):
-        self._pause = pause
-
     def _toggle_cb(self, sender):
-        qt.flow.set_pause(not self._pause, callback=lambda *args: True)
+        pause = qt.flow.is_paused()
+        qt.flow.set_pause(not pause, callback=lambda *args: True)
         self._update_label()
 
     def _measurement_start_cb(self, widget):
