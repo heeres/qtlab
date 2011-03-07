@@ -542,6 +542,8 @@ class Data(ThreadSafeGObject):
     def add_comment(self, comment):
         '''Add comment to the Data object.'''
         self._comment.append(comment)
+        if self._file is not None:
+            self._file.write('# %s\n' % comment)
 
     def get_comment(self):
         '''Return the comment for the Data object.'''
