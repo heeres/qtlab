@@ -503,6 +503,11 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def set_property(self, *args, **kwargs):
         return _QTGnuPlot.set_property(self, *args, **kwargs)
 
+    def add_data(self, data, *args, **kwargs):
+        if 'yerrdim' in kwargs:
+            kwargs['with'] = 'yerrorbars'
+        plot.Plot2D.add_data(self, data, *args, **kwargs)
+
     def create_command(self, name, val):
         if name == "style":
             return ''
@@ -553,6 +558,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             data = datadict['data']
             coorddims = datadict['coorddims']
             valdim = datadict['valdim']
+            yerrdim = datadict.get('yerrdim', None)
             ofs = datadict.get('ofs', datadict.get('offset', 0))
             traceofs = datadict.get('traceofs', 0)
             self._check_style_options(datadict)
@@ -570,6 +576,8 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
             else:
                 logging.error('Need 0 or 1 coordinate dimensions!')
                 continue
+            if yerrdim is not None:
+                using += ':%d' % (yerrdim+1)
 
             npoints = data.get_npoints()
             if datadict.get('with', None) in ['lines']:
@@ -769,7 +777,6 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         if 'palette' in kwargs:
             gamma = kwargs.pop('gamma', 1.0)
             self.set_palette(kwargs.pop('palette'), gamma, update=False)
-
         plot.Plot3D.add_data(self, data, *args, **kwargs)
 
     def create_command(self, name, val):

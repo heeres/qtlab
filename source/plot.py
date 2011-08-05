@@ -450,7 +450,12 @@ class Plot2D(Plot):
                     elif i + 1 < len(args) and type(args[i+1]) is numpy.ndarray:
                         x = args[i]
                         y = args[i + 1]
-                        data = numpy.column_stack((x, y))
+                        if 'yerr' in kwargs:
+                            data = numpy.column_stack((x, y, kwargs['yerr']))
+                            if valdim is None:
+                                valdim = 1
+                        else:
+                            data = numpy.column_stack((x, y))
                         i += 2
                     else:
                         data = args[i]
@@ -471,6 +476,8 @@ class Plot2D(Plot):
                     kwargs['binary'] = False
                 elif 'binary' not in kwargs:
                     kwargs['binary'] = True
+                if 'yerr' in kwargs:
+                    kwargs['yerrdim'] = 2
                 data = Data(data=data, tempfile=tmp, binary=kwargs['binary'])
 
             else:
