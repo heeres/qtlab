@@ -177,7 +177,7 @@ class Zaber_TNM(Instrument):
 
         return None
 
-    def send_cmd(self, cmd, arg, get_reply=True):
+    def send_cmd(self, cmd, arg, get_reply=True, signedpos=True):
         '''
         Send command <cmd> with argument <arg>.
         '''
@@ -186,6 +186,8 @@ class Zaber_TNM(Instrument):
         reply = self._send_raw_cmd([cmd] + values, get_reply)
         if get_reply and reply is not None:
             val = self.convert_bytes(reply[2:])
+            if len(reply) == 6 and signedpos and (val&0xf0000000):
+                val -= 0x100000000
             return val
 
         return None
