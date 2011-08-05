@@ -120,37 +120,18 @@ class GlibTCPHandler():
         self._in_hid = None
 
     def _handle_recv(self, socket, number):
-        if self._packet_len:
-            try:
-                data = socket.recv(2)
-            except Exception, e:
-                # No data anyway...
-                return True
-
-            if len(data) == 2:
-                datalen = ord(data[0]) * 256 + ord(data[1])
-            elif len(data) == 0:
-                self._handle_hup()
-                return False
-
-            data = socket.recv(datalen)
-
-        else:
-            data = ''
-            while True:
-                try:
-                    chunk = socket.recv(self.BUFSIZE)
-                    data += chunk
-                except Exception, e:
-                    break
-
-                if len(chunk) == 0:
-                    break
+        try:
+            data = socket.recv(self.BUFSIZE)
+        except Exception, e:
+            # No data anyway...
+            return True
 
         if len(data) == 0:
             self._handle_hup()
+            return False
         else:
             self.handle(data)
+            return True
 
         return True
 

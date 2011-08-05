@@ -22,11 +22,5 @@ class TCPClient():
         if len(lists[0]) == 0:
             return None
 
-        if self._packet_len:
-            data = self._socket.recv(2)
-            datalen = ord(data[0]) * 256 + ord(data[1])
-            data = self._socket.recv(datalen)
-        else:
-            data = self._socket.recv(maxsize)
-
+        data = self._socket.recv(maxsize)
         return data

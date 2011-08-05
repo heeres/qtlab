@@ -54,12 +54,14 @@ class ObjectSharer():
         self._callbacks_name = {}
         self._event_callbacks = {}
 
+        # Buffers to store partly received packets
+        self._buffers = {}
+
     def set_client_timeout(self, timeout):
         '''
         Set time to wait for client interaction after connection.
         '''
         self._client_timeout = timeout
-
 
     def add_client(self, conn, handler):
         '''
@@ -185,7 +187,7 @@ class ObjectSharer():
         try:
             return pickle.loads(data)
         except Exception, e:
-            logging.warning('Unable to decode object: %s', str(e))
+            logging.warning('Unable to decode object: %s [%r]', str(e), data)
             raise e
 
     def _send_return(self, conn, callid, retval):
@@ -194,19 +196,53 @@ class ObjectSharer():
         retdata = self._pickle_packet(retinfo, retval)
         self.send_packet(conn, retdata)
 
-    def handle(self, conn, data):
+    def handle_data(self, conn, data):
         '''
-        Process incoming data from connection 'conn'
+        Handle incoming data from a connection and produce packets in the
+        packet queue. If a response is not expected, process the packet
+        immediately.
         '''
 
-        try:
-            info, callinfo = self._unpickle_packet(data)
-        except Exception, e:
-            return
+        if conn not in self._buffers:
+            self._buffers[conn] = ''
+
+        self._buffers[conn] = self._buffers[conn] + data
+
+        # Decode complete packets
+        while len(self._buffers[conn]) >= 6:
+            b = self._buffers[conn]
+
+            if b[0] != 'Q' and b[1] != 'T':
+                self._buffers[conn] = ''
+                logging.warning('Packet magic missing, dumping data')
+                return None
+
+            datalen = (ord(b[2]) << 24) + (ord(b[3]) << 16) + (ord(b[4]) << 8)  + ord(b[5])
+            if len(b) < datalen + 6:
+                logging.debug('Incomplete packet received')
+                return None
+
+            packet = b[6:6+datalen]
+            self._buffers[conn] = b[6+datalen:]
+
+            try:
+                packet = self._unpickle_packet(packet)
+            except Exception, e:
+                logging.warning('Unable to unpickle packet')
+                return
+
+            self.handle_packet(conn, packet)
+
+    def handle_packet(self, conn, packet):
+        '''
+        Process an incoming packet
+        '''
+
+        info, callinfo = packet
         logging.debug('Handling packet %r', info)
 
         if info[0] == 'return':
-            # Asynchronous function reply
+            # (a)synchronous function reply
             callid = info[1]
             if callid not in self._return_cbs:
                 logging.warning('Return received for unknown call %d', callid)
@@ -242,28 +278,14 @@ class ObjectSharer():
 
         self._send_return(conn, info[1], ret)
 
-    def recv_packet(self, conn):
-        data = conn.recv(2)
-        if len(data) == 0:
-            logging.warning('Client disconnected')
-            self._client_disconnected(conn)
-            return None
-
-        datalen = ord(data[0]) * 256 + ord(data[1])
-        try:
-            data = conn.recv(datalen)
-        except:
-            logging.warning('Receive exception!')
-            self._client_disconnected(conn)
-        return data
-
     def send_packet(self, conn, data):
         dlen = len(data)
-        if dlen > 0xffff:
+        if dlen > 0xffffffffL:
             logging.error('Trying to send too long packet: %d', dlen)
             return False
 
-        tosend = '%c%c' % (int(dlen / 256), dlen & 0xff)
+        tosend = 'QT%c%c%c%c' % ((dlen&0xff000000)>>24, \
+            (dlen&0x00ff0000)>>16, (dlen&0x0000ff00)>>8, (dlen&0x000000ff))
         tosend += data
         try:
             ret = conn.send(tosend)
@@ -277,7 +299,7 @@ class ObjectSharer():
 
     def _call_cb(self, callid, val):
         if callid in self._return_vals:
-            logging.warning('Call %d timed out', callid)
+            logging.warning('Received late reply for call %d', callid)
             del self._return_vals[callid]
         else:
             self._return_vals[callid] = val
@@ -289,6 +311,8 @@ class ObjectSharer():
 
         is_signal = kwargs.pop('signal', False)
         timeout = kwargs.pop('timeout', self.TIMEOUT)
+        blocking = ('callback' not in kwargs and not is_signal)
+
         if not is_signal:
             self._last_call_id += 1
             callid = self._last_call_id
@@ -303,35 +327,48 @@ class ObjectSharer():
             cb = None
             info = ('signal', )
 
-        logging.debug('Calling %s.%s(%r, %r), info=%r', objname, funcname, args, kwargs, info)
+        logging.debug('Calling %s.%s(%r, %r), info=%r, blocking=%r', objname, funcname, args, kwargs, info, blocking)
 
         callinfo = (objname, funcname, args, kwargs)
         cmd = self._pickle_packet(info, callinfo)
         start_time = time.time()
         self.send_packet(conn, cmd)
 
-        ret = None
-        return_ok = False
-        if cb is None and not is_signal:
-            # Wait for return
-            while time.time() - start_time < timeout:
-                if callid in self._return_vals:
-                    ret = self._return_vals[callid]
-                    del self._return_vals[callid]
-                    if isinstance(ret, Exception):
-                        raise Exception('Remote error: %s' % str(ret))
-                    return ret
+        if not blocking:
+            return
 
-                import select
-                lists = select.select([conn], [], [])
-                if len(lists[0]) > 0:
-                    data = self.recv_packet(conn)
-                    self.handle(conn, data)
-                else:
+        # Wait for return
+        while time.time() - start_time < timeout:
+            if callid in self._return_vals:
+                break
+
+            # Don't depend on a main loop to receive data while blocking
+            import select
+            lists = select.select([conn], [], [], 0.1)
+            if len(lists[0]) > 0:
+                try:
+                    data = conn.recv(BUFSIZE)
+                except:
+                    # Cope with strange windows errors?
                     time.sleep(0.002)
+                    continue
 
-            # Mark as timed-out
-            self._return_vals[callid] = None
+                if len(data) == 0:
+                    self._client_disconnected(conn)
+                    return
+                self.handle_data(conn, data)
+            else:
+                time.sleep(0.002)
+
+        if callid in self._return_vals:
+            ret = self._return_vals[callid]
+            del self._return_vals[callid]
+            if isinstance(ret, Exception):
+                raise Exception('Remote error: %s' % str(ret))
+            return ret
+        else:
+            logging.warning('Blocking call %d timed out', callid)
+            self._return_vals[callid] = None    # Mark as timed out
 
         return None
 
@@ -574,7 +611,8 @@ class _DummyHandler(tcpserver.GlibTCPHandler):
         helper.add_client(self.socket, self)
 
     def handle(self, data):
-        helper.handle(self.socket, data)
+        if len(data) > 0:
+            data = helper.handle_data(self.socket, data)
         return True
 
 def start_glibtcp_server(port=PORT):
