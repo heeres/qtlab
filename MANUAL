@@ -296,13 +296,7 @@ The overhead of the 'get' and 'set' functions are quite small, but depending
 on your needs they could be significant. The following numbers were acquired
 on a Inspiron 6400 laptop with a 1.73GHz Core Duo processor under Linux:
 
-Standard:
-    do_get_<parameter> directly: ~5us
-    get('parameter', fast=True): ~13.5us
-    get_<parameter> or get('parameter'): ~155us
-
-With psyco (a python code accelerator):
-    do_get_<parameter> directly: ~3us
-    get('parameter', fast=True): ~10us
-    get_<parameter> or get('parameter'): ~143us
+    do_get_<parameter> directly: ~3.7us
+    get('parameter', fast=True): ~8.6us
+    get_<parameter> or get('parameter'): ~11.5us
 

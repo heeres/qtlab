@@ -686,7 +686,7 @@ class Instrument(SharedGObject):
             kwargs['channel'] = p['channel']
 
         flags = p['flags']
-        if not query or flags & self.FLAG_SOFTGET:
+        if not query or flags & 8: #self.FLAG_SOFTGET:
             if 'value' in p:
                 return p['value']
             else:
@@ -694,7 +694,7 @@ class Instrument(SharedGObject):
                 return None
 
         # Check this here; getting of cached values should work
-        if not flags & Instrument.FLAG_GET:
+        if not flags & 1: #Instrument.FLAG_GET:
             print 'Instrument does not support getting of %s' % name
             return None
 
@@ -750,9 +750,8 @@ class Instrument(SharedGObject):
                 self._access_lock.release()
             return ret
 
-        changed = {}
-
         if type(name) in (types.ListType, types.TupleType):
+            changed = {}
             result = {}
             for key in name:
                 val = self._get_value(key, query, **kwargs)
@@ -762,7 +761,7 @@ class Instrument(SharedGObject):
 
         else:
             result = self._get_value(name, query, **kwargs)
-            changed[name] = result
+            changed = {name: result}
 
         if Instrument.USE_ACCESS_LOCK:
             self._access_lock.release()
