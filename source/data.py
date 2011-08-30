@@ -31,7 +31,8 @@ from gettext import gettext as _L
 import qt
 from lib import namedlist, temp
 from lib.misc import dict_to_ordered_tuples, get_arg_type
-from lib.calltimer import ThreadSafeGObject
+
+from lib.network.object_sharer import SharedGObject, cache_result
 
 # Filename generator classes
 
@@ -145,7 +146,7 @@ class _DataList(namedlist.NamedList):
         else:
             return name
 
-class Data(ThreadSafeGObject):
+class Data(SharedGObject):
     '''
     Data class
     '''
@@ -231,7 +232,7 @@ class Data(ThreadSafeGObject):
             binary (bool), default True. Whether tempfile should be binary.
         '''
 
-        ThreadSafeGObject.__init__(self)
+        # Init SharedGObject a bit lower
 
         name = kwargs.get('name', '')
         infile = kwargs.get('infile', True)
@@ -272,6 +273,9 @@ class Data(ThreadSafeGObject):
         # FIXME: the name generation here is a bit nasty
         name = Data._data_list.new_item_name(self, name)
         self._name = name
+
+        SharedGObject.__init__(self, 'data_%s' % name,
+            replace=True, idle_emit=True)
 
         data = get_arg_type(args, kwargs,
                 (numpy.ndarray, list, tuple),

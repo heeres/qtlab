@@ -118,15 +118,18 @@ class ObjectSharer():
     def get_objects(self):
         return self._objects
 
-    def add_object(self, object):
+    def add_object(self, object, replace=False):
         if not isinstance(object, SharedObject):
             logging.error('Not a shareable object')
             return False
 
         objname = object.get_shared_name()
         if objname in self._objects:
-            logging.error('Object with name %s already exists', objname)
-            return False
+            if not replace:
+                logging.error('Object with name %s already exists', objname)
+                return False
+            else:
+                logging.warning('Object with name %s exists, replacing', objname)
 
         self._objects[objname] = object
         if objname is not 'root':
@@ -437,11 +440,17 @@ class SharedObject():
     Server side object that can be shared and emit signals.
     '''
 
-    def __init__(self, name):
+    def __init__(self, name, replace=False):
+        '''
+        Create SharedObject, arguments:
+        name:       shared name
+        replace:    whether to replace object when it already exists
+        '''
+
         self.__last_hid = 1
         self.__callbacks = {}
         self.__name = name
-        helper.add_object(self)
+        helper.add_object(self, replace=replace)
 
     def get_shared_name(self):
         return self.__name
@@ -464,9 +473,10 @@ class SharedObject():
 
 class SharedGObject(gobject.GObject, SharedObject):
 
-    def __init__(self, name):
+    def __init__(self, name, replace=False, idle_emit=False):
         logging.debug('Creating shared Gobject: %r', name)
         self.__hid_map = {}
+        self._do_idle_emit = idle_emit
         gobject.GObject.__init__(self)
         SharedObject.__init__(self, name)
 
@@ -476,10 +486,19 @@ class SharedGObject(gobject.GObject, SharedObject):
         self.__hid_map[ghid] = hid
         return ghid
 
+    def _idle_emit(self, signal, *args, **kwargs):
+        try:
+            gobject.GObject.emit(self, signal, *args, **kwargs)
+        except Exception, e:
+            print 'Error: %s' % e
+
     def emit(self, signal, *args, **kwargs):
         # The 'None' here is the 'sender'
         SharedObject.emit(self, signal, None, *args, **kwargs)
-        return gobject.GObject.emit(self, signal, *args, **kwargs)
+        if self._do_idle_emit:
+            gobject.idle_add(self._idle_emit, signal, *args, **kwargs)
+        else:
+            return gobject.GObject.emit(self, signal, *args, **kwargs)
 
     def disconnect(self, ghid):
         if ghid not in self.__hid_map:

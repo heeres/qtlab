@@ -22,6 +22,7 @@ for i in range(100):
 
 instruments = helper.find_object('instruments1')
 plots = helper.find_object('namedlist_plot')
+data = helper.find_object('namedlist_data')
 interpreter = helper.find_object('python_server')
 frontpanels = {}
 sliders = {}
@@ -31,6 +32,9 @@ windows = QTWindow.get_named_list()
 
 def get_instrument_proxy(name):
     return helper.find_object('instrument_%s' % name)
+
+def get_data_proxy(name):
+    return helper.find_object('data_%s' % name)
 
 def get_plot_proxy(name):
     return helper.find_object('plot_%s' % name)
