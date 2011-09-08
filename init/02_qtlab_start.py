@@ -24,6 +24,7 @@ from qt import plot, plot3, Plot2D, Plot3D, Data
 qt._IP = __IP
 
 from numpy import *
+import numpy as np
 try:
     from scipy import constants as const
 except:
