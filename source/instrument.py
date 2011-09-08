@@ -25,6 +25,7 @@ from gettext import gettext as _L
 from lib import calltimer
 from lib.network.object_sharer import SharedGObject, cache_result
 
+import numpy as np
 import logging
 import qt
 
@@ -688,7 +689,10 @@ class Instrument(SharedGObject):
         flags = p['flags']
         if not query or flags & 8: #self.FLAG_SOFTGET:
             if 'value' in p:
-                return p['value']
+                if p['type'] == np.ndarray:
+                    return np.array(p['value'])
+                else:
+                    return p['value']
             else:
 #                logging.debug('Trying to access cached value, but none available')
                 return None
@@ -717,6 +721,8 @@ class Instrument(SharedGObject):
                     value = bool(value)
                 elif p['type'] == types.NoneType:
                     pass
+                elif p['type'] == np.ndarray:
+                    value = np.array(value)
             except:
                 logging.warning('Unable to cast value "%s" to %s', value, p['type'])
 
@@ -841,6 +847,7 @@ class Instrument(SharedGObject):
             types.BooleanType: bool,
             types.TupleType: tuple,
             types.ListType: list,
+            np.ndarray: lambda x: x.tolist(),
     }
 
     def _convert_value(self, value, ttype):
@@ -850,8 +857,7 @@ class Instrument(SharedGObject):
             raise ValueError()
 
         if ttype not in self._CONVERT_MAP:
-            logging.warning('Unsupported type %s for parameter %s',
-                ttype, name)
+            logging.warning('Unsupported type %s', ttype)
             raise ValueError()
 
         try:
