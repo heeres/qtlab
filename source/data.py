@@ -25,6 +25,7 @@ import types
 import re
 import logging
 import copy
+import shutil
 
 from gettext import gettext as _L
 
@@ -764,6 +765,15 @@ class Data(SharedGObject):
         else:
             self._write_data()
         self._file.close()
+
+    def copy_file(self, fn):
+        '''
+        Copy a relevant file to the directory where the main data file is
+        located.
+        '''
+        p, n = os.path.split(fn)
+        newfn = os.path.join(self.get_dir(), n)
+        shutil.copyfile(fn, newfn)
 
 ### Adding data
 
