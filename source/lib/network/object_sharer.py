@@ -435,6 +435,11 @@ class ObjectSharer():
         logging.debug('Did %d callbacks in %.03fms for sig %s',
                 ncalls, (end - start) * 1000, signame)
 
+    def close_sockets(self):
+        logging.debug('Closing sockets')
+        for client in self._clients:
+            client.close()
+
 class SharedObject():
     '''
     Server side object that can be shared and emit signals.

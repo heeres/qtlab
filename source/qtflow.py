@@ -171,7 +171,10 @@ class FlowControl(SharedGObject):
     def exit_request(self):
         '''Run all registered exit handlers.'''
         for func in self._exit_handlers:
-            func()
+            try:
+                func()
+            except:
+                pass
 
     def register_callback(self, time_msec, func, handle=None):
         '''
@@ -275,12 +278,6 @@ def get_flowcontrol():
 def qtlab_exit():
     print "Closing QTlab..."
 
-    from lib import temp, lockfile
-    try:
-        qt.flow.exit_request()
-    except:
-        pass
+    import qt
+    qt.flow.exit_request()
 
-    # Remove temporary files
-    temp.File.remove_all()
-    lockfile.remove_lockfile()

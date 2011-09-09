@@ -51,8 +51,9 @@ def _close_gui_cb(*args):
     try:
         gtk.main_quit()
     except:
-        import sys
-        sys.exit()
+        pass
+    import sys
+    sys.exit()
 
 objsh.start_glibtcp_client('localhost', nretry=60)
 objsh.helper.register_event_callback('disconnected', _close_gui_cb)
