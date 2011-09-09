@@ -31,6 +31,9 @@ class Config(gobject.GObject):
         self.load_defaults()
         self.load()
 
+        # Override exec dir
+        self['execdir'] = get_execdir()
+
     def load_userconfig(self):
         filename = os.path.join(get_execdir(), 'userconfig.py')
         if os.path.exists(filename):
@@ -54,7 +57,6 @@ class Config(gobject.GObject):
         return os.path.join(get_execdir(), self._filename)
 
     def load_defaults(self):
-        self._defaults['execdir'] = get_execdir()
         self._defaults['datadir'] = os.path.join(get_execdir(), 'data')
 
     def save_defaults(self):
