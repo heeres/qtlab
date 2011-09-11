@@ -35,3 +35,6 @@ config['scriptdirs'] = [
 #import sys
 #sys.path.append('d:/folder1')
 #sys.path.append('d:/folder2')
+
+# Whether to start the GUI automatically
+config['startgui'] = True

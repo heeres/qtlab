@@ -25,6 +25,7 @@ from lib.calltimer import ThreadSafeGObject
 from lib.misc import exact_time
 from IPython import ultraTB
 from lib.network.object_sharer import SharedGObject
+import os
 
 class FlowControl(SharedGObject):
     '''
@@ -241,6 +242,19 @@ class FlowControl(SharedGObject):
     def set_pause(self, pause):
         '''Set / unset pause state.'''
         self._pause = pause
+
+    def start_gui(self):
+        import qt
+
+        curdir = os.getcwd()
+        os.chdir(qt.config['execdir'])
+
+        if os.name == 'nt':
+            os.spawnv(os.P_NOWAIT, 'qtlabgui.bat', ['qtlabgui.bat'])
+        if os.name == 'posix':
+            pid = os.spawnv(os.P_NOWAIT, 'qtlabgui', ['qtlabgui'])
+
+        os.chdir(curdir)
 
     def close_gui(self):
         logging.info('Emitting close-gui signal')

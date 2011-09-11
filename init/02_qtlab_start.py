@@ -30,6 +30,10 @@ try:
 except:
     pass
 
+# Auto-start GUI
+if qt.config['startgui']:
+    qt.flow.start_gui()
+
 temp.File.set_temp_dir(qt.config['tempdir'])
 
 # change startdir if commandline option is given
