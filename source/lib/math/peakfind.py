@@ -48,13 +48,24 @@ class PeakFinder(PeakFinderBase):
         self._threshold = kwargs.get('threshold', 3)
         PeakFinderBase.__init__(self, *args, **kwargs)
 
-    def find(self, sign=1):
+    def _fit_bg(self, order):
+        f = fit.Polynomial(self._xdata, self._ydata, order=order)
+        p0 = [0.1/(i+1) for i in range(order+1)]
+        p0[0] = np.average(self._ydata)
+        p = f.fit(p0)
+        return f.func(p)
+
+    def find(self, sign=1, bgorder=0):
         '''
         Return a list of (position, height, width) tuples for all peaks that
         are located.
 
         sign should be 1 to find peaks, -1 to find valleys
         '''
+
+        if bgorder > 0:
+            bg = self._fit_bg(bgorder)
+            self._ydata -= bg
 
         i = 0
         peaks = []
@@ -98,7 +109,7 @@ class PeakFinder(PeakFinderBase):
             plt.plot(f._xdata, f.func(p) + 2 * i)
 
             w = max(w, dx * 1.1)    # At least dx wide
-            mask = ((xdata > (p[2] - w)) & (xdata < (p[2] + w)))
+            mask = ((self._xdata > (p[2] - w)) & (self._xdata < (p[2] + w)))
             self._ydata[mask] = avg - sign * std
 
             i += 1
@@ -110,6 +121,7 @@ if __name__ == "__main__":
     xdata = np.arange(0, maxx, 0.1)
     for sign in (1, -1):
         ydata = np.random.random([len(xdata)])
+        ydata += -0.05 * (xdata - maxx * np.random.rand())**2
         for i in range(3):
             xpos = maxx * np.random.random()
             print 'Putting peak at %r' % (xpos, )
@@ -120,6 +132,6 @@ if __name__ == "__main__":
         plt.plot(xdata, ydata)
 
         p = PeakFinder(xdata, ydata, maxpeaks=3)
-        peaks = p.find(sign=sign)
+        peaks = p.find(sign=sign, bgorder=2)
         print 'Peaks at: %r' % (peaks, )
 
