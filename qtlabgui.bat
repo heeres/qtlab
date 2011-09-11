@@ -1,18 +1,24 @@
 :: qtlabgui.bat
 :: Runs QTlab GUI part on Windows
-::
-:: QTlab needs some programs to exist in the system PATH. They can be
-:: defined globally in "configuration_panel => system => advanced =>
-:: system_variables", or on the commandline just before execution of
-:: QTlab.
 
-SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
+@ECHO OFF
+
+:: Check if GTK is installed, if not assume GTK is in 3rd_party folder
+IF DEFINED GTK_BASEPATH GOTO mark2
 SET GTK_BASEPATH=%CD%\3rd_party\gtk
+SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
+:mark2
 
-SET PATH=%CD%\3rd_party\gnuplot\bin;%PATH%
+:: Check for version of python
+IF EXIST c:\python27\python.exe (
+    SET PYTHON_PATH=c:\python27
+    GOTO mark1
+)
+IF EXIST c:\python26\python.exe (
+    SET PYTHON_PATH=c:\python26
+    GOTO mark1
+)
+:mark1
 
-SET PATH=%CD%\3rd_party\Console2\;%PATH%
-
-start Console -w "QTLab GUI" -r "/k c:\python26\python c:\python26\scripts\ipython.py -gthread -p sh source/gui/guiclient.py"
-:: start c:\python26\python source/gui/guiclient.py
-exit
+:: Run QTlab GUI
+start %PYTHON_PATH%\pythonw.exe source/gui/guiclient.py
