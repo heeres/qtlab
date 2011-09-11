@@ -287,7 +287,14 @@ class Gaussian(Function):
 
     def get_height(self, p=None):
         '''Return height (from background).'''
-        return p[1] / p[3] / np.sqrt(pi/2) - p[0]
+        if p is None:
+            p = self._fit_params
+        return p[1] / p[3] / np.sqrt(pi/2)
+
+    def get_area(self, p=None):
+        if p is None:
+            p = self._fit_params
+        return p[1]
 
     def func(self, p, x=None):
         p, x = self.get_px(p, x)
@@ -318,7 +325,12 @@ class Lorentzian(Function):
         '''Return height (from background).'''
         if p is None:
             p = self._fit_params
-        return 2 / np.pi / p[3] * p[1] - p[0]
+        return 2 / np.pi / p[3] * p[1]
+
+    def get_area(self, p=None):
+        if p is None:
+            p = self._fit_params
+        return p[1]
 
     def func(self, p, x=None):
         p, x = self.get_px(p, x)
