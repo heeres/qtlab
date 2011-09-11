@@ -475,6 +475,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         'lines': {'datastyle': 'lines'},
         'points': {'datastyle': 'points'},
         'linespoints': {'datastyle': 'linespoints'},
+        'steps': {'datastyle': 'steps'},
         'histeps': {'datastyle': 'histeps'},
         'boxes': {'datastyle': 'boxes'},
     }
