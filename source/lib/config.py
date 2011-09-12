@@ -43,15 +43,14 @@ class Config(gobject.GObject):
     def setup_tempdir(self):
         '''Get directory for temporary files.'''
 
-        dir = self.get('tempdir', None)
+        tdir = self.get('tempdir', None)
+        if tdir == None or not os.path.exists(tdir):
+            tdir = os.path.join(get_execdir(), 'tmp')
+            self.set('tempdir', tdir)
+        if not os.path.exists(tdir):
+            os.makedirs(tdir)
 
-        if dir == None:
-            dir = os.path.join(get_execdir(), 'tmp')
-            self.set('tempdir', dir)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-
-        return dir
+        return tdir
 
     def _get_filename(self):
         return os.path.join(get_execdir(), self._filename)
