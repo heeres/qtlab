@@ -8,10 +8,10 @@
 :: statements. Comment or uncomment these lines as needed.
 
 :: Add gnuplot to PATH ("binary" folder for >= 4.4.0, "bin" folder for 4.3)
-IF EXIST %CD%\3rd_party\gnuplot\binary (
+IF EXIST "%CD%\3rd_party\gnuplot\binary" (
     SET PATH=%CD%\3rd_party\gnuplot\binary;%PATH%
 )
-IF EXIST %CD%\3rd_party\gnuplot\bin (
+IF EXIST "%CD%\3rd_party\gnuplot\bin" (
     SET PATH=%CD%\3rd_party\gnuplot\bin;%PATH%
 )
 
@@ -49,3 +49,5 @@ IF EXIST "%PYTHON_PATH%\scripts\ipython-script.py" (
 
 echo Failed to run qtlab.bat
 pause
+
+:EOF
