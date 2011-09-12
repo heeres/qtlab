@@ -190,10 +190,14 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._autorange_xyz = gtk.Button(_L('Autorange XYZ'))
         self._autorange_xyz.connect('clicked', self._autorange_xyz_cb, True)
 
+        self._clear_button = gtk.Button(_L('Clear'))
+        self._clear_button.connect('clicked', self._clear_clicked_cb)
+
         vbox = gui.pack_vbox([
             gui.pack_hbox([
                 gtk.Label(_L('Plot')),
-                self._plot_dropdown], True, True),
+                self._plot_dropdown,
+                self._clear_button], True, True),
             gui.pack_hbox([
                 gtk.Label(_L('Style')),
                 self._styles_dropdown], True, True),
@@ -337,6 +341,11 @@ class GnuplotWindow(qtwindow.QTWindow):
                 func(filepath=filepath,
                         append_graphname=False,
                         autosuffix=False)
+
+    def _clear_clicked_cb(self, widget):
+        if self._current_plot is None:
+            return
+        self._current_plot.clear()
 
     def _save_gp_clicked_cb(self, widget):
         if self._current_plot is not None:

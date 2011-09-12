@@ -634,6 +634,9 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def is_busy(self):
         return _QTGnuPlot.is_busy(self)
 
+    def clear(self):
+        return _QTGnuPlot.clear(self)
+
 class Plot3D(plot.Plot3D, _QTGnuPlot):
     '''
     Class to create surface plots using gnuplot.
@@ -950,6 +953,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def is_busy(self):
         return _QTGnuPlot.is_busy(self)
+
+    def clear(self):
+        return _QTGnuPlot.clear(self)
 
 def get_gnuplot(name=None):
     return _QTGnuPlot.get(name=name)
