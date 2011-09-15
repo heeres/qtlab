@@ -34,6 +34,7 @@ class ObjectSharer():
     '''
 
     TIMEOUT = 2
+    server = None
 
     def __init__(self):
         self._functions = {}
@@ -437,8 +438,11 @@ class ObjectSharer():
 
     def close_sockets(self):
         logging.debug('Closing sockets')
+        if SharedObject.server is None:
+            SharedObject.server.close()
+            SharedObject.server = None
         for client in self._clients:
-            client.close()
+            client.get_connection().close()
 
 class SharedObject():
     '''
@@ -643,8 +647,10 @@ def start_glibtcp_server(port=PORT):
     try:
         server = tcpserver.GlibTCPServer(('', port), _DummyHandler, '127.0.0.1')
         SharedObject.server = server
+        return True
     except Exception, e:
         logging.warning('Failed to start sharing server: %s', str(e))
+        return False
 
 def start_glibtcp_client(host, port=PORT, nretry=1):
     while nretry > 0:

@@ -39,12 +39,16 @@ class GlibTCPServer():
         self.add_allowed_ip(allowed_ip)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind(server_address)
         self.socket.setblocking(0)  # Set nonblocking
 
         # Watch the listener socket for data
         gobject.io_add_watch(self.socket, gobject.IO_IN, self._handle_accept)
         self.socket.listen(1)
+
+    def close(self):
+        self.socket.close()
 
     def _handle_accept(self, source, condition):
         """Process incoming data on the server's socket by doing an accept()
