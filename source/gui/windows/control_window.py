@@ -267,6 +267,8 @@ class QTSetInstrumentFrame(gtk.VBox):
 
 class ControlWindow(qtwindow.QTWindow):
 
+    ORDERID = 21
+
     def __init__(self):
         qtwindow.QTWindow.__init__(self, 'control', 'Instrument Control')
         self.connect("delete-event", self._delete_event_cb)

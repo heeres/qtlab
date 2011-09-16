@@ -173,8 +173,8 @@ class FlowControl(SharedGObject):
         for func in self._exit_handlers:
             try:
                 func()
-            except:
-                pass
+            except Exception, e:
+                print 'Error in func %s: %s' % (func.__name__, str(e))
 
     def register_callback(self, time_msec, func, handle=None):
         '''
@@ -221,6 +221,17 @@ class FlowControl(SharedGObject):
 
     def is_measuring(self):
         return self.get_status() == 'running'
+
+    def get_live_plot(self):
+        import qt
+        return qt.config.get('live-plot', True)
+
+    def set_live_plot(self, val):
+        import qt
+        qt.config.set('live-plot', val)
+
+    def toggle_live_plot(self):
+        self.set_live_plot(not self.get_live_plot())
 
     def check_abort(self):
         '''Check whether an abort has been requested.'''

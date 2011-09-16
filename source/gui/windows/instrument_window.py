@@ -254,6 +254,8 @@ class QTInstrumentFrame(gtk.VBox):
 
 class InstrumentWindow(qtwindow.QTWindow):
 
+    ORDERID = 20
+
     def __init__(self):
         qtwindow.QTWindow.__init__(self, 'instruments', 'Instrument View')
 
