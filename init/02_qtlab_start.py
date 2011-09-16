@@ -1,6 +1,6 @@
 import types
 from instrument import Instrument
-from lib.misc import exact_time
+from lib.misc import exact_time, get_ipython
 from lib import temp
 from time import sleep
 
@@ -21,7 +21,6 @@ else:
 
 import qt
 from qt import plot, plot3, Plot2D, Plot3D, Data
-qt._IP = __IP
 
 from numpy import *
 import numpy as np
@@ -49,6 +48,6 @@ try:
     import qtflow
     # Note: This does not seem to work for 'KeyboardInterrupt',
     # likely it is already caught by ipython itself.
-    __IP.set_custom_exc((Exception, ), qtflow.exception_handler)
+    get_ipython().set_custom_exc((Exception, ), qtflow.exception_handler)
 except Exception, e:
     print 'Error: %s' % str(e)

@@ -13,8 +13,8 @@ config = config.create_config('qtlabgui.cfg')
 
 from lib.network import object_sharer as objsh
 
-from IPython.ultraTB import AutoFormattedTB
-TB = AutoFormattedTB()
+from lib.misc import get_traceback
+TB = get_traceback()()
 
 def setup_windows():
     from windows import main_window

@@ -22,10 +22,11 @@ import logging
 import time
 from gettext import gettext as _L
 from lib.calltimer import ThreadSafeGObject
-from lib.misc import exact_time
-from IPython import ultraTB
+from lib.misc import exact_time, get_traceback
 from lib.network.object_sharer import SharedGObject
 import os
+
+AutoFormattedTB = get_traceback()
 
 class FlowControl(SharedGObject):
     '''
@@ -102,15 +103,17 @@ class FlowControl(SharedGObject):
             # Handle callbacks
             self.run_mainloop(1, wait=False)
 
-    def run_mainloop(self, delay, wait=True):
+    def run_mainloop(self, delay, wait=True, exact=False):
         '''
         Run mainloop for a maximum of <delay> seconds.
         If wait is True (default), sleep until <delay> seconds have passed.
         '''
         start = exact_time()
         dt = 0
+	# TODO possibly this implementation of event handling using threads
+	# can be done in a better way using ipython-0.11 inputhook support?
         gtk.gdk.threads_enter()
-        while gtk.events_pending() and dt < delay:
+        while gtk.events_pending() and (not exact or (dt + 0.001) < delay):
             gtk.main_iteration_do(False)
             dt = exact_time() - start
         gtk.gdk.threads_leave()
@@ -124,7 +127,7 @@ class FlowControl(SharedGObject):
 
         This function will check whether an abort has been requested and
         handle queued events for a time up to 'delay' (in seconds).
-        
+
         It starts by emitting the 'measurement-idle' signal to allow callbacks
         to be executed by the time this function handles the event queue.
         After that it handles events and sleeps for periods of 10msec. Every
@@ -151,14 +154,10 @@ class FlowControl(SharedGObject):
                 self.emit('measurement-idle')
                 lastemit = curtime
 
-            dt = curtime - start
+            dt = exact_time() - start
+            self.run_mainloop(delay-dt, wait=False, exact=exact)
 
-            gtk.gdk.threads_enter()
-            while gtk.events_pending() and (not exact or (dt + 0.001) < delay):
-                gtk.main_iteration_do(False)
-                dt = exact_time() - start
-            gtk.gdk.threads_leave()
-
+            dt = exact_time() - start
             if dt + 0.01 < delay:
                 time.sleep(0.01)
             else:
@@ -213,7 +212,7 @@ class FlowControl(SharedGObject):
     def get_status(self):
         '''Get status, one of "running", "stopped", "starting" '''
         return self._status
-    
+
     def _set_status(self, val):
         self._status = val
 
@@ -231,7 +230,7 @@ class FlowControl(SharedGObject):
             self.emit('stop-request')
             self.measurement_end(abort=True)
             raise ValueError(_L('Human abort'))
-    
+
     def set_abort(self):
         '''Request an abort.'''
         self._abort = True
@@ -261,9 +260,7 @@ class FlowControl(SharedGObject):
         self.emit('close-gui')
 
 def exception_handler(self, etype, value, tb):
-    InteractiveTB = ultraTB.AutoFormattedTB(mode='Context',
-                                            color_scheme='Linux',
-                                            tb_offset=1)
+    TB = AutoFormattedTB(mode='Context', color_scheme='Linux', tb_offset=1)
 
     fc = get_flowcontrol()
 
@@ -278,7 +275,7 @@ def exception_handler(self, etype, value, tb):
         # put qtlab back in 'stopped' state
         fc.measurement_end(abort=True)
 
-    InteractiveTB(etype, value, tb)
+    TB(etype, value, tb)
 
 try:
     _flowcontrol

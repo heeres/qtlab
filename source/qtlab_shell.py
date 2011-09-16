@@ -47,8 +47,13 @@ def show_start_help():
     print '\t\t\t(can be used multiple times'
 
     import IPython
-    ip = IPython.ipapi.get()
-    ip.magic('Exit')
+    ip_version = IPython.__version__.split('.')
+    if int(ip_version[0]) > 0 or int(ip_version[1]) > 10:
+        ip = IPython.core.ipapi.get()
+        ip.exit()
+    else:
+        ip = IPython.ipapi.get()
+        ip.magic('Exit')
 
 def do_start():
     basedir = os.path.split(os.path.dirname(sys.argv[0]))[0]
