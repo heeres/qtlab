@@ -48,6 +48,8 @@ def do_print(r):
 
 class WatchWindow(qtwindow.QTWindow):
 
+    ORDERID = 22
+
     def __init__(self):
         qtwindow.QTWindow.__init__(self, 'watch', 'Watch')
         self.connect("delete-event", self._delete_event_cb)

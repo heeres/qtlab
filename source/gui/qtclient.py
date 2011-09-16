@@ -43,6 +43,9 @@ def cmd(cmd, callback=None):
     '''Execute a python command in the server.'''
     return interpreter.cmd(cmd, callback=callback)
 
+def replot_all():
+    cmd('qt.replot_all()', callback=lambda x:None)
+
 def format_parameter_value(opt, val):
     if val is None:
         return ''

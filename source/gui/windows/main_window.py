@@ -20,7 +20,7 @@ from gettext import gettext as _L
 import logging
 
 import lib.gui as gui
-from lib.gui import qtwindow, stopbutton
+from lib.gui import qtwindow, stopbutton, orderedbox
 
 import qtclient as qt
 
@@ -55,26 +55,20 @@ class MainWindow(qtwindow.QTWindow):
 #        self.menu = gui.build_menu(menu)
 
         self._liveplot_but = gtk.ToggleButton(_L('Live Plotting'))
-        self._liveplot_but.set_active(qt.config.get('auto-update', True))
+        self._liveplot_but.set_active(qt.flow.get_live_plot())
         self._liveplot_but.connect('clicked', self._toggle_liveplot_cb)
         self._replot_but = gtk.Button(_L('Replot'))
         self._replot_but.connect('clicked', self._toggle_replot_cb)
         self._stop_but = stopbutton.StopButton()
         self._pause_but = stopbutton.PauseButton()
 
-        self._window_button_vbox = gtk.VBox()
-        self._window_buttons = []
-
-        v1 = gui.pack_vbox([
-            self._liveplot_but,
-            self._replot_but,
-            self._stop_but,
-            self._pause_but,
-            self._window_button_vbox])
-
-#        self.vbox.pack_start(self.menu, False, False)
-        self.vbox.pack_start(v1, False, False)
-        self.add(self.vbox)
+        vbox = gui.orderedbox.OrderedVBox()
+        vbox.add(self._liveplot_but, 10, False)
+        vbox.add(self._replot_but, 11, False)
+        vbox.add(self._stop_but, 12, False)
+        vbox.add(self._pause_but, 13, True)
+        self._vbox = vbox
+        self.add(self._vbox)
 
         self.show_all()
 
@@ -82,8 +76,8 @@ class MainWindow(qtwindow.QTWindow):
         '''Add a button for window 'win' to the main window.'''
 
         title = win.get_title()
+
         button = gtk.ToggleButton(title)
-        self._window_buttons.append(button)
 
         visible = qt.config.get('%s_show' % title, False)
         button.set_active(visible)
@@ -93,8 +87,12 @@ class MainWindow(qtwindow.QTWindow):
         win.connect('show', self._visibility_changed_cb, button)
         win.connect('hide', self._visibility_changed_cb, button)
 
+        try:
+            orderid = win.ORDERID
+        except:
+            orderid = 1000
+        self._vbox.add(button, orderid)
         button.show()
-        self._window_button_vbox.pack_start(button)
 
     def load_instruments(self):
         return
@@ -128,7 +126,7 @@ class MainWindow(qtwindow.QTWindow):
             button.set_active(False)
 
     def _toggle_liveplot_cb(self, widget):
-        qt.config.set('auto-update', not qt.config.get('auto-update'))
+        qt.flow.toggle_live_plot()
 
     def _toggle_replot_cb(self, widget):
         qt.replot_all()

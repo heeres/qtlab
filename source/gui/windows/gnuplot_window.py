@@ -364,4 +364,3 @@ class GnuplotWindow(qtwindow.QTWindow):
             self._current_plot.set_zrange()
 
 Window = GnuplotWindow
-
