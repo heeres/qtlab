@@ -8,4 +8,3 @@ qt.flow.register_exit_handler(lockfile.remove_lockfile)
 
 # Clear "starting" status
 qt.flow.finished_starting()
-
