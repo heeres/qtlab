@@ -10,7 +10,7 @@ RUNNING QTLAB
 
 win32:
 qtlab.bat
-(assumes python installed in c:\python26, change if needed)
+(assumes python installed in c:\python2X, change if needed)
 
 linux:
 ./qtlab
@@ -29,28 +29,31 @@ B) other programs.
 
 =group A=
 
-1) python (2.6.x)
+1) python (2.6.x or 2.7.x)
 
-    NOTE: python is in transition to an new and incompatible version 3.x. Python 2.6 is the last of the 2.x series and will likely be supported for a very long time. It contains many features that should make the transition smooth (if we will ever make it). We will stick with 2.6.x until all the dependencies have switched to 3.x.
+    NOTE: python is in transition to an new and incompatible version 3.x. Python 2.7 is the last of the 2.x series and will likely be supported for a very long time. It contains many features that should make the transition smooth (if we will ever make it). We will stick with 2.7.x until all the dependencies have switched to 3.x.
     URL: python.org
 
-2a) numpy (1.4.0)
-2b) scipy (0.7.1) (optional)
+2a) numpy (>=1.4.0)
+2b) scipy (>=0.7.1) (optional)
 
     numpy gives numerical-math functionality (similar to matlab)
     scipy has many math routines (like fitting), based on numpy.
     URL: scipy.org (for both numpy and scipy)
 
-3a) ipython (0.10)
-3b) pyreadline (1.5)
+3a) ipython (>=0.10)
+3b) pyreadline (>=1.5)
 
     enhanced interactive shell for python
     pyreadline is needed by ipython for 'tab'-completion
     URL: ipython.scipy.org (pyreadline in download dir)
 
-4a) pygtk (2.16.0)
-4b) pygobject (2.20.0)
-4c) pycairo (1.8.6)
+    NOTE: it is highly recommended to use ipython >0.11 as it
+    contains a much more robust interactive gui implementation.
+
+4)  pygtk-all-in-one (>=2.24.0)
+
+    containing pygtk, pygobject, pycairo and gtk-runtime.
 
     libraries used for creating graphical interfaces.
     URL: pygtk.org
@@ -62,24 +65,18 @@ B) other programs.
 
 =Group B=
 
-1) gnuplot (4.4rc1)
+1) gnuplot (>=4.3)
 
     plotting in QTlab is done using the gnuplot program.
     URL: gnuplot.info
-    (NEED version 4.3, currently found in development section!)
 
-2) Console2 (2.00)
+2) Console2 (>=2.00)
 
     an enhanced interface for the windows 'cmd'-terminal
     URL: sourceforge.net/projects/console
-    (Don't get the _src version, but just the
-    regular binary version from the files list.)
 
-3) GTK (2.16.6)
-
-    Libraries to make graphical interfaces. (use bundle)
-    URL: http://ftp.gnome.org/pub/gnome/binaries/win32/gtk+/
-
+    NOTE: Don't get the _src version, but just the
+    regular binary version from the files list.
 
 To 'install' the programs of group B, we recommend the following.
 
@@ -87,19 +84,11 @@ a) Make a folder '3rd_party' inside the QTLab folder.
 
 b) Both gnuplot and Console2 don't have an installer. They are just copied to the 3rd_party folder.
 
-c) GTK comes as a bundle, and is also just a collection of files and folders. Just put everything in a folder 'GTK' in the '3rd_party' folder.
-
-d) Lastly we have to make sure QTlab can find the executables. In stead of changing the PATH permanently (in system => advanced => system_variables), we prefer to add them on the commandline. Adjust the qtlab.bat file to correspond to the location of your '3rd_party' folder. If you did it exactly as recommended here, you can just uncomment the four 'SET' lines. This will add the following variables to the PATH:
+c) Make sure that QTlab can find the executables. In stead of changing the PATH permanently (in system => advanced => system_variables), we prefer to add them on the commandline. Adjust the qtlab.bat file to correspond to the location of your '3rd_party' folder. If you did it exactly as recommended here, you can just uncomment the four 'SET' lines. This will add the following variables to the PATH:
 
 <path_to_gnuplot_folder>\bin
 <path_to_console2_folder>\
-<path_to_gtk_folder>\bin
-<path_to_gtk_folder>\lib
 
 It is important to add them to the beginning of the list (of the PATH variable), so if any other versions exist, ours will be found before.
-
-Additionally the following variable is created (or overwritten):
-
-GTK_BASEPATH = <path_to_gtk_folder>
 
 This is it, your done. Happy measuring.
