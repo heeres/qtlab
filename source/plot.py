@@ -85,7 +85,7 @@ class Plot(SharedGObject):
         supportbin = kwargs.get('supportbin', False)
         name = kwargs.get('name', '')
         self._name = Plot._plot_list.new_item_name(self, name)
-        SharedGObject.__init__(self, 'plot_%s' % self._name)
+        SharedGObject.__init__(self, 'plot_%s' % self._name, replace=True)
 
         self._config = qt.config
         self._data = []

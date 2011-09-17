@@ -130,7 +130,7 @@ class ObjectSharer():
                 logging.error('Object with name %s already exists', objname)
                 return False
             else:
-                logging.warning('Object with name %s exists, replacing', objname)
+                logging.info('Object with name %s exists, replacing', objname)
 
         self._objects[objname] = object
         if objname is not 'root':
@@ -487,7 +487,7 @@ class SharedGObject(gobject.GObject, SharedObject):
         self.__hid_map = {}
         self._do_idle_emit = idle_emit
         gobject.GObject.__init__(self)
-        SharedObject.__init__(self, name)
+        SharedObject.__init__(self, name, replace=replace)
 
     def connect(self, signal, *args, **kwargs):
         hid = SharedObject.connect(self, signal, *args, **kwargs)

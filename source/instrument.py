@@ -83,7 +83,7 @@ class Instrument(SharedGObject):
     _lock_classes = {}
 
     def __init__(self, name, **kwargs):
-        SharedGObject.__init__(self, 'instrument_%s' % name)
+        SharedGObject.__init__(self, 'instrument_%s' % name, replace=True)
 
         self._name = name
         self._initialized = False
