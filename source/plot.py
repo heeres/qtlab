@@ -300,7 +300,7 @@ class Plot(SharedGObject):
             else:
                 return
 
-        cfgau = self._config.get('auto-update', True)
+        cfgau = self._config.get('live-plot', True)
         if force or (cfgau and dt > self._mintime):
             if self.is_busy():
                 self._queue_update(force=force, **kwargs)
