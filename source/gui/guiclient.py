@@ -4,7 +4,10 @@ import logging
 l = logging.getLogger()
 l.setLevel(logging.WARNING)
 
-import os, sys, time
+import os
+import sys
+import time
+import optparse
 adddir = os.path.join(os.getcwd(), 'source')
 sys.path.append(adddir)
 
@@ -62,6 +65,18 @@ qt.flow.connect('close-gui', _close_gui_cb)
 setup_windows()
 
 if __name__ == "__main__":
+    parser = optparse.OptionParser()
+    parser.add_option('-d', '--disable-io', default=False, action='store_true')
+    args, pargs = parser.parse_args()
+    if args.disable_io:
+        os.close(sys.stdin.fileno())
+        os.close(sys.stdout.fileno())
+        os.close(sys.stderr.fileno())
+
+    # Ignore CTRL-C
+    import signal
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     import gtk
     gtk.main()
 
