@@ -37,7 +37,9 @@ class _GnuPlotList(NamedList):
                 shared_name='namedlist_gnuplot')
 
     def create(self, name):
-        return gnuplotpipe.GnuplotPipe(termtitle=name)
+        term = qt.config.get('gnuplot_terminal', None)
+        return gnuplotpipe.GnuplotPipe(termtitle=name,
+            default_terminal=term)
 
     def get(self, name=''):
         '''Get Gnuplot instance from list and verify whether it's alive.'''

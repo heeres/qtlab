@@ -1,7 +1,7 @@
 # gnuplotpipe.py, class for communicating with gnuplot through a pipe.
 # Reinier Heeres <reinier@heeres.eu>
 #
-# On Windows you will need gnuplot 4.3.
+# On Windows you will need gnuplot >= 4.3.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import time
 import ctypes
 import logging
 import sys
+import types
 
 DEFAULT_TIMEOUT = 0.1
 
@@ -96,11 +97,20 @@ class GnuplotPipe():
     _RE_LOG = re.compile('(\w+) \(base ([^\)]*)\)')
     _RE_LABEL = re.compile('.*label is "[\"]"')
 
-    def __init__(self, termtitle='QTGnuplot', persist=False, noraise=True):
+    def __init__(self, termtitle='QTGnuplot', persist=False, noraise=True,
+                    default_terminal=None):
         self._termtitle = termtitle
         self._persist = persist
         self._noraise = noraise
         self._reopen_cb = None
+
+        if type(default_terminal) in (types.StringType, types.UnicodeType):
+            self._default_terminal = (default_terminal, '')
+        elif default_terminal is not None:
+            self._default_terminal = default_terminal
+        else:
+            self._default_terminal = None
+
         self._open_gnuplot()
 
     def set_reopen_cb(self, cb):
@@ -122,7 +132,8 @@ class GnuplotPipe():
 
         self._wait_start()
 
-        self._default_terminal = self.get_terminal()
+        if self._default_terminal is None:
+            self._default_terminal = self.get_terminal()
         if self._default_terminal is None:
             if on_windows():
                 self._default_terminal = ('windows', '')

@@ -38,3 +38,8 @@ config['scriptdirs'] = [
 
 # Whether to start the GUI automatically
 config['startgui'] = True
+
+# Default gnuplot terminal
+#config['gnuplot_terminal'] = 'x11'
+#config['gnuplot_terminal'] = 'wxt'
+#config['gnuplot_terminal'] = 'windows'
