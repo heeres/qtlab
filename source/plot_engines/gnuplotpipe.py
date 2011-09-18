@@ -25,11 +25,15 @@ import ctypes
 import logging
 import sys
 import types
+import os
 
 DEFAULT_TIMEOUT = 0.1
 
 def on_windows():
     return sys.platform in ('win32', 'cygwin')
+
+def is_64bit_windows():
+    return 'PROGRAMFILES(X86)' in os.environ
 
 class WinPipe():
     '''
@@ -134,6 +138,10 @@ class GnuplotPipe():
 
         if self._default_terminal is None:
             self._default_terminal = self.get_terminal()
+            # disable wx terminal on 64bit windows due to font bug in gnuplot
+            if self._default_terminal is not None and \
+                self._default_terminal[0] == 'wxt' and is_64bit_windows():
+                    self._default_terminal = ('windows', '')
         if self._default_terminal is None:
             if on_windows():
                 self._default_terminal = ('windows', '')
