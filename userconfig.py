@@ -6,7 +6,10 @@ config.remove([
             'datadir',
             'startdir',
             'startscript',
+            'scriptdirs',
             'user_ins_dir',
+            'startgui',
+            'gnuplot_terminal',
             ])
 
 ## This sets a default location for data-storage
