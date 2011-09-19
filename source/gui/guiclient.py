@@ -51,6 +51,7 @@ def _close_gui_cb(*args):
     import gtk
     import logging
     logging.info('Closing GUI')
+    qt.config.save()
     try:
         gtk.main_quit()
     except:
