@@ -3,11 +3,11 @@
 
 @ECHO OFF
 
-:: Check if GTK is installed, if not assume GTK is in 3rd_party folder
-IF DEFINED GTK_BASEPATH GOTO mark2
-SET GTK_BASEPATH=%CD%\3rd_party\gtk
-SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
-:mark2
+:: If using a separate GTK install (and not the one provided in the
+:: pygtk-all-in-one installer), uncomment and adjust the following
+:: two lines to point to the appropriate locations
+::SET GTK_BASEPATH=%CD%\3rd_party\gtk
+::SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
 
 :: Check for version of python
 IF EXIST c:\python27\python.exe (

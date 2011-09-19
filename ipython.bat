@@ -31,3 +31,4 @@ IF EXIST "%PYTHON_PATH%\scripts\ipython-script.py" (
 
 echo Failed to run ipython.bat
 pause
+:EOF

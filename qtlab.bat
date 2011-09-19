@@ -13,11 +13,10 @@ SET PATH=%CD%\3rd_party\gnuplot\binary;%PATH%
 :: Add Console2 to PATH
 SET PATH=%CD%\3rd_party\Console2\;%PATH%
 
-:: Check if GTK is installed, if not assume GTK is in 3rd_party folder
-IF DEFINED GTK_BASEPATH GOTO mark2
-SET GTK_BASEPATH=%CD%\3rd_party\gtk
-SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
-:mark2
+:: Add GTK to PATH and set GTK_BASEPATH (not needed if using
+:: pygtk-all-in-one installer).
+::SET GTK_BASEPATH=%CD%\3rd_party\gtk
+::SET PATH=%CD%\3rd_party\gtk\bin;%CD%\3rd_party\gtk\lib;%PATH%
 
 :: Check for version of python
 IF EXIST c:\python27\python.exe (
@@ -44,5 +43,4 @@ IF EXIST "%PYTHON_PATH%\scripts\ipython-script.py" (
 
 echo Failed to run qtlab.bat
 pause
-
 :EOF
