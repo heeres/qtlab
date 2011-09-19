@@ -295,8 +295,8 @@ class ObjectSharer():
             ret = conn.send(tosend)
             if ret != len(tosend):
                 logging.warning('Only %d bytes got sent instead of %d', ret, len(tosend))
-        except:
-            logging.warning('Send exception, assuming client disconnected')
+        except exception, e:
+            logging.warning('Send exception (%s), assuming client disconnected', e)
             self._client_disconnected(conn)
 
         return True
