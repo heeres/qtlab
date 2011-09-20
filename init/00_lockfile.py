@@ -2,6 +2,9 @@ from lib import config
 _cfg = config.create_config('qtlab.cfg')
 _cfg.load_userconfig()
 _cfg.setup_tempdir()
+
+# Mark that we're in qtlab
+_cfg['qtlab'] = True
 del _cfg
 
 import os

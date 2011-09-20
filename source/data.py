@@ -29,11 +29,15 @@ import shutil
 
 from gettext import gettext as _L
 
-import qt
 from lib import namedlist, temp
 from lib.misc import dict_to_ordered_tuples, get_arg_type
-
+from lib.config import get_config
+config = get_config()
+in_qtlab = config.get('qtlab', False)
 from lib.network.object_sharer import SharedGObject, cache_result
+
+if in_qtlab:
+    import qt
 
 # Filename generator classes
 
@@ -76,7 +80,7 @@ class DateTimeGenerator:
     def new_filename(self, data_obj):
         '''Return a new filename, based on name and timestamp.'''
 
-        dir = self.create_data_dir(qt.config['datadir'], name=data_obj._name,
+        dir = self.create_data_dir(config['datadir'], name=data_obj._name,
                 ts=data_obj._localtime)
         tstr = time.strftime('%H%M%S', data_obj._localtime)
         filename = '%s_%s.dat' % (tstr, data_obj._name)
@@ -584,11 +588,12 @@ class Data(SharedGObject):
 
         self._write_header()
 
-        if settings_file:
+        if settings_file and in_qtlab:
             self._write_settings_file()
 
         try:
-            self._stop_req_hid = \
+            if in_qtlab:
+                self._stop_req_hid = \
                     qt.flow.connect('stop-request', self._stop_request_cb)
         except:
             pass
@@ -604,7 +609,7 @@ class Data(SharedGObject):
             self._file.close()
             self._file = None
 
-        if self._stop_req_hid is not None:
+        if self._stop_req_hid is not None and in_qtlab:
             qt.flow.disconnect(self._stop_req_hid)
             self._stop_req_hid = None
 
@@ -650,7 +655,7 @@ class Data(SharedGObject):
                 format = '%%.%de' % opts['precision']
                 return format % val
 
-        precision = qt.config.get('default_precision', 12)
+        precision = config.get('default_precision', 12)
         format = '%%.%de' % precision
         return format % val
 
