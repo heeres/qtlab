@@ -36,6 +36,7 @@ class MainWindow(qtwindow.QTWindow):
 
         qtwindow.QTWindow.__init__(self, 'main', 'QT Lab', add_to_main=False)
         self.connect("delete-event", self._delete_event_cb)
+        self.connect("destroy", self._destroy_cb)
 
         self.vbox = gtk.VBox()
 
@@ -98,14 +99,16 @@ class MainWindow(qtwindow.QTWindow):
         return
 
     def _delete_event_cb(self, widget, event, data=None):
-        print 'Hiding main window. Type show_main() to get it back.'
-        self.hide()
-        return True
+        return False
 
     def _destroy_cb(self, widget, data=None):
-        config = config.get_config()
-        config.save()
-        gtk.main_quit()
+        logging.info('Closing GUI')
+        qt.config.save(delay=0)
+        try:
+            gtk.main_quit()
+        except:
+            pass
+        sys.exit()
 
     def _save_cb(self, widget):
         pass

@@ -49,14 +49,12 @@ def setup_windows():
 
 def _close_gui_cb(*args):
     import gtk
-    import logging
     logging.info('Closing GUI')
-    qt.config.save()
+    qt.config.save(delay=0)
     try:
         gtk.main_quit()
     except:
         pass
-    import sys
     sys.exit()
 
 objsh.start_glibtcp_client('localhost', nretry=60)
