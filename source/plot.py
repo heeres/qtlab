@@ -23,7 +23,11 @@ import time
 import types
 import numpy
 
-import qt
+from lib.config import get_config
+config = get_config()
+if config.get('qtlab', False):
+    import qt
+
 from data import Data
 from lib import namedlist
 from lib.misc import get_dict_keys
@@ -87,7 +91,6 @@ class Plot(SharedGObject):
         self._name = Plot._plot_list.new_item_name(self, name)
         SharedGObject.__init__(self, 'plot_%s' % self._name, replace=True)
 
-        self._config = qt.config
         self._data = []
 
         # Plot properties, things such as maxpoints might be migrated here.
@@ -300,7 +303,7 @@ class Plot(SharedGObject):
             else:
                 return
 
-        cfgau = self._config.get('live-plot', True)
+        cfgau = config.get('live-plot', True)
         if force or (cfgau and dt > self._mintime):
             if self.is_busy():
                 self._queue_update(force=force, **kwargs)
@@ -704,7 +707,7 @@ def plot(*args, **kwargs):
 
     plotname = kwargs.pop('name', 'plot')
     ret = kwargs.pop('ret', True)
-    graph = qt.plots[plotname]
+    graph = Plot._plot_list[plotname]
     if graph is None:
         graph = qt.Plot2D(name=plotname)
 
@@ -742,7 +745,7 @@ def plot3(*args, **kwargs):
 
     plotname = kwargs.pop('name', 'plot3d')
     ret = kwargs.pop('ret', True)
-    graph = qt.plots[plotname]
+    graph = Plot._plot_list[plotname]
     if graph is None:
         graph = qt.Plot3D(name=plotname)
 

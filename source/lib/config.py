@@ -191,7 +191,8 @@ def get_config():
     global _config
     if _config is None:
         pname = os.path.split(sys.argv[0])[-1]
-        _config = create_config(pname)
+        fname = pname + '.cfg'
+        _config = create_config(fname)
     return _config
 
 _config = None

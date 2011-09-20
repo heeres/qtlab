@@ -23,7 +23,8 @@ import types
 import logging
 import numpy as np
 
-import qt
+from lib.config import get_config
+config = get_config()
 from lib.namedlist import NamedList
 from lib.network.object_sharer import cache_result
 import plot
@@ -37,7 +38,7 @@ class _GnuPlotList(NamedList):
                 shared_name='namedlist_gnuplot')
 
     def create(self, name):
-        term = qt.config.get('gnuplot_terminal', None)
+        term = config.get('gnuplot_terminal', None)
         return gnuplotpipe.GnuplotPipe(termtitle=name,
             default_terminal=term)
 
@@ -206,7 +207,7 @@ class _QTGnuPlot():
 
         if filepath is None:
             filepath = self.get_first_filepath()
-            if filepath.startswith(qt.config['tempdir']):
+            if filepath.startswith(config['tempdir']):
                 filepath = os.getcwd()
 
         if os.path.isdir(filepath):
@@ -484,7 +485,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = qt.config.get('gnuplot_binary', True)
+        kwargs['supportbin'] = config.get('gnuplot_binary', True)
         plot.Plot2D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
@@ -521,7 +522,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
         '''Set plotting style.'''
 
         if style is None or style == '':
-            style = qt.config.get('gnuplot2d_style', 'lines')
+            style = config.get('gnuplot2d_style', 'lines')
 
         if style not in self._STYLES:
             logging.warning('Unknown style: %s', style)
@@ -757,7 +758,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
-        kwargs['supportbin'] = qt.config.get('gnuplot_binary', True)
+        kwargs['supportbin'] = config.get('gnuplot_binary', True)
         plot.Plot3D.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
@@ -804,7 +805,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         '''Set plotting style.'''
 
         if style is None or style == '':
-            style = qt.config.get('gnuplot_style', 'image3d')
+            style = config.get('gnuplot_style', 'image3d')
 
         if style not in self._STYLES:
             logging.warning('Unknown style: %s', style)
