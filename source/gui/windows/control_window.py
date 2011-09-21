@@ -236,15 +236,23 @@ class QTSetInstrumentFrame(gtk.VBox):
         self._set_but.set_sensitive(sset)
         self._make_sl.set_sensitive(sset)
 
+    def _param_get_cb(self, val):
+        self._param_edit.set_text('%s' % val)
+        self._get_but.set_sensitive(True)
+
+    def _param_set_cb(self):
+        self._set_but.set_sensitive(True)
+
     def _get_param_clicked_cb(self, widget):
         param = self._param_combo.get_parameter()
-        val = self._ins.get(param)
-        self._param_edit.set_text('%s' % val)
+        self._get_but.set_sensitive(False)
+        self._ins.get(param, callback=self._param_get_cb)
 
     def _set_param_clicked_cb(self, widget):
         param = self._param_combo.get_parameter()
         val = self._param_edit.get_text()
-        self._ins.set(param, val)
+        self._set_but.set_sensitive(False)
+        self._ins.set(param, val, callback=self._param_set_cb)
 
     def _fp_clicked_cb(self, sender):
         ins = self._ins_combo.get_instrument()
