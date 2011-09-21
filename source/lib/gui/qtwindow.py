@@ -35,7 +35,7 @@ class QTWindow(gtk.Window):
         if show:
             gobject.timeout_add(100, self._do_show)
 
-        self.connect('size-allocate', self._size_allocate_cb)
+        self.connect('configure-event', self._configure_event_cb)
         self.connect('show', lambda x: self._show_hide_cb(x, True))
         self.connect('hide', lambda x: self._show_hide_cb(x, False))
 
@@ -56,17 +56,16 @@ class QTWindow(gtk.Window):
     def _do_show(self):
         self.show()
 
-    def _size_allocate_cb(self, sender, alloc):
-        self._config.set('%s_size' % self._title, (alloc.width, alloc.height))
-
     def _show_hide_cb(self, sender, show):
         self._config.set('%s_show' % self._title, show)
 
-        if show:
-            pos = self.get_position()
-            pos = [max(i, 0) for i in pos]
+    def _configure_event_cb(self, sender, *args):
+        pos = self.get_position()
+        pos = [max(i, 0) for i in pos]
+        self._config.set('%s_pos' % self._title, pos)
 
-            self._config.set('%s_pos' % self._title, pos)
+        w, h = self.get_size()
+        self._config.set('%s_size' % self._title, (w, h))
 
     def get_title(self):
         '''Return window title.'''
