@@ -4,9 +4,8 @@ import gobject
 from gettext import gettext as _L
 
 from lib import namedlist
-from lib import config
-
-import qtclient as qt
+from lib.config import get_config
+config = get_config()
 
 class QTWindow(gtk.Window):
 
@@ -18,12 +17,11 @@ class QTWindow(gtk.Window):
 
         self._name = self.generate_name(name)
         self._title = title
-        self._config = qt.config
 
-        winx, winy = self._config.get('%s_pos' % title, (250, 40))
+        winx, winy = config.get('%s_pos' % title, (250, 40))
         self.move(winx, winy)
 
-        width, height = self._config.get('%s_size' % self._title, (200, 400))
+        width, height = config.get('%s_size' % self._title, (200, 400))
         self.set_size_request(50, 50)
         self.resize(width, height)
 
@@ -31,7 +29,7 @@ class QTWindow(gtk.Window):
 
         self.set_title(_L(title))
 
-        show = self._config.get('%s_show' % self._title, False)
+        show = config.get('%s_show' % self._title, False)
         if show:
             gobject.timeout_add(100, self._do_show)
 
@@ -57,15 +55,15 @@ class QTWindow(gtk.Window):
         self.show()
 
     def _show_hide_cb(self, sender, show):
-        self._config.set('%s_show' % self._title, show)
+        config.set('%s_show' % self._title, show)
 
     def _configure_event_cb(self, sender, *args):
         pos = self.get_position()
         pos = [max(i, 0) for i in pos]
-        self._config.set('%s_pos' % self._title, pos)
+        config.set('%s_pos' % self._title, pos)
 
         w, h = self.get_size()
-        self._config.set('%s_size' % self._title, (w, h))
+        config.set('%s_size' % self._title, (w, h))
 
     def get_title(self):
         '''Return window title.'''
