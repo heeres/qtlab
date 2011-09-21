@@ -240,7 +240,7 @@ class QTSetInstrumentFrame(gtk.VBox):
         self._param_edit.set_text('%s' % val)
         self._get_but.set_sensitive(True)
 
-    def _param_set_cb(self):
+    def _param_set_cb(self, boolsucces):
         self._set_but.set_sensitive(True)
 
     def _get_param_clicked_cb(self, widget):
