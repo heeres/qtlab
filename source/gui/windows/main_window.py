@@ -99,8 +99,43 @@ class MainWindow(qtwindow.QTWindow):
     def load_instruments(self):
         return
 
+    def _checkbutton_cb(self, widget):
+        if widget.get_active() == 0:
+            qt.config['show_close_dialog'] = True
+        else:
+            qt.config['show_close_dialog'] = False
+
     def _delete_event_cb(self, widget, event, data=None):
-        return False
+        if not qt.config.get('show_close_dialog', True):
+            return False
+
+        label = gtk.Label("""
+You are closing the QTLab GUI.
+
+If you want to reopen it, run qt.flow.start_gui()
+from the shell, or run the qtlabgui[.bat] script
+in the QTLab folder.
+""")
+        label.set_line_wrap(True)
+
+        checkbox = gtk.CheckButton("Do not show this message again.")
+        checkbox.connect("toggled", self._checkbutton_cb)
+
+        dialog = gtk.Dialog("Confirmation", None,
+                gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT,
+                 gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT))
+
+        dialog.vbox.pack_start(label)
+        dialog.vbox.pack_end(checkbox)
+        dialog.vbox.show_all()
+        response = dialog.run()
+        dialog.destroy()
+
+        if response == gtk.RESPONSE_ACCEPT:
+            return False
+        else:
+            return True
 
     def _destroy_cb(self, widget, data=None):
         logging.info('Closing GUI')
