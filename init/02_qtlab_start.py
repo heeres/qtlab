@@ -1,3 +1,11 @@
+_cfg = config.create_config('qtlab.cfg')
+_cfg.load_userconfig()
+_cfg.setup_tempdir()
+
+# Mark that we're in qtlab
+_cfg['qtlab'] = True
+del _cfg
+
 import types
 from instrument import Instrument
 from lib.misc import exact_time, get_ipython
@@ -51,3 +59,8 @@ try:
     get_ipython().set_custom_exc((Exception, ), qtflow.exception_handler)
 except Exception, e:
     print 'Error: %s' % str(e)
+
+# Other functions should be registered using qt.flow.register_exit_handler
+from lib.misc import register_exit
+import qtflow
+register_exit(qtflow.qtlab_exit)
