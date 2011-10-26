@@ -21,7 +21,6 @@ import gtk
 import logging
 import time
 from gettext import gettext as _L
-from lib.calltimer import ThreadSafeGObject
 from lib.misc import exact_time, get_traceback
 from lib.network.object_sharer import SharedGObject
 import os
