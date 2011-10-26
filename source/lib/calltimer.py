@@ -17,10 +17,10 @@
 
 import logging
 import gobject
-gobject.threads_init()
+#gobject.threads_init()
 
 import gtk
-gtk.gdk.threads_init()
+#gtk.gdk.threads_init()
 
 import threading
 import time
