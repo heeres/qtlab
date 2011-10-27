@@ -28,8 +28,6 @@ from lib.gui.qttable import QTTable
 from lib.gui import dropdowns, qtwindow
 from lib import temp
 
-from lib.calltimer import GObjectThread, ThreadVariable
-
 import numpy as np
 
 def gptime():
