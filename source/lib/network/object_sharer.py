@@ -57,6 +57,7 @@ class ObjectSharer():
 
         # Buffers to store partly received packets
         self._buffers = {}
+        self._send_queue = {}
 
     def set_client_timeout(self, timeout):
         '''
@@ -110,6 +111,9 @@ class ObjectSharer():
                 self.remove_client(client)
                 break
 
+        if conn in self._send_queue:
+            del self._send_queue[conn]
+
     def get_clients(self):
         return self._clients
 
@@ -149,14 +153,10 @@ class ObjectSharer():
         self._object_cache[objname] = proxy
         return proxy
 
-    def find_object(self, objname):
+    def find_remote_object(self, objname):
         '''
-        Locate a shared object. Search locally and with connected clients.
+        Locate a shared object. Search with connected clients.
         '''
-
-        # Local objects
-        if objname in self._objects:
-            return self._objects[objname]
 
         # Remote objects which have a local proxy
         if objname in self._object_cache:
@@ -178,6 +178,18 @@ class ObjectSharer():
                 return self._get_object_from(client, objname)
 
         return None
+
+    def find_object(self, objname):
+        '''
+        Locate a shared object. Search locally first and then with connected
+        clients.
+        '''
+
+        # Local objects
+        if objname in self._objects:
+            return self._objects[objname]
+
+        return self.find_remote_object(objname)
 
     def _pickle_packet(self, info, data):
         try:
@@ -282,24 +294,59 @@ class ObjectSharer():
 
         self._send_return(conn, info[1], ret)
 
+    def _do_send_raw(self, conn, data):
+        try:
+            ret = conn.send(data)
+        except socket.error, e:
+            if e.errno not in (10035, ):
+                logging.warning('Send exception (%s), assuming client disconnected', e)
+                self._client_disconnected(conn)
+                return -1
+            ret = 0
+
+        return ret
+
+    def _process_send_queue(self):
+        '''
+        Process send queue on a per connection basis.
+        '''
+
+        for conn in self._send_queue.keys():
+            datalist = self._send_queue[conn]
+            while len(datalist) > 0:
+                nsent = self._do_send_raw(conn, datalist[0])
+
+                # Ok
+                if nsent == len(datalist[0]):
+                    del datalist[0]
+
+                # Failed, signals disconnection so remove send queue
+                elif nsent == -1:
+                    if conn in self._send_queue:
+                        del self._send_queue[conn]
+                    break
+
+                # Partially sent
+                else:
+                    datalist[0] = datalist[0][nsent:]
+                    break
+
+        return True
+
     def send_packet(self, conn, data):
         dlen = len(data)
         if dlen > 0xffffffffL:
             logging.error('Trying to send too long packet: %d', dlen)
-            return False
+            return -1
 
         tosend = 'QT%c%c%c%c' % ((dlen&0xff000000)>>24, \
             (dlen&0x00ff0000)>>16, (dlen&0x0000ff00)>>8, (dlen&0x000000ff))
         tosend += data
-        try:
-            ret = conn.send(tosend)
-            if ret != len(tosend):
-                logging.warning('Only %d bytes got sent instead of %d', ret, len(tosend))
-        except Exception, e:
-            logging.warning('Send exception (%s), assuming client disconnected', e)
-            self._client_disconnected(conn)
 
-        return True
+        if conn not in self._send_queue:
+            self._send_queue[conn] = []
+        self._send_queue[conn].append(tosend)
+        self._process_send_queue()
 
     def _call_cb(self, callid, val):
         if callid in self._return_vals:
@@ -400,7 +447,7 @@ class ObjectSharer():
 
     def disconnect(self, hid):
         if hid in self._callbacks_hid:
-            del self._callbacks[hid]
+            del self._callbacks_hid[hid]
 
         for name, info_list in self._callbacks_name.iteritems():
             for index, info in enumerate(info_list):
@@ -409,7 +456,7 @@ class ObjectSharer():
                     break
 
     def emit_signal(self, objname, signame, *args, **kwargs):
-        logging.info('Emitting %s(%r, %r) for %s to %d clients',
+        logging.debug('Emitting %s(%r, %r) for %s to %d clients',
                 signame, args, kwargs, objname, len(self._clients))
 
         kwargs['signal'] = True
@@ -417,7 +464,7 @@ class ObjectSharer():
             client.receive_signal(objname, signame, *args, **kwargs)
 
     def receive_signal(self, objname, signame, *args, **kwargs):
-        logging.info('Received signal %s(%r, %r) from %s',
+        logging.debug('Received signal %s(%r, %r) from %s',
                 signame, args, kwargs, objname)
 
         ncalls = 0
@@ -565,8 +612,7 @@ class ObjectProxy():
         return helper.connect(self.__name, signame, func)
 
     def disconnect(self, hid):
-        if self.client:
-            return self.__client.disconnect(hid)
+        return helper.disconnect(hid)
 
 def cache_result(f):
     f._share_options = {'cache_result': True}
@@ -643,10 +689,19 @@ class _DummyHandler(tcpserver.GlibTCPHandler):
             data = helper.handle_data(self.socket, data)
         return True
 
+_flush_queue_hid = None
+
+def setup_glib_flush_queue():
+    global _flush_queue_hid
+    if _flush_queue_hid is not None:
+        return
+    _flush_queue_hid = gobject.timeout_add(2000, helper._process_send_queue)
+
 def start_glibtcp_server(port=PORT):
     try:
         server = tcpserver.GlibTCPServer(('', port), _DummyHandler, '127.0.0.1')
         SharedObject.server = server
+        setup_glib_flush_queue()
         return True
     except Exception, e:
         logging.warning('Failed to start sharing server: %s', str(e))
@@ -658,6 +713,7 @@ def start_glibtcp_client(host, port=PORT, nretry=1):
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((host, port))
             handler = _DummyHandler(sock, 'client', 'server')
+            setup_glib_flush_queue()
             return True
         except Exception, e:
             logging.warning('Failed to start sharing client: %s', str(e))
