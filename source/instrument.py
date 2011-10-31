@@ -29,6 +29,9 @@ import numpy as np
 import logging
 import qt
 
+from lib.config import get_config
+config = get_config()
+
 class Instrument(SharedGObject):
     """
     Base class for instruments.
@@ -374,7 +377,7 @@ class Instrument(SharedGObject):
 #            property(lambda: self.get(name), lambda x: self.set(name, x)))
 
         if options['flags'] & self.FLAG_PERSIST:
-            val = qt.config.get('persist_%s_%s' % (self._name, name))
+            val = config.get('persist_%s_%s' % (self._name, name))
             options['value'] = val
         else:
             options['value'] = None
@@ -782,6 +785,10 @@ class Instrument(SharedGObject):
         Perform a get in a separate thread. Run gobject main loop while
         executing and return when the get finishes.
         '''
+
+        if config.get('threading_warning', True):
+            logging.warning('Using threading functions could result in QTLab becoming unstable!')
+
         thread = calltimer.ThreadCall(self.get, *args, **kwargs)
 
         # In python 2.6 the function is called is_alive
@@ -968,8 +975,8 @@ class Instrument(SharedGObject):
             value = self._get_value(name, **kwargs)
 
         if p['flags'] & self.FLAG_PERSIST:
-            qt.config.set('persist_%s_%s' % (self._name, name), value)
-            qt.config.save()
+            config.set('persist_%s_%s' % (self._name, name), value)
+            config.save()
 
         p['value'] = value
         return value

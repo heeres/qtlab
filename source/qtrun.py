@@ -52,5 +52,11 @@ def qtrun(filepath, name=''):
         data.close_datafile()
 
 def qtrun_thread(filepath, name=''):
-    calltimer.ThreadCall(qtrun, filepath, name)
+    '''
+    Run a script using qtrun() in a separate thread.
+    '''
 
+    if config.get('threading_warning', True):
+        logging.warning('Using threading functions could result in QTLab becoming unstable!')
+
+    calltimer.ThreadCall(qtrun, filepath, name)
