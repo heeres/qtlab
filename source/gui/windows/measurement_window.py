@@ -360,7 +360,7 @@ class MeasurementWindow(QTWindow):
 
     def _start_clicked_cb(self, widget):
         logging.debug('Starting measurement')
-        if config.get('threading_warning', True):
+        if qt.config.get('threading_warning', True):
             logging.warning('The measurement window uses threading; this could result in QTLab becoming unstable!')
 
         self.set_sensitive(False)
