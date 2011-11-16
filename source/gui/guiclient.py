@@ -9,7 +9,7 @@ import sys
 import time
 import optparse
 adddir = os.path.join(os.getcwd(), 'source')
-sys.path.append(adddir)
+sys.path.insert(0, adddir)
 
 from lib import config
 config = config.create_config('qtlabgui.cfg')

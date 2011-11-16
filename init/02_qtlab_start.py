@@ -38,7 +38,7 @@ except:
     pass
 
 # Auto-start GUI
-if qt.config['startgui']:
+if qt.config.get('startgui', True):
     qt.flow.start_gui()
 
 temp.File.set_temp_dir(qt.config['tempdir'])
