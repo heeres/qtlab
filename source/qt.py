@@ -22,10 +22,11 @@ msleep = flow.measurement_idle
 mstart = flow.measurement_start
 mend = flow.measurement_end
 
-if config.get('plot_type', 'gnuplot') == 'matplotlib':
-    from plot_engines.qtmatplotlib import Plot2D, Plot3D
-else:
-    from plot_engines.qtgnuplot import Plot2D, Plot3D, plot_file
+from plot import Plot2D, Plot3D
+try:
+    from plot import plot_file
+except:
+    pass
 
 plots = Plot.get_named_list()
 

@@ -58,11 +58,12 @@ class AxisSettings(gtk.Frame):
                 self._label_entry,
                 self._label_but], True, True),
             gui.pack_hbox([
+                self._logcheck,
                 gtk.Label(_L('Range')),
                 self._min_range,
                 self._max_range,
                 self._range_but], True, True),
-            self._logcheck], False, False)
+            ], False, False)
 
         self.add(vbox)
 
@@ -143,6 +144,21 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._styles_dropdown = dropdowns.StringListDropdown([])
         self._styles_dropdown.connect('changed', self._style_changed_cb)
 
+        self._maxpoints_entry = gtk.Entry()
+        self._maxpoints_but = gtk.Button(_L('Set'))
+        self._maxpoints_but.connect('clicked', self._maxpoints_clicked_cb)
+        self._maxpoints_entry.connect('activate', self._maxpoints_clicked_cb)
+
+        self._maxtraces_entry = gtk.Entry()
+        self._maxtraces_but = gtk.Button(_L('Set'))
+        self._maxtraces_but.connect('clicked', self._maxtraces_clicked_cb)
+        self._maxtraces_entry.connect('activate', self._maxtraces_clicked_cb)
+
+        self._mintime_entry = gtk.Entry()
+        self._mintime_but = gtk.Button(_L('Set'))
+        self._mintime_but.connect('clicked', self._mintime_clicked_cb)
+        self._mintime_entry.connect('activate', self._mintime_clicked_cb)
+
         self._legend_check = gtk.CheckButton('Legend')
         self._legend_check.set_active(False)
         self._legend_check.connect('toggled', self._legend_toggled_cb)
@@ -167,17 +183,14 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._filename_entry = gtk.Entry()
         self._save_button = gtk.Button(_L('Save'))
         self._save_button.connect('clicked', self._save_clicked_cb)
-        self._save_gp_button = gtk.Button(_L('Save .gp file'))
-        self._save_gp_button.connect('clicked', self._save_gp_clicked_cb)
 
         vbox = gui.pack_vbox([
             gui.pack_hbox([
                 gtk.Label(_L('Filename')),
-                self._filename_entry], True, True),
-            gui.pack_hbox([
+                self._filename_entry,
                 self._save_as_dropdown,
                 self._save_button], True, True),
-            self._save_gp_button], False, False)
+            ], False, False)
         self._save_as_frame.add(vbox)
 
         self._axis_x = AxisSettings('x')
@@ -193,11 +206,15 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._clear_button = gtk.Button(_L('Clear'))
         self._clear_button.connect('clicked', self._clear_clicked_cb)
 
+        self._del_button = gtk.Button(_L('Delete'))
+        self._del_button.connect('clicked', self._del_clicked_cb)
+
         vbox = gui.pack_vbox([
             gui.pack_hbox([
                 gtk.Label(_L('Plot')),
                 self._plot_dropdown,
-                self._clear_button], True, True),
+                self._clear_button,
+                self._del_button], True, True),
             gui.pack_hbox([
                 gtk.Label(_L('Style')),
                 self._styles_dropdown], True, True),
@@ -205,9 +222,20 @@ class GnuplotWindow(qtwindow.QTWindow):
                 self._legend_check,
                 self._legendpos_dropdown], True, True),
             gui.pack_hbox([
-                gtk.Label(_L('Palette')),
-                self._palette_dropdown], True, True),
+                gtk.Label(_L('Max Points')),
+                self._maxpoints_entry,
+                self._maxpoints_but], True, True),
             gui.pack_hbox([
+                gtk.Label(_L('Max Traces')),
+                self._maxtraces_entry,
+                self._maxtraces_but], True, True),
+            gui.pack_hbox([
+                gtk.Label(_L('Min Time')),
+                self._mintime_entry,
+                self._mintime_but], True, True),
+            gui.pack_hbox([
+                gtk.Label(_L('Palette')),
+                self._palette_dropdown,
                 gtk.Label(_L('Gamma')),
                 self._gamma_spin], True, True),
             self._save_as_frame,
@@ -252,11 +280,13 @@ class GnuplotWindow(qtwindow.QTWindow):
             itemlist = []
         self._palette_dropdown.set_items(itemlist)
 
+        itemlist = ['gp']
         try:
-            itemlist = plot.get_save_as_types()
+            itemlist.extend(plot.get_save_as_types())
         except:
-            itemlist = []
+            pass
         self._save_as_dropdown.set_items(itemlist)
+        self._save_as_dropdown.set_item('gp')
 
         try:
             itemlist = plot.get_legend_positions()
@@ -269,6 +299,10 @@ class GnuplotWindow(qtwindow.QTWindow):
         info = plot.get_properties()
         if 'style' in info:
             self._styles_dropdown.set_item(info['style'])
+
+        self._maxpoints_entry.set_text(str(plot.get_maxpoints()))
+        self._maxtraces_entry.set_text(str(plot.get_maxtraces()))
+        self._mintime_entry.set_text(str(plot.get_mintime()))
 
         legend = info.get('legend', True)
         self._legend_check.set_active(legend)
@@ -303,6 +337,27 @@ class GnuplotWindow(qtwindow.QTWindow):
         self._current_plot.set_style(stylename)
         self._plot_state['style'] = stylename
 
+    def _maxpoints_clicked_cb(self, widget):
+        if self._ignore_changes or self._current_plot is None:
+            return
+        value = self._maxpoints_entry.get_text()
+        self._current_plot.set_maxpoints(int(value))
+        self._current_plot.update()
+
+    def _maxtraces_clicked_cb(self, widget):
+        if self._ignore_changes or self._current_plot is None:
+            return
+        value = self._maxtraces_entry.get_text()
+        self._current_plot.set_maxtraces(int(value))
+        self._current_plot.update()
+
+    def _mintime_clicked_cb(self, widget):
+        if self._ignore_changes or self._current_plot is None:
+            return
+        value = self._mintime_entry.get_text()
+        self._current_plot.set_mintime(float(value))
+        self._current_plot.update()
+
     def _legendpos_changed_cb(self, widget):
         if self._ignore_changes or self._current_plot is None:
             return
@@ -335,21 +390,25 @@ class GnuplotWindow(qtwindow.QTWindow):
     def _save_clicked_cb(self, widget):
         if self._current_plot is not None:
             format = self._save_as_dropdown.get_item()
-            func = getattr(self._current_plot, 'save_%s' % format, None)
-            filepath = self._filename_entry.get_text()
-            if func is not None:
-                func(filepath=filepath,
-                        append_graphname=False,
-                        autosuffix=False)
+            if format is 'gp':
+                self._current_plot.save_gp()
+            else:
+                func = getattr(self._current_plot, 'save_%s' % format, None)
+                filepath = self._filename_entry.get_text()
+                if func is not None:
+                    func(filepath=filepath,
+                            append_graphname=False,
+                            autosuffix=False)
 
     def _clear_clicked_cb(self, widget):
         if self._current_plot is None:
             return
         self._current_plot.clear()
 
-    def _save_gp_clicked_cb(self, widget):
-        if self._current_plot is not None:
-            self._current_plot.save_gp()
+    def _del_clicked_cb(self, widget):
+        if self._current_plot is None:
+            return
+        qt.plots.remove(self._current_plot.get_name())
 
     def _autorange_xyz_cb(self, widget, autoz):
         self._axis_x._min_range.set_text('')

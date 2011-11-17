@@ -25,8 +25,6 @@ import numpy
 
 from lib.config import get_config
 config = get_config()
-if config.get('qtlab', False):
-    import qt
 
 from data import Data
 from lib import namedlist
@@ -48,6 +46,7 @@ class _PlotList(namedlist.NamedList):
         '''Remove a plot (should be cleared and closed).'''
         if name in self:
             self[name].clear()
+            self[name].quit()
         namedlist.NamedList.remove(self, name)
 
 class Plot(SharedGObject):
@@ -153,11 +152,23 @@ class Plot(SharedGObject):
         kwargs['file'] = filename
         self._data.append(kwargs)
 
+    def set_mintime(self, t):
+        self._mintime = t
+
+    def get_mintime(self):
+        return self._mintime
+
     def set_maxtraces(self, n):
         self._maxtraces = n
 
+    def get_maxtraces(self):
+        return self._maxtraces
+
     def set_maxpoints(self, n):
         self._maxpoints = n
+
+    def get_maxpoints(self):
+        return self._maxpoints
 
     def set_property(self, prop, val, update=False):
         self._properties[prop] = val
@@ -273,6 +284,10 @@ class Plot(SharedGObject):
                 info['data'].disconnect(info['new-data-block-hid'])
             del self._data[0]
 
+    def quit(self):
+        '''Close back-end, override in implementation'''
+        pass
+
     def set_title(self, val):
         '''Set the title of the plot window. Override in implementation.'''
         pass
@@ -375,7 +390,7 @@ class Plot(SharedGObject):
         if 'style' in kwargs:
             self.set_style(kwargs.pop('style'), update=False)
 
-class Plot2D(Plot):
+class Plot2DBase(Plot):
     '''
     Abstract base class for a 2D plot.
     Real implementations should at least implement:
@@ -525,7 +540,7 @@ class Plot2D(Plot):
         if update:
             self.update()
 
-class Plot3D(Plot):
+class Plot3DBase(Plot):
     '''
     Abstract base class for a 3D plot.
     Real implementations should at least implement:
@@ -709,7 +724,7 @@ def plot(*args, **kwargs):
     ret = kwargs.pop('ret', True)
     graph = Plot._plot_list[plotname]
     if graph is None:
-        graph = qt.Plot2D(name=plotname)
+        graph = Plot2D(name=plotname)
 
     set_global_plot_options(graph, kwargs)
 
@@ -747,7 +762,7 @@ def plot3(*args, **kwargs):
     ret = kwargs.pop('ret', True)
     graph = Plot._plot_list[plotname]
     if graph is None:
-        graph = qt.Plot3D(name=plotname)
+        graph = Plot3D(name=plotname)
 
     set_global_plot_options(graph, kwargs)
 
@@ -764,3 +779,7 @@ def replot_all():
     for p in plots:
         plots[p].update()
 
+if config.get('plot_type', 'gnuplot') == 'matplotlib':
+    from plot_engines.qtmatplotlib import Plot2D, Plot3D
+else:
+    from plot_engines.qtgnuplot import Plot2D, Plot3D, plot_file

@@ -118,6 +118,15 @@ class _QTGnuPlot():
         'y2tics': 'set y2tics\n',
         'ztics': 'set ztics\n',
 
+        'xdata': 'set xdata %s\n',
+        'x2data': 'set x2data %s\n',
+        'ydata': 'set ydata %s\n',
+        'y2data': 'set y2data %s\n',
+        'zdata': 'set zdata %s\n',
+        'cbdata': 'set cbdata %s\n',
+
+        'timefmt': 'set timefmt %s\n',
+
         'grid': 'set grid\n',
         'datastyle': 'set style data %s\n',
         'legend': 'set key\n',
@@ -179,6 +188,9 @@ class _QTGnuPlot():
         '''Clear the plot.'''
         self.cmd('clear')
         plot.Plot.clear(self)
+
+    def quit(self):
+        self.cmd('quit')
 
     def get_first_filepath(self):
         '''Return filepath of first data item.'''
@@ -469,7 +481,7 @@ def _parse_style_string(spec):
 
     return opts
 
-class Plot2D(plot.Plot2D, _QTGnuPlot):
+class Plot2D(plot.Plot2DBase, _QTGnuPlot):
     '''
     Class to create line plots.
     '''
@@ -486,7 +498,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
         kwargs['supportbin'] = config.get('gnuplot_binary', True)
-        plot.Plot2D.__init__(self, *args, **kwargs)
+        plot.Plot2DBase.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
         self.set_grid(update=False)
@@ -510,7 +522,7 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def add_data(self, data, *args, **kwargs):
         if 'yerrdim' in kwargs:
             kwargs['with'] = 'yerrorbars'
-        plot.Plot2D.add_data(self, data, *args, **kwargs)
+        plot.Plot2DBase.add_data(self, data, *args, **kwargs)
 
     def create_command(self, name, val):
         if name == "style":
@@ -640,7 +652,10 @@ class Plot2D(plot.Plot2D, _QTGnuPlot):
     def clear(self):
         return _QTGnuPlot.clear(self)
 
-class Plot3D(plot.Plot3D, _QTGnuPlot):
+    def quit(self):
+        return _QTGnuPlot.quit(self)
+
+class Plot3D(plot.Plot3DBase, _QTGnuPlot):
     '''
     Class to create surface plots using gnuplot.
     '''
@@ -759,7 +774,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
     def __init__(self, *args, **kwargs):
         kwargs['needtempfile'] = True
         kwargs['supportbin'] = config.get('gnuplot_binary', True)
-        plot.Plot3D.__init__(self, *args, **kwargs)
+        plot.Plot3DBase.__init__(self, *args, **kwargs)
         _QTGnuPlot.__init__(self)
 
         style = kwargs.get('style', None)
@@ -784,7 +799,7 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
         if 'palette' in kwargs:
             gamma = kwargs.pop('gamma', 1.0)
             self.set_palette(kwargs.pop('palette'), gamma, update=False)
-        plot.Plot3D.add_data(self, data, *args, **kwargs)
+        plot.Plot3DBase.add_data(self, data, *args, **kwargs)
 
     def create_command(self, name, val):
         if name == 'style':
@@ -959,6 +974,9 @@ class Plot3D(plot.Plot3D, _QTGnuPlot):
 
     def clear(self):
         return _QTGnuPlot.clear(self)
+
+    def quit(self):
+        return _QTGnuPlot.quit(self)
 
 def get_gnuplot(name=None):
     return _QTGnuPlot.get(name=name)
