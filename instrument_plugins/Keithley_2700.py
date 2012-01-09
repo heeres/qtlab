@@ -485,7 +485,7 @@ class Keithley_2700(Instrument):
             return float(0)
         self._trigger_sent = False
 
-        text = self._visainstrument.ask('DATA:FRESH?')
+        text = self._visainstrument.ask(':DATA:FRESH?')
             # Changed the query to from Data?
             # to Data:FRESH? so it will actually wait for the
             # measurement to finish.
@@ -510,7 +510,7 @@ class Keithley_2700(Instrument):
         '''
         logging.debug('Read last value')
 
-        text = self._visainstrument.ask('DATA?')
+        text = self._visainstrument.ask(':DATA?')
         return float(text[0:15])
 
     def do_get_readval(self, ignore_error=False):
