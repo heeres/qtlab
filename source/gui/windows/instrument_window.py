@@ -271,21 +271,21 @@ class InstrumentWindow(qtwindow.QTWindow):
 
         self._tags_dropdown = dropdowns.TagsDropdown()
         self._tags_dropdown.connect('changed', self._tag_changed_cb)
-        self._tags_dropdown.show()
 
         self._outer_vbox = gtk.VBox()
         self._outer_vbox.set_border_width(4)
         self._vbox = gtk.VBox()
         self._vbox.set_border_width(4)
+
         self._outer_vbox.pack_start(gui.pack_hbox([
             gtk.Label(_L('Types')),
             self._tags_dropdown]), False, False)
 
         self._range_toggle = gtk.ToggleButton(_L('Range'))
-        self._range_toggle.set_active(False)
+        self._range_toggle.set_active(qt.config.get('Instrument View_show_range', True))
         self._range_toggle.connect('toggled', self._range_toggled_cb)
         self._rate_toggle = gtk.ToggleButton(_L('Rate'))
-        self._rate_toggle.set_active(False)
+        self._rate_toggle.set_active(qt.config.get('Instrument View_show_rate', True))
         self._rate_toggle.connect('toggled', self._rate_toggled_cb)
 
         self._outer_vbox.pack_start(gui.pack_hbox([
@@ -296,7 +296,6 @@ class InstrumentWindow(qtwindow.QTWindow):
         self._add_instruments()
 
         self._scrolled_win = gtk.ScrolledWindow()
-        self._scrolled_win.show()
         self._scrolled_win.set_policy(gtk.POLICY_AUTOMATIC, \
             gtk.POLICY_AUTOMATIC)
         self._scrolled_win.add_with_viewport(self._vbox)
@@ -304,6 +303,8 @@ class InstrumentWindow(qtwindow.QTWindow):
         self._outer_vbox.pack_start(self._scrolled_win, True, True)
 
         self._outer_vbox.show_all()
+        self._range_toggle.emit('toggled')
+        self._rate_toggle.emit('toggled')
         self.add(self._outer_vbox)
 
     def _add_instrument(self, ins):
@@ -357,11 +358,13 @@ class InstrumentWindow(qtwindow.QTWindow):
 
     def _range_toggled_cb(self, sender):
         state = self._range_toggle.get_active()
+        qt.config.set('Instrument View_show_range', state)
         for name, widget in self._ins_widgets.iteritems():
             widget.show_range_column(state)
 
     def _rate_toggled_cb(self, sender):
         state = self._rate_toggle.get_active()
+        qt.config.set('Instrument View_show_rate', state)
         for name, widget in self._ins_widgets.iteritems():
             widget.show_rate_column(state)
 
