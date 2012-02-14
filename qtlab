@@ -1,4 +1,18 @@
 #!/bin/bash
 
 basedir=`dirname $0`
-ipython -gthread $basedir/source/qtlab_shell.py - $1 $2 $3 $4 $5 $6 $7 $8 $9
+
+if type -p ipython; then
+    _ipython=ipython
+else
+    echo "no ipython executable found in PATH"
+fi
+
+if [[ "$_ipython" ]]; then
+    version=$("$_ipython" --version)
+    if [[ "version" < "0.11" ]]; then
+        ipython -gthread $basedir/source/qtlab_shell.py - $1 $2 $3 $4 $5 $6 $7 $8 $9
+    else
+        ipython --gui=gtk -i $basedir/source/qtlab_shell.py
+    fi
+fi
