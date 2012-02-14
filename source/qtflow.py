@@ -269,7 +269,9 @@ class FlowControl(SharedGObject):
         logging.info('Emitting close-gui signal')
         self.emit('close-gui')
 
-def exception_handler(self, etype, value, tb):
+def exception_handler(self, etype, value, tb, tb_offset=None):
+    # when the 'tb_offset' keyword argument is omitted above, ipython
+    # raises an error.
     TB = AutoFormattedTB(mode='Context', color_scheme='Linux', tb_offset=1)
 
     fc = get_flowcontrol()
