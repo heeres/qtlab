@@ -9,8 +9,14 @@ else
 fi
 
 if [[ "$_ipython" ]]; then
-    version=$("$_ipython" --version)
-    if [[ "version" < "0.11" ]]; then
+    version=$("$_ipython" --version 2>/dev/null)
+    # Old ipython versions have -Version argument in stead of --version.
+    # Determine from the length of the return string if the help-text
+    # is returned instead of the version number.
+    if [ ${#version} > 10 ]; then
+        version=$("$_ipython" -Version)
+    fi
+    if [[ "$version" < "0.11" ]]; then
         ipython -gthread $basedir/source/qtlab_shell.py - $1 $2 $3 $4 $5 $6 $7 $8 $9
     else
         ipython --gui=gtk -i $basedir/source/qtlab_shell.py
