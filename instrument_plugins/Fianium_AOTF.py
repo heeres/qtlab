@@ -141,6 +141,8 @@ class Fianium_AOTF(Instrument):
             table = self.CRYST2
             
         i = np.searchsorted(table[:,0], wlen)
+        if i == len(table[:,0]):
+            i = i - 1
         dwlen = np.abs(table[i,0] - wlen)
         if i > 0:
             dwlen2 = np.abs(table[i-1,0] - wlen)
