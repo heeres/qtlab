@@ -69,7 +69,10 @@ class Scripts():
         self._cache = {}
 
     def __repr__(self):
-        return 'Script list: %r' % (self.get_list(), )
+        s = 'Script list:'
+        for scr in self.get_list():
+            s += '\n\t%s' % scr
+        return s
 
     def __getitem__(self, item):
         return self.get(item)
