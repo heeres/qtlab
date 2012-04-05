@@ -165,17 +165,21 @@ class ObjectSharer():
         # Cached names of objects on remote clients
         for client, object_names in self._client_cache.iteritems():
             if objname in object_names:
-                return self._get_object_from(client, objname)
+                obj = self._get_object_from(client, objname)
+                if obj is not None:
+                    return obj
 
         # Full search
         for client in self._clients:
             names = client.list_objects()
             if names is None:
-                return None
+                continue
 
             self._client_cache[client] = names
             if objname in names:
-                return self._get_object_from(client, objname)
+                obj = self._get_object_from(client, objname)
+                if obj is not None:
+                    return obj
 
         return None
 
