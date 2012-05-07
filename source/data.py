@@ -357,7 +357,7 @@ class Data(SharedGObject):
 
     def get_values(self):
         '''Return info for all value dimensions.'''
-        return self._dimensions[0:self._nvalues]
+        return self._dimensions[self._ncoordinates:]
 
     def get_nvalues(self):
         '''Return number of value dimensions.'''
