@@ -18,9 +18,11 @@
 
 from instrument import Instrument
 import visa
+from visa import vpp43
+from lib import visafunc
 import types
 import logging
-import qt
+import time
 
 class SMC100(Instrument):
 
@@ -55,41 +57,63 @@ class SMC100(Instrument):
         self._visa = visa.instrument(self._address,
                         baud_rate=57600, data_bits=8, stop_bits=1,
                         parity=visa.no_parity, term_chars='\r\n')
-        # Initial visa.write, this one usually gives a time-out
-        #so run it in the beginning to get rid of this problem
-        self._visa.write('1TS')
-        self._visa.read()
         self._ctr_addr = ctr_addr
-                        
+
         self.add_parameter('position',
             flags=Instrument.FLAG_GETSET,
             type=types.FloatType,
             units='mm')
-            
+
         self.add_parameter('state',
             flags=Instrument.FLAG_GET,
             type=types.StringType)
-            
+
         self.add_parameter('velocity',
             flags=Instrument.FLAG_GETSET,
             type=types.FloatType,
             units='mm/s')
-            
+
         # Functions
         self.add_function('stop_motion')
         self.add_function('set_state_ready')
         self.add_function('get_error')
         self.add_function('go_home')
-            
+        self.add_function('go_left')
+        self.add_function('go_right')
+
         if reset:
             self.reset()
+        else:
+            self.get_all()
+
+    def raw_read(self):
+        navail = visafunc.get_navail(self._visa.vi)
+#        print 'Avail: %s' % (navail, )
+        BUFSIZE = 4192
+        ret = vpp43.ViUInt32()
+        b = vpp43.create_string_buffer(BUFSIZE)
+        try:
+            test = vpp43.visa_library().viRead(self._visa.vi, b, navail, vpp43.byref(ret))
+        except Exception, e:
+            pass   # This seems to happen almost always...
+#            print 'Error: %s' % (e, )
+
+# Weird: sometimes seems to start with NULL byte
+        ii = 0
+        while b[ii] == '\x00' and ii < 16:
+            ii += 1
+        jj = ii
+        while b[jj] != '\x00' and jj < BUFSIZE-1:
+            jj += 1
+
+        s = str(b[ii:jj]).rstrip()
+        return s
 
     def reset(self):
         '''
         Reset the motor controller and do 'homing' calibration
         '''
-        self._visa.write('1RS')
-        qt.msleep(2)
+        self.ask('TS')
         try:
             self.get_state()
         except:
@@ -103,28 +127,32 @@ class SMC100(Instrument):
         self.get_position()
         self.get_state()
         self.get_velocity()
-        
+
     def ask(self, command):
         '''
         Write a command and read value from the device
         '''
         try:
-            result = self._visa.ask(str(self._ctr_addr) + command)
-            return result[len(command)+1:]
-        except:
-            try:
-                print self.get_error()
-            except:
-                print 'I/O error'
+            self.write(command)
+            time.sleep(0.020)
+            ret = self.raw_read()
+#            print 'Read: %r' % (ret, )
+            if len(ret) > len(command):
+                return ret[len(command)+1:]
+            else:
+                return ret
+        except Exception, e:
+            print 'Error: %s' % (e, )
             return False
-    
+
     def write(self, command):
         '''
         Write a command to the device
         '''
-        self._visa.write(str(self._ctr_addr) + command)
-        self.get_error()
-            
+        cmd = '%d%s\r\n' % (self._ctr_addr, command)
+#        print 'Sending %r' % (cmd, )
+        self._visa.write(cmd)
+
     def do_get_state(self):
         '''
         Get the state of the controller.
@@ -136,79 +164,94 @@ class SMC100(Instrument):
             return self._state_map[state]
         else:
             return False
-        
+
     def set_state_ready(self):
         '''
         Set the state to 'ready'.
         '''
         state = self.get_state()
         if(state == 'DISABLE'):
-            self._visa.write('1MM1')
+            self.write('MM1')
         if(state == 'NOT REFERENCED'):
-            self._visa.write('OR') # Home search
+            self.write('OR') # Home search
         print self.get_error()
-            
+
     def set_state_disabled(self):
         '''
         Set the state to 'disabled'.
         '''
         state = self.get_state()
         if(state == 'READY'):
-            self._visa.write('1MM0')
+            self.write('MM0')
         if(state == 'NOT REFERENCED'):
-            self._visa.write('OR') # Home search
-            self._visa.write('1MM0')
+            self.write('OR') # Home search
+            self.write('MM0')
         print self.get_error()
-        
+
     def do_get_position(self):
         '''
         Get the current position (mm)
         '''
-        return float(self._visa.ask('1TP')[3:])
-        
+        return float(self.ask('TP'))
+
     def do_set_position(self,val):
         '''
         Set the absolute position (mm)
         '''
         # First check state and set to ready
-        if(self.get_state()!='READY'):
-            self.set_state_ready()
-        self._visa.write('1PA' + str(val))
-        print self.get_error()
-        
+#        if(self.get_state()!='READY'):
+#            self.set_state_ready()
+
+        # Use maximum of 5 digits
+        self.write('PA%.5f' % val)
+
     def do_get_velocity(self):
         '''
         Get the current velocity (mm/s)
         '''
-        return float(self._visa.ask('1VA?')[4:])
-        
+        return float(self.ask('VA?'))
+
     def do_set_velocity(self,val):
         '''
         Set the velocity (mm/s)
         '''
         self.set_state_disabled()
-        self._visa.write('1VA' + str(val))
+        self.write('VA%.5f' % val)
         self.set_state_ready()
-        print self.get_error()
-        
+
     def stop_motion(self):
         '''
         Stop the motor motion
         '''
-        self._visa.write('ST')
-        
+        self.write('ST')
+
     def get_error(self):
         '''
         Get error message
         '''
-        result = self._visa.ask('1TB')
-        if(result[3]!='@'):
-            return result[5:]
+        result = self.ask('TB')
+        if len(result) > 0 and result[0]!='@':
+            return result
         else:
             return True
-            
+
     def go_home(self):
         '''
         'Homing' calibration, go to position = 0
         '''
-        self._visa.write('1OR')
+        self.write('OR')
+
+    def go_left(self, value):
+        '''
+        Move position relative to the left
+        '''
+        pos = self.get_position()
+        self.set_position(pos-value)
+
+    def go_right(self, value):
+        '''
+        Move position relative to the left
+        '''
+        pos = self.get_position()
+        print str(pos)
+        self.set_position(pos+value)
