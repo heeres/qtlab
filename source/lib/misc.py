@@ -1,4 +1,4 @@
-import math
+import numpy as np
 import StringIO
 import types
 import sys
@@ -27,10 +27,10 @@ def get_dict_keys(dic, keys):
 
 def seconds_to_str(secs):
     '''Convert a number of seconds to hh:mm:ss string.'''
-    hours = math.floor(secs / 3600)
+    hours = np.floor(secs / 3600)
     secs -= hours * 3600
-    mins = math.floor(secs / 60)
-    secs = math.floor(secs - mins * 60)
+    mins = np.floor(secs / 60)
+    secs = np.floor(secs - mins * 60)
     return '%02d:%02d:%02d' % (hours, mins, secs)
 
 def pil_to_pixbuf(pilimage):
