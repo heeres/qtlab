@@ -427,7 +427,7 @@ class ObjectSharer():
 
         return None
 
-    def connect(self, objname, signame, callback, *args):
+    def connect(self, objname, signame, callback, *args, **kwargs):
         '''
         Called by ObjectProxy instances to register a callback request.
         '''
@@ -438,6 +438,7 @@ class ObjectSharer():
                 'signal': signame,
                 'function': callback,
                 'args': args,
+                'kwargs': kwargs,
         }
 
         self._callbacks_hid[self._last_hid] = info
@@ -478,7 +479,11 @@ class ObjectSharer():
             info_list = self._callbacks_name[name]
             for info in info_list:
                 try:
-                    info['function'](*args, **kwargs)
+                    fargs = list(args)
+                    fargs.extend(info['args'])
+                    fkwargs = kwargs.copy()
+                    fkwargs.update(info['kwargs'])
+                    info['function'](*fargs, **fkwargs)
                     ncalls += 1
                 except Exception, e:
                     logging.warning('Callback failed: %s', str(e))

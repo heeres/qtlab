@@ -33,7 +33,7 @@ class GlibTCPServer():
     allow_reuse_address = True
     request_queue_size = 20
 
-    def __init__(self, server_address, handler_class, allowed_ip='*'):
+    def __init__(self, server_address, handler_class, allowed_ip='.*'):
         self._handler_class = handler_class
         self._allowed_ips = []
         self.add_allowed_ip(allowed_ip)
