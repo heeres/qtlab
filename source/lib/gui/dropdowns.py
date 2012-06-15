@@ -62,9 +62,10 @@ class InstrumentDropdown(QTComboBox):
         QTComboBox.__init__(self, model=self._ins_list)
 
         self._types = types
-        self._ins_list.append(['<None>'])
+        self._ins_list.append([TEXT_NONE])
         self._instruments = qt.instruments
         for insname in self._instruments.get_instrument_names():
+            # This should perhaps go through qt.get_instrument_proxy()
             ins = helper.find_object('instrument_%s' % insname)
             if len(types) == 0 or ins.has_tag(types):
                 self._ins_list.append([insname])
@@ -92,7 +93,7 @@ class InstrumentDropdown(QTComboBox):
         if item is None:
             return None
         ins_name = self._ins_list.get(item, 0)
-        return qt.get_instrument_proxy(ins_name)
+        return qt.get_instrument_proxy(ins_name[0])
 
 class InstrumentTypeDropdown(QTComboBox):
     '''
@@ -103,7 +104,7 @@ class InstrumentTypeDropdown(QTComboBox):
         self._type_list = gtk.ListStore(gobject.TYPE_STRING)
         QTComboBox.__init__(self, model=self._type_list)
 
-        self._type_list.append(['<None>'])
+        self._type_list.append([TEXT_NONE])
         for name in qt.instruments.get_types():
             self._type_list.append([name])
 
@@ -112,7 +113,7 @@ class InstrumentTypeDropdown(QTComboBox):
         if item is None:
             return None
         type_name = self._type_list.get(item, 0)
-        if type_name[0] == '<None>':
+        if type_name[0] == TEXT_NONE:
             return None
         else:
             return type_name[0]
@@ -164,6 +165,7 @@ class InstrumentParameterDropdown(QTComboBox):
 
     def set_instrument(self, ins):
         if type(ins) == types.StringType:
+            # This should perhaps go through qt.get_instrument_proxy()
             ins = helper.find_object('instruments_%s' % ins)
 
         if self._instrument == ins:
@@ -177,7 +179,7 @@ class InstrumentParameterDropdown(QTComboBox):
         self._instrument = ins
         self._param_list.clear()
         if ins is not None:
-            self._param_list.append(['<None>'])
+            self._param_list.append([TEXT_NONE])
 
             self._instrument.connect('parameter-added', self._parameter_added_cb)
 
@@ -237,7 +239,7 @@ class InstrumentFunctionDropdown(QTComboBox):
         self._instrument = ins
         self._func_list.clear()
         if ins is not None:
-            self._func_list.append(['<None>', '<Nothing>'])
+            self._func_list.append([TEXT_NONE, '<Nothing>'])
 
             funcs = ins.get_functions()
             for (name, options) in misc.dict_to_ordered_tuples(funcs):
@@ -297,6 +299,7 @@ class AllParametersDropdown(QTComboBox):
         inslist = qt.instruments.get_instrument_names()
         inslist.sort()
         for insname in inslist:
+            # This should perhaps go through qt.get_instrument_proxy()
             ins = helper.find_object('instrument_%s' % insname)
             self.add_instrument(ins)
 
@@ -371,7 +374,7 @@ class AllParametersDropdown(QTComboBox):
         self._do_update_hid = None
 
         self._param_list.clear()
-        self._param_list.append(['<None>'])
+        self._param_list.append([TEXT_NONE])
         for add_name, opts in self._param_info.iteritems():
             if self._should_add(opts['options']):
                 self._param_list.append([add_name])

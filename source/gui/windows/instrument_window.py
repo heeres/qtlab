@@ -327,7 +327,7 @@ class InstrumentWindow(qtwindow.QTWindow):
 
     def _add_instruments(self):
         for name in self._instruments.get_instrument_names():
-            ins = helper.find_object('instrument_%s' % name)
+            ins = qt.get_instrument_proxy(name)
             self._add_instrument(ins)
 
     def _delete_event_cb(self, widget, event, data=None):

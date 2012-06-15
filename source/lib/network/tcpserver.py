@@ -33,10 +33,11 @@ class GlibTCPServer():
     allow_reuse_address = True
     request_queue_size = 20
 
-    def __init__(self, server_address, handler_class, allowed_ip='.*'):
+    def __init__(self, server_address, handler_class, allowed_ip=None):
         self._handler_class = handler_class
         self._allowed_ips = []
-        self.add_allowed_ip(allowed_ip)
+        if allowed_ip:
+            self.add_allowed_ip(allowed_ip)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -72,12 +73,13 @@ class GlibTCPServer():
         pass
 
     def add_allowed_ip(self, ip_regexp):
+        print 'Adding %s' % ip_regexp
         self._allowed_ips.append(re.compile(ip_regexp))
 
     def allow_client(self, client):
         for regexp in self._allowed_ips:
-            if regexp.match(client):
-                return True
+            m = regexp.match(client)
+            return True
         return False
 
 class GlibTCPHandler():

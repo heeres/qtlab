@@ -1,10 +1,30 @@
+
 _cfg = config.create_config('qtlab.cfg')
 _cfg.load_userconfig()
 _cfg.setup_tempdir()
 
+def _parse_options():
+    import optparse
+    parser = optparse.OptionParser(description='QTLab')
+    parser.add_option('--nogui', default=False, action='store_true')
+    parser.add_option('-p', '--port', type=int, default=0,
+        help='Port to listen on for GUI/remote communication')
+    parser.add_option('--name', type=str, default='',
+        help='Shared instance name')
+    parser.add_option('--nolock', default=False, action='store_true')
+
+    args, pargs = parser.parse_args()
+    logging.debug('Started with args %r', args)
+    if args.nogui:
+        _cfg['startgui'] = False
+    if args.name:
+        _cfg['instance_name'] = args.name
+    if args.port:
+        _cfg['port'] = args.port
+_parse_options()
+
 # Mark that we're in qtlab
 _cfg['qtlab'] = True
-del _cfg
 
 import types
 from instrument import Instrument
@@ -13,12 +33,15 @@ from lib import temp
 from time import sleep
 
 #set_debug(True)
-from lib.network.object_sharer import start_glibtcp_server, SharedObject, \
-        PythonInterpreter
-start_glibtcp_server()
-SharedObject.server.add_allowed_ip('130.161.*.*')
-SharedObject.server.add_allowed_ip('145.94.*.*')
-PythonInterpreter('python_server', globals())
+from lib.network import object_sharer as objsh
+objsh.root.set_instance_name(_cfg.get('instance_name', ''))
+objsh.start_glibtcp_server(port=_cfg.get('port', objsh.PORT))
+for _ipaddr in _cfg['allowed_ips']:
+    objsh.SharedObject.server.add_allowed_ip(_ipaddr)
+objsh.PythonInterpreter('python_server', globals())
+if _cfg['instrument_server']:
+    from lib.network import remote_instrument
+    remote_instrument.InstrumentServer()
 
 if False:
     import psyco

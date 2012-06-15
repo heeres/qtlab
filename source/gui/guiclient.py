@@ -57,16 +57,24 @@ def _close_gui_cb(*args):
         pass
     sys.exit()
 
-objsh.start_glibtcp_client('localhost', nretry=60)
-objsh.helper.register_event_callback('disconnected', _close_gui_cb)
-import qtclient as qt
-qt.flow.connect('close-gui', _close_gui_cb)
-setup_windows()
-
 if __name__ == "__main__":
     parser = optparse.OptionParser()
     parser.add_option('-d', '--disable-io', default=False, action='store_true')
+    parser.add_option('-p', '--port', type=int, default=objsh.PORT,
+        help='Port to connect to')
+    parser.add_option('--name', default='',
+        help='QTlab instance name to connect to')
+
     args, pargs = parser.parse_args()
+    if args.name:
+        config['instance_name'] = args.name
+
+    objsh.start_glibtcp_client('localhost', port=args.port, nretry=60)
+    objsh.helper.register_event_callback('disconnected', _close_gui_cb)
+    import qtclient as qt
+    qt.flow.connect('close-gui', _close_gui_cb)
+    setup_windows()
+
     if args.disable_io:
         os.close(sys.stdin.fileno())
         os.close(sys.stdout.fileno())

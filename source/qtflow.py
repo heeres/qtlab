@@ -258,10 +258,13 @@ class FlowControl(SharedGObject):
         curdir = os.getcwd()
         os.chdir(qt.config['execdir'])
 
+        args = ['-p', str(qt.config['port']), '--name', qt.config['instance_name']]
         if os.name == 'nt':
-            os.spawnv(os.P_NOWAIT, 'qtlabgui.bat', ['qtlabgui.bat'])
+            args.insert(0, 'qtlabgui.bat')
+            os.spawnv(os.P_NOWAIT, 'qtlabgui.bat', args)
         if os.name == 'posix':
-            pid = os.spawnv(os.P_NOWAIT, 'qtlabgui', ['qtlabgui'])
+            args.insert(0, 'qtlabgui')
+            pid = os.spawnv(os.P_NOWAIT, 'qtlabgui', args)
 
         os.chdir(curdir)
 

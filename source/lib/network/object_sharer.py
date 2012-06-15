@@ -76,7 +76,8 @@ class ObjectSharer():
             return None
         client = ObjectProxy(conn, info)
         self._clients.append(client)
-        logging.info('Added client %r', client.get_id())
+        name = client.get_instance_name()
+        logging.info('Added client %r, name %s', client.get_id(), name)
         self._do_event_callbacks('connect', client)
         return client
 
@@ -147,10 +148,21 @@ class ObjectSharer():
             del self._objects[objname]
             self._objects['root'].emit('object-removed', objname)
 
+    def _get_full_object_name(self, client, objname):
+        if ':' in objname:
+            return objname
+        else:
+            return '%s:%s' % (client.get_instance_name(), objname)
+
     def _get_object_from(self, client, objname):
         info = client.get_object(objname)
         proxy = ObjectProxy(client.get_connection(), info)
         self._object_cache[objname] = proxy
+
+        fullname = self._get_full_object_name(client, objname)
+        if objname != fullname:
+            self._object_cache[objname] = proxy
+
         return proxy
 
     def find_remote_object(self, objname):
@@ -162,8 +174,21 @@ class ObjectSharer():
         if objname in self._object_cache:
             return self._object_cache[objname]
 
+        hostname = None
+        if ':' in objname:
+            parts = objname.split(':')
+            if len(parts) != 2:
+                return None
+            hostname = parts[0]
+            objname = parts[1]
+
         # Cached names of objects on remote clients
         for client, object_names in self._client_cache.iteritems():
+
+            # Request from any client or specific one
+            if hostname is not None and hostname != client.get_instance_name():
+                continue
+
             if objname in object_names:
                 obj = self._get_object_from(client, objname)
                 if obj is not None:
@@ -171,6 +196,11 @@ class ObjectSharer():
 
         # Full search
         for client in self._clients:
+
+            # Request from any client or specific one
+            if hostname is not None and hostname != client.get_instance_name():
+                continue
+
             names = client.list_objects()
             if names is None:
                 continue
@@ -188,6 +218,22 @@ class ObjectSharer():
         Locate a shared object. Search locally first and then with connected
         clients.
         '''
+
+        logging.debug('Finding shared object %s', objname)
+
+        parts = objname.split(':')
+        if len(parts) > 2:
+            return None
+
+        elif len(parts) == 2:
+
+            # Only look locally
+            if parts[0] == root.get_instance_name():
+                return self._objects.get(parts[1], None)
+
+            # Find this anywhere
+            if parts[0] == '':
+                objname = parts[1]
 
         # Local objects
         if objname in self._objects:
@@ -633,6 +679,14 @@ class RootObject(SharedObject):
         SharedObject.__init__(self, name)
         self._objects = helper.get_objects()
         self._id = random.randint(0, 1e6)
+        self._instance_name = ''
+
+    def set_instance_name(self, name):
+        self._instance_name = name
+
+    @cache_result
+    def get_instance_name(self):
+        return self._instance_name
 
     def get_object(self, objname):
         if objname not in self._objects:
@@ -732,5 +786,5 @@ def start_glibtcp_client(host, port=PORT, nretry=1):
     return False
 
 helper = ObjectSharer()
-RootObject('root')
+root = RootObject('root')
 

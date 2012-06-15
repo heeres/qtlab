@@ -12,6 +12,19 @@ config.remove([
             'gnuplot_terminal',
             ])
 
+# QTLab instance name and port for networked operation
+config['instance_name'] = 'qtlab_n1'
+config['port'] = 12002
+
+# A list of allowed IP ranges for remote connections
+config['allowed_ips'] = (
+#    '130.161.*.*',
+#    '145.94.*.*',
+)
+
+# Start instrument server to share with instruments with remote QTLab?
+config['instrument_server'] = False
+
 ## This sets a default location for data-storage
 #config['datadir'] = 'd:/data'
 
