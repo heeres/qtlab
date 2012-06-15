@@ -7,6 +7,8 @@
 :: execution of QTlab. The latter is done below with the "SET PATH"
 :: statements. Comment or uncomment these lines as needed.
 
+@ECHO OFF
+
 :: Add gnuplot to PATH ("binary" folder for >= 4.4.0, "bin" folder for 4.3)
 SET PATH=%CD%\3rd_party\gnuplot\binary;%PATH%
 
@@ -32,12 +34,12 @@ IF EXIST c:\python26\python.exe (
 :: Run QTlab
 :: check if version < 0.11
 IF EXIST "%PYTHON_PATH%\scripts\ipython.py" (
-    start Console -w "QTLab" -r "/k %PYTHON_PATH%\python.exe %PYTHON_PATH%\scripts\ipython.py -gthread -p sh source/qtlab_shell.py"
+    start Console -w "QTLab" -r "/k %PYTHON_PATH%\python.exe %PYTHON_PATH%\scripts\ipython.py -gthread -p sh source/qtlab_shell.py -- %*"
     GOTO EOF
 )
 :: check if version >= 0.11
 IF EXIST "%PYTHON_PATH%\scripts\ipython-script.py" (
-    start Console -w "QTLab" -r "/k %PYTHON_PATH%\python.exe %PYTHON_PATH%\scripts\ipython-script.py --gui=gtk -i source/qtlab_shell.py"
+    start Console -w "QTLab" -r "/k %PYTHON_PATH%\python.exe %PYTHON_PATH%\scripts\ipython-script.py --gui=gtk -i source/qtlab_shell.py -- %*"
     GOTO EOF
 )
 
