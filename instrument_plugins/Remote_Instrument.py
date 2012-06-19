@@ -36,13 +36,13 @@ class Remote_Instrument(Instrument):
         if argspec is None:
             codestr = 'lambda *args, **kwargs: self._call("%s", *args, **kwargs)' % funcname
         else:
-            if len(argspec[0]) < 1:
+            if len(argspec['args']) < 1:
                 return None
-            args = ','.join(argspec[0][1:])
-            if argspec[1] is not None:
-                args = ','.join((args, '*%s' % argspec[1]))
-            if argspec[2] is not None:
-                args = ','.join((args, '**%s' % argspec[2]))
+            args = ','.join(argspec['args'][1:])
+            if argspec['varargs'] is not None:
+                args = ','.join((args, '*%s' % argspec['varargs']))
+            if argspec['keywords'] is not None:
+                args = ','.join((args, '**%s' % argspec['keywords']))
 
             codestr = 'lambda %s: self._call("%s"' % (args, funcname)
             if args != '':

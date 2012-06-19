@@ -331,8 +331,8 @@ class FrontPanel(qtwindow.QTWindow):
         rows = self._table.props.n_rows
         functions = self._instrument.get_functions()
         for fname, fopts in dict_to_ordered_tuples(functions):
-            anames = fopts['argspec'][0]
-            adefaults = fopts['argspec'][3]
+            anames = fopts['argspec']['args']
+            adefaults = fopts['argspec']['defaults']
             for i, aname in enumerate(anames):
                 if aname == 'self':
                     continue

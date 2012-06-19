@@ -46,8 +46,8 @@ class ArgumentTable(gtk.Table):
         if argspec is None:
             return
 
-        names = argspec[0]
-        defaults = argspec[3]
+        names = argspec['args']
+        defaults = argspec['defaults']
         for i, name in enumerate(names):
             if name in self._exclude:
                 continue

@@ -1050,6 +1050,9 @@ class Instrument(SharedGObject):
         p['value'] = value
         self._queue_changed({name: value})
 
+    def get_argspec_dict(self, a):
+        return dict(args=a[0], varargs=a[1], keywords=a[2], defaults=a[3])
+
     def add_function(self, name, **options):
         '''
         Inform the Instrument wrapper class to expose a function.
@@ -1066,7 +1069,7 @@ class Instrument(SharedGObject):
         if hasattr(f, '__doc__'):
             options['doc'] = getattr(f, '__doc__')
 
-        options['argspec'] = inspect.getargspec(f)
+        options['argspec'] = self.get_argspec_dict(inspect.getargspec(f))
 
         self._functions[name] = options
 
