@@ -13,7 +13,7 @@ if [[ "$_ipython" ]]; then
     # Old ipython versions have -Version argument in stead of --version.
     # Determine from the length of the return string if the help-text
     # is returned instead of the version number.
-    if [ ${#version} > 10 ]; then
+    if [[ {#$version} > 10 ]]; then
         version=$("$_ipython" -Version)
     fi
     if [[ "$version" < "0.11" ]]; then
