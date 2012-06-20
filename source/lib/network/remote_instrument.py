@@ -53,8 +53,24 @@ class InstrumentServer(objsh.SharedObject):
             funcs[name] = copy.copy(funcs[name])
         return funcs
 
+def create(remote_instance, remote_name, prefix='remote_', name=None):
+    srv = objsh.helper.find_object('%s:instrument_server' % remote_instance)
+    if srv is None:
+        logging.error('Unable to locate remote instrument server')
+        return None
+
+    if name is None:
+        name = prefix + remote_name
+    ins = qt.instruments.create(name, 'Remote_Instrument',
+            remote_name=remote_name, inssrv=srv)
+    return ins
+
 def create_all(remote_instance, prefix='remote_'):
     srv = objsh.helper.find_object('%s:instrument_server' % remote_instance)
+    if srv is None:
+        logging.error('Unable to locate remote instrument server')
+        return None
+
     inslist = srv.get_ins_list()
     for insname in inslist:
         logging.info('Creating instrument: %s', insname)

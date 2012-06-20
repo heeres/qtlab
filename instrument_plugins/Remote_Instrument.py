@@ -1,13 +1,16 @@
 from instrument import Instrument
 from lib.network import remote_instrument as ri
+from lib.network import object_sharer as objsh
 import logging
 
 class Remote_Instrument(Instrument):
 
-    def __init__(self, name, remote_name, inssrv):
+    def __init__(self, name, remote_name, inssrv=None, server=None):
         Instrument.__init__(self, name, tags=['remote'])
 
         self._remote_name = remote_name
+        if inssrv is None:
+            inssrv = objsh.helper.find_object('%s:instrument_server' % server)
         self._srv = inssrv
         params = self._srv.get_ins_parameters(remote_name)
         for name, info in params.iteritems():
