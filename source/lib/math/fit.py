@@ -271,9 +271,9 @@ class Gaussian(Function):
 
      parameters:
         background
-        height
+        area
         position
-        width
+        full width at (exp^(-0.5) = 0.607)
     '''
 
     def __init__(self, *args, **kwargs):
@@ -289,7 +289,7 @@ class Gaussian(Function):
         '''Return height (from background).'''
         if p is None:
             p = self._fit_params
-        return p[1] / p[3] / np.sqrt(pi/2)
+        return p[1] / p[3] / np.sqrt(np.pi/2)
 
     def get_area(self, p=None):
         if p is None:
@@ -301,13 +301,49 @@ class Gaussian(Function):
         ret = p[0] + p[1] / p[3] / np.sqrt(np.pi / 2) * np.exp(-2*(x - p[2])**2 / p[3]**2)
         return ret
 
+class GaussianPlain(Function):
+    '''
+    Gaussian fit function: a + b * exp(-4ln(2)(x - c)**2 / d**2)
+
+     parameters:
+        background
+        height
+        position
+        full width at half max
+    '''
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('nparams', 4)
+        Function.__init__(self, *args, **kwargs)
+
+    def get_fwhm(self, p=None):
+        if p is None:
+            p = self._fit_params
+        return p[3]
+
+    def get_height(self, p=None):
+        '''Return height (from background).'''
+        if p is None:
+            p = self._fit_params
+        return p[1]
+
+    def get_area(self, p=None):
+        if p is None:
+            p = self._fit_params
+        return p[1] * np.sqrt(np.pi) * p[3] / np.sqrt(4*np.log(2))
+
+    def func(self, p, x=None):
+        p, x = self.get_px(p, x)
+        ret = p[0] + p[1] * np.exp(-4 * np.log(2) * (x - p[2])**2 / p[3]**2)
+        return ret
+
 class Lorentzian(Function):
     '''
     Lorentzian fit function: a + 2bd / pi / (4(x - c)**2 + d**2)
 
      parameters:
         background
-        height
+        area
         position
         width
     '''
