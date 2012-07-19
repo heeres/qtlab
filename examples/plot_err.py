@@ -15,5 +15,5 @@ d.add_data_point(x,y,yerr)
 p = qt.Plot2D()
 p.add_data(d, coorddim=0, valdim=1, yerrdim=2)
 
-# or:
-qt.plot(x, y, yerr=yerr, name='test2')
+# or: ('ok' is style for black circles)
+qt.plot(x, y, 'ok', yerr=yerr, name='test2')

@@ -394,9 +394,7 @@ class _QTGnuPlot():
     def _check_style_options(self, datadict):
         if 'style' not in datadict:
             return
-        opts = _parse_style_string(datadict['style'])
-        for key, val in opts.iteritems():
-            datadict[key] = val
+        datadict = _parse_style_string(datadict['style'], datadict)
         del datadict['style']
 
     def _get_trace_options(self, datadict, defaults={}):
@@ -461,17 +459,17 @@ _MARKER_MAP = {
     'd': 13,    # Closed diamond
 }
 
-def _parse_style_string(spec):
+def _parse_style_string(spec, opts):
     if spec == '':
-        return {}
+        return opts
 
-    opts = {}
     for ch in spec:
         if ch in _COLOR_MAP:
             opts['color'] = _COLOR_MAP[ch]
         if ch in _MARKER_MAP:
             opts['pointtype'] = _MARKER_MAP[ch]
-            opts['with'] = 'points'
+            if opts.get('with', '') not in ['yerrorbars']:
+                opts['with'] = 'points'
 
     if '-' in spec:
         if 'with' in opts:
