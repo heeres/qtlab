@@ -103,8 +103,13 @@ class WatchWindow(qtwindow.QTWindow):
         self._pause_button = gtk.ToggleButton(_L('Pause'))
         self._pause_button.set_active(False)
         self._pause_button.connect('clicked', self._toggle_pause_cb)
+        self._apply_button = gtk.Button(_L('Apply'))
+        self._apply_button.connect('clicked', self._apply_clicked_cb)
+        self._clear_button = gtk.Button(_L('Clear'))
+        self._clear_button.connect('clicked', self._clear_clicked_cb)
         buttons = gui.pack_hbox([self._add_button, self._remove_button,
-                self._pause_button], False, False)
+                self._pause_button, self._apply_button, self._clear_button],
+                False, False)
 
         self._tree_model = gtk.ListStore(str, str, str)
         self._tree_view = QTTable([
@@ -279,27 +284,34 @@ class WatchWindow(qtwindow.QTWindow):
         if not info.get('graph', False):
             return
 
+        cols = self._get_ncols(info, val)
         plotname = 'watch_%s.%s' % (ins.get_name(), param)
-        if 'data' not in info or info['data'] is None:
-            cols = self._get_ncols(info, val)
-            d = np.zeros([info['points'], cols], dtype=np.float)
-            r = self._get_row(info, val)
-            d[0,:] = self._get_row(info, val)
-            info['data'] = d
+
+        # Create temp file and setup plotting
+        if 'tempfile' not in info:
             info['tempfile'] = temp.File(mode='w')
 
             cmd = 'qt.plot_file("%s", name="%s", clear=True)' % (info['tempfile'].name, plotname)
-            qt.cmd(cmd, callback=lambda *x: do_print(x))
+            qt.cmd(cmd, callback=lambda *x: True)
             for i in range(cols - 2):
                 cmd = 'qt.plot_file("%s", name="%s", valdim=%d)' % (info['tempfile'].name, plotname, i+2)
-                qt.cmd(cmd, callback=lambda *x: do_print(x))
-
+                qt.cmd(cmd, callback=lambda *x: True)
         else:
             info['tempfile'].reopen()
 
-        info['data'][0:-1,:] = info['data'][1:,:]
+        # Allocate array, fill xs and ys with first point, shift otherwise
+        if 'data' not in info or info['data'] is None:
+            d = np.ones([info['points'], cols])
+            info['data'] = d
+            r = self._get_row(info, val)
+            for i in range(cols):
+                d[:,i] = r[i]
+        else:
+            info['data'][:-1,:] = info['data'][1:,:]
+
         r = self._get_row(info, val, prevrow=info['data'][-2,:])
-        info['data'][-1,:] = self._get_row(info, val, prevrow=info['data'][-2,:])
+        info['data'][-1,:] = r
+
         np.savetxt(info['tempfile'].get_file(), info['data'])
         info['tempfile'].close()
         cmd = 'qt.plots["%s"].update()' % (plotname, )
@@ -326,6 +338,26 @@ class WatchWindow(qtwindow.QTWindow):
             else:
                 info['ins'].disconnect(info['hid'])
             del self._watch[ins_param]
+
+    def _apply_clicked_cb(self, widget):
+        (model, rows) = self._tree_view.get_selection().get_selected_rows()
+        for row in rows:
+            iter = model.get_iter(row)
+            ins_param = model.get_value(iter, 0)
+
+            info = self._watch[ins_param]
+            if info['delay'] != 0:
+                delay = int(self._interval.get_value())
+                self._set_delay(ins_param, delay)
+
+    def _clear_clicked_cb(self, widget):
+        (model, rows) = self._tree_view.get_selection().get_selected_rows()
+        for row in rows:
+            iter = model.get_iter(row)
+            ins_param = model.get_value(iter, 0)
+
+            info = self._watch[ins_param]
+            info['data'] = None
 
 Window = WatchWindow
 
