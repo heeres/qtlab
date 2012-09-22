@@ -359,7 +359,8 @@ class Instruments(SharedGObject):
         try:
             module.detect_instruments()
             return True
-        except:
+        except Exception, e:
+            logging.error('Failed to detect instruments: %s', str(e))
             return False
 
     def remove(self, name):
