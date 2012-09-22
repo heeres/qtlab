@@ -278,7 +278,7 @@ class ObjectSharer():
         while len(self._buffers[conn]) >= 6:
             b = self._buffers[conn]
 
-            if b[0] != 'Q' and b[1] != 'T':
+            if b[0] != 'Q' or b[1] != 'T':
                 self._buffers[conn] = ''
                 logging.warning('Packet magic missing, dumping data')
                 return None
@@ -410,9 +410,10 @@ class ObjectSharer():
         Call a function through connection 'conn'
         '''
 
+        cb = kwargs.pop('callback', None)
         is_signal = kwargs.pop('signal', False)
         timeout = kwargs.pop('timeout', self.TIMEOUT)
-        blocking = ('callback' not in kwargs and not is_signal)
+        blocking = (cb is None and not is_signal)
 
         if not is_signal:
             self._last_call_id += 1
@@ -739,6 +740,17 @@ class PythonInterpreter(SharedObject):
     def cmd(self, cmd):
         retval = eval(cmd, self._namespace, self._namespace)
         return retval
+
+    def ip_queue(self, cmd):
+        import code, threading, IPython
+        c = code.compile_command(cmd)
+        cev = threading.Event()
+        rev = threading.Event()
+        try:
+            ip = IPython.core.ipapi.get()
+        except:
+            ip = IPython.ipapi.get()
+        ip.IP.code_queue.put((c, cev, rev))
 
 class _DummyHandler(tcpserver.GlibTCPHandler):
 
