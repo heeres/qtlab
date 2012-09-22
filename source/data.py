@@ -677,6 +677,11 @@ class Data(SharedGObject):
             line = self._format_data_value(args, 0)
 
         line += '\n'
+
+        if self._file is None:
+            logging.info('File not opened yet, doing now')
+            self.create_file()
+
         self._file.write(line)
         self._file.flush()
 
