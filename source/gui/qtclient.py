@@ -1,5 +1,6 @@
 from lib.network.object_sharer import helper
 import time
+import types
 
 from lib import config
 config = config.get_config()
