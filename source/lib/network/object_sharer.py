@@ -418,7 +418,6 @@ class ObjectSharer():
         if not is_signal:
             self._last_call_id += 1
             callid = self._last_call_id
-            cb = kwargs.pop('callback', None)
             if cb is not None:
                 self._return_cbs[callid] = cb
             else:
@@ -533,7 +532,7 @@ class ObjectSharer():
                     info['function'](*fargs, **fkwargs)
                     ncalls += 1
                 except Exception, e:
-                    logging.warning('Callback failed: %s', str(e))
+                    logging.warning('Callback to %s failed for %s.%s: %s', info['function'], objname, signame, str(e))
 
         end = time.time()
         logging.debug('Did %d callbacks in %.03fms for sig %s',
