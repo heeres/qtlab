@@ -35,17 +35,27 @@ class Remote_Instrument(Instrument):
             except Exception, e:
                 logging.warning('Failed to create function %s: %s', name, e)
 
+    def _extend_args(self, args, add):
+        if len(args) > 0:
+            return args + ',' + add
+        else:
+            return add
+
     def create_lambda(self, funcname, argspec=None):
         if argspec is None:
             codestr = 'lambda *args, **kwargs: self._call("%s", *args, **kwargs)' % funcname
         else:
             if len(argspec['args']) < 1:
-                return None
-            args = ','.join(argspec['args'][1:])
+                args = ''
+            else:
+                args = ','.join(argspec['args'][1:])
+
             if argspec['varargs'] is not None:
-                args = ','.join((args, '*%s' % argspec['varargs']))
+                args = self._extend_args(args, '*%s' % argspec['varargs'])
             if argspec['keywords'] is not None:
-                args = ','.join((args, '**%s' % argspec['keywords']))
+                args = self._extend_args(args, '**%s' % argspec['keywords'])
+            else:
+                args = self._extend_args(args, '**kwargs')
 
             codestr = 'lambda %s: self._call("%s"' % (args, funcname)
             if args != '':
@@ -54,11 +64,11 @@ class Remote_Instrument(Instrument):
 
         return eval(codestr, {'self': self})
 
-    def _get(self, channel):
-        return self._srv.ins_get(self._remote_name, channel)
+    def _get(self, channel, **kwargs):
+        return self._srv.ins_get(self._remote_name, channel, **kwargs)
 
-    def _set(self, val, channel):
-        return self._srv.ins_set(self._remote_name, channel, val)
+    def _set(self, val, channel, **kwargs):
+        return self._srv.ins_set(self._remote_name, channel, val, **kwargs)
 
     def _call(self, funcname, *args, **kwargs):
         return self._srv.ins_call(self._remote_name, funcname, *args, **kwargs)
