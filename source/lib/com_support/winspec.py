@@ -51,6 +51,24 @@ def get_exposure_time():
 def set_exposure_time(val):
     return _exp.SetParam(_const.EXP_EXPOSURE, val)
 
+def get_use_new_window():
+    return _exp.SGetParam(_const.EXP_NEWWINDOW)[1]
+
+def set_use_new_window(val):
+    return _exp.SetParam(_const.EXP_NEWWINDOW, val)
+
+def get_file_inc_enable():
+    return _exp.SGetParam(_const.EXP_FILEINCENABLE)[1]
+
+def set_file_inc_enable(val):
+    return _exp.SetParam(_const.EXP_FILEINCENABLE, val)
+
+def get_autosave():
+    return _exp.SGetParam(_const.EXP_AUTOSAVE)[1]
+
+def set_autosave(val):
+    return _exp.SetParam(_const.EXP_AUTOSAVE, val)
+
 def get_grating():
     return _spec.GetParam(_const.SPT_CUR_GRATING)[1]
 
@@ -93,8 +111,9 @@ def set_wavelength(val):
 
 # Default maximum number of sleeps for 250sec
 MAX_SLEEPS = 5000
+doc = None
 
-def get_spectrum(wlen=True, wlenpoly=True):
+def get_spectrum(wlen=True, wlenpoly=True, newdoc=False):
     '''
     Get a spectrum using winspec.
 
@@ -105,7 +124,10 @@ def get_spectrum(wlen=True, wlenpoly=True):
     for the individual pixels. It can be off by ~0.3nm.
     '''
 
-    doc = CreateObject('WinX32.DocFile.3')
+    global doc
+    if newdoc or doc is None:
+        doc = CreateObject('WinX32.DocFile.3')
+
     _exp.Start(doc)
     i = 0
     while i < MAX_SLEEPS:
@@ -124,7 +146,7 @@ def get_spectrum(wlen=True, wlenpoly=True):
     if ydim != 1:
         raise ValueError('Can only get 1D spectra')
 
-    spectrum = np.array(doc.GetFrame(1))
+    spectrum = np.array(doc.GetFrame(1),dtype=np.uint16)
     spectrum.flatten()
     if wlen:
         calib = doc.GetCalibration()

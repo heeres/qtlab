@@ -56,8 +56,23 @@ class Winspec(Instrument):
                 flags=Instrument.FLAG_GETSET,
                 units='nm')
 
+        self.add_parameter('newwindow', type=types.BooleanType,
+                flags=Instrument.FLAG_GETSET,
+                help='Create new winodw for each measurement?')
+        self.add_parameter('autosave', type=types.IntType,
+                flags=Instrument.FLAG_GETSET,
+                format_map={
+                1: 'Ask',
+                2: 'Autosave',
+                3: "Don't autosave / ask"
+                },
+                help='Autosave every spectrum?')
+        self.add_parameter('fileincenable', type=types.BooleanType,
+                flags=Instrument.FLAG_GETSET,
+                help='File name increment enable?')
+
+        self.add_function('get_spectrum')
         self.add_function('take_spectrum')
-#        self.add_function('take_spectra')
         self.add_function('save_spectrum')
         self.add_function('plus_1nm')
         self.add_function('minus_1nm')
@@ -76,6 +91,9 @@ class Winspec(Instrument):
         self.get_exposure_time()
         self.get_grating()
         self.get_wavelength()
+        self.get_newwindow()
+        self.get_autosave()
+        self.get_fileincenable()
         return True
 
     def do_get_target_temperature(self):
@@ -93,6 +111,24 @@ class Winspec(Instrument):
     def do_set_exposure_time(self, val):
         return winspec.set_exposure_time(val)
 
+    def do_get_newwindow(self):
+        return winspec.get_use_new_window()
+
+    def do_set_newwindow(self, val):
+        return winspec.set_use_new_window(val)
+
+    def do_get_autosave(self):
+        return winspec.get_autosave()
+
+    def do_set_autosave(self, val):
+        return winspec.set_autosave(val)
+
+    def do_get_fileincenable(self):
+        return winspec.get_file_inc_enable()
+
+    def do_set_fileincenable(self, val):
+        return winspec.set_file_inc_enable(val)
+
     def do_get_wavelength(self):
         return winspec.get_wavelength()
 
@@ -105,14 +141,19 @@ class Winspec(Instrument):
     def do_set_grating(self, val):
         return winspec.set_grating(val)
 
-    def take_spectrum(self, ret=False):
-        spec = winspec.get_spectrum()
+    def get_spectrum(self, newdoc=False):
+        spec = winspec.get_spectrum(newdoc=newdoc)
+        return spec
+
+    def take_spectrum(self, ret=False, newdoc=False):
+        spec = winspec.get_spectrum(newdoc=newdoc)
         qt.plot(spec, name='winspec_spectrum', clear=True)
         if ret:
             return spec
 
     # Not working yet... The msleep gives threading problems
     def take_spectra(self, n=100):
+        return
         for i in range(n):
             self.take_spectrum()
             qt.msleep(0.05)
