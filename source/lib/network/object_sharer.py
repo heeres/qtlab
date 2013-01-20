@@ -16,7 +16,10 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 import logging
-import pickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import socket
 from lib.network import tcpserver
 import copy
@@ -24,6 +27,7 @@ import random
 import inspect
 import time
 import gobject
+import types
 
 PORT = 12002
 BUFSIZE = 8192
@@ -313,8 +317,15 @@ class ObjectSharer():
             if callid not in self._return_cbs:
                 logging.warning('Return received for unknown call %d', callid)
                 return
+
             func = self._return_cbs[callid]
             del self._return_cbs[callid]
+
+            if type(callinfo) == types.StringType and callinfo.startswith('sharedname:'):
+                sn = callinfo[11:]
+                logging.debug('Received shared object reference, finding %s', sn)
+                callinfo = helper.find_object(sn)
+
             func(callinfo)
             return
 
@@ -341,6 +352,11 @@ class ObjectSharer():
         if info[0] == 'signal':
             # No need to send return
             return
+
+        if isinstance(ret, SharedObject):
+            sn = root.get_instance_name() + ':' + ret.get_shared_name()
+            logging.debug('Returning a shared object reference: %s', sn)
+            ret = 'sharedname:' + sn
 
         self._send_return(conn, info[1], ret)
 
@@ -712,6 +728,7 @@ class RootObject(SharedObject):
             'properties': props,
             'functions': funcs
         }
+
         return info
 
     def receive_signal(self, objname, signame, *args, **kwargs):
