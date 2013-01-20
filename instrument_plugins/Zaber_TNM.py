@@ -52,11 +52,27 @@ class Zaber_TNM(Instrument):
             flags=Instrument.FLAG_GETSET,
             type=types.IntType)
 
+        self.add_parameter('cursetposition',
+            flags=Instrument.FLAG_SET,
+            type=types.IntType)
+
+        self.add_parameter('max_position',
+            flags=Instrument.FLAG_GETSET,
+            type=types.IntType)
+
+        self.add_parameter('max_relmove',
+            flags=Instrument.FLAG_GETSET,
+            type=types.IntType)
+
         self.add_parameter('speed',
             flags=Instrument.FLAG_GETSET,
             type=types.IntType)
 
         self.add_parameter('acceleration',
+            flags=Instrument.FLAG_GETSET,
+            type=types.IntType)
+
+        self.add_parameter('microsteps',
             flags=Instrument.FLAG_GETSET,
             type=types.IntType)
 
@@ -261,7 +277,10 @@ class Zaber_TNM(Instrument):
         self.get_firmware()
         self.get_speed()
         self.get_position()
+        self.get_max_position()
+        self.get_max_relmove()
         self.get_acceleration()
+        self.get_microsteps()
 
     def do_get_firmware(self):
         fwversion = self.send_cmd(51, 0)
@@ -287,6 +306,31 @@ class Zaber_TNM(Instrument):
         pos = self.send_cmd(53, 45)
         return pos
 
-    def do_set_position(self, pos):
-        self.move_abs(pos)
+    def do_set_cursetposition(self, pos):
+        pos = self.send_cmd(45, pos)
+        return pos
 
+    def do_get_max_position(self):
+        pos = self.send_cmd(53, 44)
+        return pos
+
+    def do_set_max_position(self, val):
+        pos = self.send_cmd(44, val)
+        return pos
+
+    def do_get_max_relmove(self):
+        pos = self.send_cmd(53, 46)
+        return pos
+
+    def do_set_max_relmove(self, val):
+        pos = self.send_cmd(46, val)
+        return pos
+
+    def do_get_microsteps(self):
+        ms = self.send_cmd(53, 37)
+        return ms
+
+    def do_set_microsteps(self, val):
+        ms = self.send_cmd(37, val)
+        self.get_all()
+        return ms
