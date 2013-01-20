@@ -17,12 +17,14 @@
 
 import numpy as np
 import struct
+import sys
 
 from lib.namedstruct import *
 
-class PHDFile:
+_T2WRAPAROUND = 210698240
+_RESOLUTION = 4e-12
 
-    _HEADERINFO = (
+GENERAL_HEADER_INFO = (
         ('Ident', S, 16),
         ('FormatVersion', S, 6),
         ('CreatorName', S, 18),
@@ -115,6 +117,10 @@ class PHDFile:
 		('RtChan4_CFDZeroCross', U32, 1),
     )
 
+class PHDFile:
+
+    _HEADERINFO = GENERAL_HEADER_INFO
+
     _CURVEINFO = (
 		('CurveIndex', U32, 1),
 		('TimeOfRecording', U32, 1),
@@ -206,12 +212,83 @@ class PHDFile:
         else:
            return y
 
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) == 2:
-        fname = sys.argv[1]
-    else:
-        fname = 'test.phd'
+class PT2File:
+
+    _HEADERINFO = GENERAL_HEADER_INFO
+
+    _T2T3INFO = (
+		('ExtDevices', U32, 1),
+		('Reserved1', U32, 1),
+		('Reserved2', U32, 1),
+		('InpRate0', U32, 1),
+		('InpRate1', U32, 1),
+		('StopAfter', U32, 1),  # In ms
+		('StopReason', U32, 1), # 0 = time over, 1 = manual, 2 = overflow
+		('NumRecords', U32, 1),
+		('ImgHdrSize', U32, 1),
+    )
+
+    def __init__(self, filename=None):
+        self._info = {}
+        self._filename = ''
+        self._data = None
+
+        # Little-endian
+        self._header_struct = NamedStruct(self._HEADERINFO, alignment='<')
+        self._t2t3_struct = NamedStruct(self._T2T3INFO, alignment='<')
+
+        if filename:
+            self.load(filename)
+
+    def load(self, filename, progress=0):
+        f = open(filename, 'rb')
+        data = f.read(692)
+        self._header = self._header_struct.unpack(data)
+
+        data = f.read(36)
+        self._t2t3 = self._t2t3_struct.unpack(data)
+
+        data = f.read(self._t2t3['ImgHdrSize'])
+
+        self._data = np.fromfile(f, np.uint32, -1)
+
+    def get_data(self):
+        return self._data
+
+    def get_ch_data(self, ch, progress=0):
+        chs = (self._data >> 28)
+        d = self._data.astype(np.float64)
+
+        # Add overflows
+        idx = np.where(d == 0xf0000000)[0]
+        add = 0
+        starti = 0
+        for endi in idx:
+            d[starti:endi] += add
+            starti = endi + 1
+            add += _T2WRAPAROUND
+        d[starti:] += add
+
+        # Convert to time
+        mask = (chs == ch)
+        d = d[mask] * _RESOLUTION
+
+        return d
+
+    def get_header(self):
+        return self._header
+
+    def get_t2t3(self):
+        return self._t2t3
+
+    def get_data(self):
+        return self._data
+
+class PT3File(PT2File):
+    def __init__(self, filename=None):
+        PT2File.__init__(self, filename)
+
+def test_phd(fname):
     phd = PHDFile(fname)
 
     print 'Info:'
@@ -235,3 +312,68 @@ if __name__ == '__main__':
         plt.plot(xs, ys)
 
     plt.show()
+
+def test_pt2(fname):
+    t2 = PT2File(fname)
+
+    print 'Header info:'
+    info = t2.get_header()
+    for line in t2._HEADERINFO:
+        key = line[0]
+        val = info[key]
+        print '  %s => %r' % (key, val)
+
+    print 'PT2/PT3 info:'
+    info = t2.get_t2t3()
+    for line in t2._T2T3INFO:
+        key = line[0]
+        val = info[key]
+        print '  %s => %r' % (key, val)
+
+    data = t2.get_data()
+    print 'Data size: %s, type: %s' % (data.size, data.dtype)
+
+    data = t2.get_ch_data(0, progress=1000)
+    print 'Channel data: %s, type: %s' % (data.size, data.size)
+
+    avgdt = data[-1] / data.size
+    print 'Average dt: %.03f us' % (avgdt * 1e6, )
+
+    import matplotlib.pyplot as plt
+
+    print 'Time-trace construction...'
+    binsize = 5e-3
+    plt.figure()
+    n, bins, patches = plt.hist(data, bins=(120/binsize), range=(0,120), histtype='step')
+    plt.xlabel('Time (s)')
+    plt.ylabel('Counts / %.03f ms bin' % (binsize*1e3))
+    plt.savefig('timebins.pdf')
+
+    print 'Start-stop construction'
+    NDELTAS = 10
+    print 'NDELTAS = %s --> ok to %.03f us' % (NDELTAS, NDELTAS*avgdt*1e6)
+    deltas = np.array([])
+    for i in range(1, NDELTAS):
+        newdeltas = data[i:]-data[:-i]
+        deltas = np.concatenate((deltas, newdeltas), axis=0)
+
+    plt.figure()
+    binsize = 0.05      # us
+    n, bins, patches = plt.hist(deltas*1e6, bins=10/binsize, range=(0,10), histtype='step')
+    plt.xlabel('dt (us)')
+    plt.ylabel('Events / %.03f us (start - %d stops)' % (binsize, NDELTAS))
+    plt.savefig('dtbins.pdf')
+
+if __name__ == '__main__':
+    import os
+
+    if len(sys.argv) == 2:
+        fname = sys.argv[1]
+    else:
+        fname = 'test.phd'
+
+    if os.path.splitext(fname)[1] == '.phd':
+        test_phd(fname)
+    else:
+        test_pt2(fname)
+
