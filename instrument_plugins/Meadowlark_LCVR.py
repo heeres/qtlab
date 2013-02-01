@@ -68,7 +68,6 @@ def bulk_write(devhandle, cmd):
 def bulk_read(devhandle):
     buf = ctypes.create_string_buffer('\000' * 256)
     output = _drv.USBDRVD_BulkRead(devhandle, 0, buf, len(buf))
-    print output
     return buf.value
 
 class Meadowlark_LCVR(Instrument):
@@ -80,6 +79,7 @@ class Meadowlark_LCVR(Instrument):
         self._devhandle = open_device(devid)
         self._pipe0 = open_pipe(devid, 0)
         self._pipe1 = open_pipe(devid, 1)
+        self._alias_info = {}
 
         self.add_parameter('version',
             flags=Instrument.FLAG_GET,
@@ -88,11 +88,10 @@ class Meadowlark_LCVR(Instrument):
         self.add_parameter('voltage',
             flags=Instrument.FLAG_GETSET,
             channels=(1, 4),
-            type=types.IntType)
+            type=types.FloatType)
 
     def write(self, cmd):
         ret = bulk_write(self._devhandle, cmd)
-        print ret
 
     def read(self):
         reply = bulk_read(self._devhandle)
@@ -110,12 +109,46 @@ class Meadowlark_LCVR(Instrument):
     def do_get_voltage(self, channel):
         reply = self.ask('ld:%d,?\r' % channel)
         if reply.find(',') != -1:
-            return reply.split(',')[1]
+            val = round(1000 * int(reply.split(',')[1]) / 6553.5)
+            return val / 1000
         return 0
 
-    def do_set_voltage(self, channel, volts):
-        ii = int(volts * 6553.5)
+    def do_set_voltage(self, volts, channel):
+        ii = round(volts * 6553.5)
         return self.ask('ld:%d,%d\r' % (channel, ii))
+
+    def do_set_alias(self, name, val):
+        if name not in self._alias_info:
+            logging.warning('LCVR: No such alias')
+            return False
+        if val not in self._alias_info[name]:
+            logging.warning('LCVR: No such alias value')
+            return False
+        for ch, chval in self._alias_info[name][val]:
+            self.set('voltage%d' % ch, chval)
+        return True
+
+    def add_alias(self, name, channel_info):
+        '''
+        channel_info is a dictionary. For each possible setting it
+        contains a list of (channel, value) tuples. For example:
+        {
+            'H': ((1, 1.0), (2, 2.0)),
+            'V': ((2, 2.0), (1, 1.0)),
+        }
+        '''
+
+        if name in self._alias_info:
+            logging.warning('Alias already exists!')
+            return False
+        self._alias_info[name] = channel_info
+
+        self.add_parameter(name,
+            flags=Instrument.FLAG_SET|Instrument.FLAG_SOFTGET,
+            option_list=channel_info.keys(),
+            set_func=lambda val: self.do_set_alias(name, val),
+            type=types.StringType,
+            )
 
 def detect_instruments():
     count = get_device_count()
