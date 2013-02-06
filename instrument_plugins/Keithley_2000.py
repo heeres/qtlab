@@ -1,4 +1,4 @@
-# Keithley_2100.py driver for Keithley 2100 DMM
+# Keithley_2000.py driver for Keithley 2000 DMM
 # Pieter de Groot <pieterdegroot@gmail.com>, 2008
 # Martijn Schaafsma <qtlab@mcschaafsma.nl>, 2008
 # Reinier Heeres <reinier@heeres.eu>, 2008 - 2010
@@ -37,13 +37,13 @@ def bool_to_str(val):
     else:
         return "OFF"
 
-class Keithley_2100(Instrument):
+class Keithley_2000(Instrument):
     '''
-    This is the driver for the Keithley 2100 Multimeter
+    This is the driver for the Keithley 2000 Multimeter
 
     Usage:
     Initialize with
-    <name> = instruments.create('<name>', 'Keithley_2100',
+    <name> = instruments.create('<name>', 'Keithley_2000',
         address='<GBIP address>',
         reset=<bool>,
         change_display=<bool>,
@@ -53,7 +53,7 @@ class Keithley_2100(Instrument):
     def __init__(self, name, address, reset=False,
             change_display=True, change_autozero=True):
         '''
-        Initializes the Keithley_2100, and communicates with the wrapper.
+        Initializes the Keithley_2000, and communicates with the wrapper.
 
         Input:
             name (string)           : name of the instrument
@@ -67,7 +67,7 @@ class Keithley_2100(Instrument):
             None
         '''
         # Initialize wrapper functions
-        logging.info('Initializing instrument Keithley_2100')
+        logging.info('Initializing instrument Keithley_2000')
         Instrument.__init__(self, name, tags=['physical'])
 
         # Add some global constants
