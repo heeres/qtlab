@@ -17,6 +17,7 @@
 
 import ctypes
 import numpy as np
+import logging
 
 phlib = ctypes.windll.phlib
 
@@ -71,8 +72,13 @@ class PHDevice():
 
     def __init__(self, devid, mode=MODE_HIST):
         self._devid = devid
-        self.open()
-        self.initialize(mode)
+        self._is_open = False
+
+        try:
+            self.open()
+            self.initialize(mode)
+        except:
+            logging.error('Error loading Picoharp. In use? Check USB connection?')
 
     def __del__(self):
         self.close()
@@ -81,11 +87,17 @@ class PHDevice():
         buf = ctypes.create_string_buffer(16)
         ret = phlib.PH_OpenDevice(self._devid, buf)
         self._serial = buf.value
+        if ret >= 0:
+            self._is_open = True
         return ph_check(ret)
 
     def close(self):
+        self._is_open = False
         ret = phlib.PH_CloseDevice(self._devid)
         return ph_check(ret)
+
+    def is_open(self):
+        return self._is_open
 
     def initialize(self, mode):
         '''

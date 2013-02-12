@@ -54,6 +54,8 @@ class Picoharp(Instrument):
 
         self.add_function('reset')
         self.add_function('get_all')
+        self.add_function('open')
+        self.add_function('close')
         self.add_function('start')
         self.add_function('plot')
 
@@ -65,19 +67,23 @@ class Picoharp(Instrument):
             self.get_all()
 
     def _create_dev(self):
-        try:
-            self._dev = picoquant_ph.PHDevice(self._devid)
-        except:
-            logging.error('Error loading Picoharp. In use? Check USB connection?')
-            self._dev = None
+        self._dev = picoquant_ph.PHDevice(self._devid)
 
     def reset(self):
         self.get_all()
 
     def get_all(self):
-        self.get_resolution()
-        self.get_counts0()
-        self.get_counts1()
+        if self._dev.is_open():
+            self.get_resolution()
+            self.get_counts0()
+            self.get_counts1()
+
+    def close(self):
+        self._dev.close()
+
+    def open(self):
+        self._dev.open()
+        self._dev.initialize(picoquant_ph.MODE_HIST)
 
     def do_get_resolution(self):
         if self._dev:
