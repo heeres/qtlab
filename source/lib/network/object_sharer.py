@@ -32,6 +32,9 @@ import types
 PORT = 12002
 BUFSIZE = 8192
 
+class RemoteException(Exception):
+    pass
+
 class ObjectSharer():
     '''
     The object sharer containing both client and server functions.
@@ -347,7 +350,9 @@ class ObjectSharer():
         try:
             ret = func(*args, **kwargs)
         except Exception, e:
-            ret = e
+            import traceback
+            tb = traceback.format_exc(15)
+            ret = RemoteException('%s\n%s' % (e, tb))
 
         if info[0] == 'signal':
             # No need to send return
@@ -773,7 +778,7 @@ class _DummyHandler(tcpserver.GlibTCPHandler):
     def __init__(self, sock, client_address, server):
         tcpserver.GlibTCPHandler.__init__(self, sock, client_address, server,
                 packet_len=True)
-        helper.add_client(self.socket, self)
+        self.client = helper.add_client(self.socket, self)
 
     def handle(self, data):
         if len(data) > 0:
@@ -805,7 +810,7 @@ def start_glibtcp_client(host, port=PORT, nretry=1):
             sock.connect((host, port))
             handler = _DummyHandler(sock, 'client', 'server')
             setup_glib_flush_queue()
-            return True
+            return handler.client
         except Exception, e:
             logging.warning('Failed to start sharing client: %s', str(e))
             if nretry > 0:
