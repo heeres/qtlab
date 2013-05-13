@@ -18,10 +18,7 @@
 import time
 import gtk
 import gobject
-
 import logging
-from lib import calltimer
-
 import qt
 from data import Data
 
@@ -42,7 +39,6 @@ class Measurement(gobject.GObject):
         gobject.GObject.__init__(self)
 
         self._name = name
-        self._thread = None
         self._options = kwargs
 
         self._coords = []
@@ -249,8 +245,6 @@ class Measurement(gobject.GObject):
             float: extra requested timeout in ms
         '''
 
-        gtk.gdk.threads_enter()
-
         coords = self._current_coords
         data = self._do_measurements()
 
@@ -258,8 +252,6 @@ class Measurement(gobject.GObject):
             extra_delay = self._do_set_values(iter)
         else:
             extra_delay = 0
-
-        gtk.gdk.threads_leave()
 
         cols = coords + data
         nb = {'newblock': self._new_data_block}
@@ -273,15 +265,9 @@ class Measurement(gobject.GObject):
 
         return extra_delay
 
-    def start(self, blocking=False):
+    def start(self):
         '''
         Start measurement loop.
-
-        Input:
-            blocking (boolean): If false (default) do measurement in a thread.
-
-        Output:
-            None
         '''
 
         if len(self._coords) == 0:
@@ -312,17 +298,14 @@ class Measurement(gobject.GObject):
         self._do_set_values(-1)
         time.sleep(self._delay / 1000.0)
 
-        if not blocking:
-            self._thread = calltimer.CallTimerThread(self._measure, self._delay, self._ntotal)
-            self._thread.connect('finished', self._finished_cb)
-        else:
-            self._thread = calltimer.CallTimer(self._measure, self._delay, self._ntotal)
+        for i in range(self._ntotal):
+            self._measure()
+            try:
+                qt.msleep(self._delay / 1000.0)
+            except:
+                self.emit('finished', 'Interrupted')
 
-        self._thread.start()
-
-    def stop(self, msg):
-        if self._thread is not None:
-            self._thread.set_stop_request(msg)
+        self.emit('finished', 'Ok')
 
     def _finished_cb(self, sender, msg):
         logging.debug('Measurement finished: %s', msg)
