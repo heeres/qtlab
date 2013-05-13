@@ -1,3 +1,8 @@
+# qtclient.py, module that should replace qt.py in clients 
+# The name of this file might be somewhat confusing due to the existence
+# of client_qt.py which contains code to start a client based on the Qt
+# toolkit.
+
 from lib.network.object_sharer import helper
 import time
 import types
@@ -14,6 +19,13 @@ class constants():
     FLAG_PERSIST = 0x10
 
 flow = helper.find_object('%s:flow' % config['instance_name'])
+if flow is None:
+    flow = helper.find_object('flow')
+    if flow is None:
+        raise ValueError('Unable to locate qt.flow object (%s), client failed to start' % config['instance_name'])
+    else:
+        print 'Connected to undefined qtlab instance'
+
 for i in range(100):
     status = flow.get_status()
     if not (status is None or status == "starting"):

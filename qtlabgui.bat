@@ -21,4 +21,4 @@ IF EXIST c:\python26\python.exe (
 :mark1
 
 :: Run QTlab GUI
-start %PYTHON_PATH%\pythonw.exe source/gui/guiclient.py %*
+start %PYTHON_PATH%\pythonw.exe clients/client_gtk.py --module gui_client --config gui_client.cfg %*

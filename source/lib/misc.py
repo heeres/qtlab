@@ -25,6 +25,12 @@ def get_dict_keys(dic, keys):
             ret[key] = dic[key]
     return ret
 
+def invert_dict(dic):
+    ret = {}
+    for key, val in dic.iteritems():
+        ret[val] = key
+    return ret
+
 def seconds_to_str(secs):
     '''Convert a number of seconds to hh:mm:ss string.'''
     hours = np.floor(secs / 3600)
