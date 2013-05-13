@@ -107,6 +107,7 @@ class GnuplotPipe():
         self._persist = persist
         self._noraise = noraise
         self._reopen_cb = None
+        self._popen = None
 
         if type(default_terminal) in (types.StringType, types.UnicodeType):
             self._default_terminal = (default_terminal, '')
@@ -117,10 +118,28 @@ class GnuplotPipe():
 
         self._open_gnuplot()
 
+    def __del__(self):
+        self.close_gnuplot()
+
     def set_reopen_cb(self, cb):
         self._reopen_cb = cb
 
+    def close_gnuplot(self):
+        if self._popen is None:
+            return
+        try:
+            self._popen.terminate()
+        except:
+            pass
+        self._popen.stdin.close()
+        self._popen.stdout.close()
+        self._popen.stderr.close()
+        self._popen.wait()
+        self._popen = None
+
     def _open_gnuplot(self):
+        self.close_gnuplot()
+
         args = ['gnuplot']
         if self._persist:
             args.append('-persist')
@@ -185,6 +204,9 @@ class GnuplotPipe():
     def get_output(self, timeout=DEFAULT_TIMEOUT):
         '''Read output from gnuplot, waiting at most <timeout> seconds.'''
 
+        if not self._popen:
+            return None
+
         ret = ''
         i = 0
         while i < 1000:
@@ -210,6 +232,8 @@ class GnuplotPipe():
         try:
             if retoutput:
                 self.flush_output()
+            if not self._popen:
+                self._open_gnuplot()
             ret = self._popen.stdin.write(cmd)
             if retoutput:
                 return self.get_output(timeout)

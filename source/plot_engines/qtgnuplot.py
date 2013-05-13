@@ -191,6 +191,7 @@ class _QTGnuPlot():
 
     def quit(self):
         self.cmd('quit')
+        self._gnuplot.close_gnuplot()
 
     def get_first_filepath(self):
         '''Return filepath of first data item.'''
