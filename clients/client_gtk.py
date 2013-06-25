@@ -8,6 +8,7 @@ import client_shared
 args, pargs = client_shared.process_args()
 
 from lib.network import object_sharer as objsh
+from lib.network import share_gtk
 
 def _close_gui_cb(*args):
     import gtk
@@ -21,7 +22,7 @@ def _close_gui_cb(*args):
     sys.exit()
 
 if __name__ == "__main__":
-    srv = objsh.start_glibtcp_client('localhost', port=args.port, nretry=60)
+    srv = share_gtk.start_client('localhost', port=args.port, nretry=60)
 
     # Be sure to talk to the qtlab instance that we just connected to
     if srv:

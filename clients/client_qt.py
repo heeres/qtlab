@@ -5,7 +5,6 @@
 
 import os
 import sys
-import socket
 import logging
 
 import client_shared
@@ -19,7 +18,7 @@ sip.setapi('QString', 2)
 sip.setapi('QVariant', 2)
 from PyQt4 import QtGui, QtCore
 
-from lib.network.tcpserverqt import QtQtlabHandler
+from lib.network import share_qt
 from lib.network import object_sharer as objsh
 
 def close_client(self):
@@ -34,11 +33,9 @@ if __name__ == "__main__":
     if app is None:
         app = QtGui.QApplication([sys.argv[0],])
 
-    # open the socket and start the client.
+    # Start object sharer integrated with Qt main loop
     # will fail if no connection to qtlab is available
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(('localhost', args.port))
-    handler = QtQtlabHandler(sock, 'client', 'server')
+    share_qt.start_client('localhost', args.port)
 
     # Be sure to talk to the qtlab instance that we just connected to
     flow = objsh.helper.find_object('%s:flow' % handler.client.get_instance_name())
