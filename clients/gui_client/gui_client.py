@@ -11,8 +11,9 @@ import optparse
 adddir = os.path.join(os.getcwd(), 'source')
 sys.path.insert(0, adddir)
 
+# We should not overwrite the config file set up by client_shared.py
 from lib import config
-config = config.create_config('qtlabgui.cfg')
+config = config.get_config()
 
 from lib.network import object_sharer as objsh
 

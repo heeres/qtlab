@@ -18,9 +18,9 @@ class constants():
     FLAG_SOFTGET = 0x08
     FLAG_PERSIST = 0x10
 
-flow = helper.find_object('%s:flow' % config['instance_name'])
+flow = helper.find_remote_object('%s:flow' % config['instance_name'])
 if flow is None:
-    flow = helper.find_object('flow')
+    flow = helper.find_remote_object('flow')
     if flow is None:
         raise ValueError('Unable to locate qt.flow object (%s), client failed to start' % config['instance_name'])
     else:

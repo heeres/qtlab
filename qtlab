@@ -19,6 +19,6 @@ if [[ "$_ipython" ]]; then
     if [[ "$version" < "0.11" ]]; then
         ipython -gthread $basedir/source/qtlab_shell.py -- "$@"
     else
-        ipython --gui=gtk -i $basedir/source/qtlab_shell.py
+        ipython --gui=gtk -i $basedir/source/qtlab_shell.py -- "$@"
     fi
 fi

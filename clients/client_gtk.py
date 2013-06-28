@@ -22,13 +22,20 @@ def _close_gui_cb(*args):
     sys.exit()
 
 if __name__ == "__main__":
-    srv = share_gtk.start_client('localhost', port=args.port, nretry=60)
+    srv = share_gtk.start_client(args.host, port=args.port, nretry=60)
+    logging.debug('Connected to %s', srv.get_instance_name())
 
     # Be sure to talk to the qtlab instance that we just connected to
     if srv:
         import lib.config as cfg
         cfg.get_config()['instance_name'] = srv.get_instance_name()
 
+
+    # Close when requested
+    flow = objsh.helper.find_object('%s:flow' % srv.get_instance_name())
+    flow.connect('close-gui', _close_gui_cb)
+
+    # Or if disconected
     objsh.helper.register_event_callback('disconnected', _close_gui_cb)
 
     if args.module:

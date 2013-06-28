@@ -88,6 +88,18 @@ class ObjectSharer():
         self._do_event_callbacks('connect', client)
         return client
 
+    def get_client_for_socket(self, conn):
+        for c in self.clients:
+            if c.get_proxy_socket() == conn:
+                return c
+        return None
+
+    def remove_client(self, client):
+        if client in self._clients:
+            del self._clients[self._clients.index(client)]
+
+        self._do_event_callbacks('disconnected', client)
+
     def register_event_callback(self, event, cb):
         '''
         Register callback cb for event. Event is one of:
@@ -105,12 +117,6 @@ class ObjectSharer():
             return
         for func in self._event_callbacks[event]:
             func(*args)
-
-    def remove_client(self, client):
-        if client in self._clients:
-            del self._clients[self._clients.index(client)]
-
-        self._do_event_callbacks('disconnected', client)
 
     def _client_disconnected(self, conn):
         for client in self._clients:
@@ -743,6 +749,14 @@ class ObjectProxy():
     def disconnect(self, hid):
         return helper.disconnect(hid)
 
+    def get_proxy_client(self):
+        '''Return the client where this proxy is pointing to'''
+        return helper.get_client_for_socket(self.__conn)
+
+    def get_proxy_socket(self):
+        '''Return the connection this proxy is using'''
+        return self.__conn
+
 def cache_result(f):
     f._share_options = {'cache_result': True}
     return f
@@ -802,7 +816,6 @@ class PythonInterpreter(SharedObject):
         self._namespace = namespace
 
     def cmd(self, cmd):
-        print 'Evaluating %s' % (cmd, )
         retval = eval(cmd, self._namespace, self._namespace)
         return retval
 
