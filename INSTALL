@@ -41,7 +41,7 @@ B) other programs.
     scipy has many math routines (like fitting), based on numpy.
     URL: scipy.org (for both numpy and scipy)
 
-3a) ipython (>=0.10)
+3a) ipython (>=1.0.0)
 3b) pyreadline (>=1.5)
 
     enhanced interactive shell for python
@@ -58,7 +58,7 @@ B) other programs.
     libraries used for creating graphical interfaces.
     URL: pygtk.org
 
-5) pyvisa (1.3)
+5) pyvisa (1.3, < 1.6)
 
     library for communication with GPIB/USB/SERIAL instruments
     URL: pyvisa.sourceforge.net/
