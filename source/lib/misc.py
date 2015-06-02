@@ -3,6 +3,7 @@ import StringIO
 import types
 import sys
 import time
+from IPython import get_ipython
 
 def dict_to_ordered_tuples(dic):
     '''Convert a dictionary to a list of tuples, sorted by key.'''
@@ -23,12 +24,6 @@ def get_dict_keys(dic, keys):
     for key in keys:
         if key in dic:
             ret[key] = dic[key]
-    return ret
-
-def invert_dict(dic):
-    ret = {}
-    for key, val in dic.iteritems():
-        ret[val] = key
     return ret
 
 def seconds_to_str(secs):
@@ -100,35 +95,9 @@ def usleep(usec):
     while (exact_time() - start) * 1e6 < usec:
         pass
 
-def get_ipython():
-    import IPython
-    if ipython_is_newer((0, 11)):
-        return IPython.core.ipapi.get()
-    else:
-        return IPython.ipapi.get()
-
 def get_traceback():
-    if ipython_is_newer((0, 11)):
-        from IPython.core.ultratb import AutoFormattedTB
-    else:
-        from IPython.ultraTB import AutoFormattedTB
+    from IPython.core.ultratb import AutoFormattedTB
     return AutoFormattedTB
-
-def ipython_is_newer(vin):
-    """
-    vin is tuple of version (a,b,c) for version "a.b.c"
-    result gives True for larger or equal version
-    """
-    import IPython
-    vs = IPython.__version__.split('.')
-    for i in range(len(vs)):
-        if i > (len(vin)-1):
-            return True
-        if int(vs[i]) > vin[i]:
-            return True
-        elif int(vs[i]) < vin[i]:
-            return False
-    return True
 
 def is_ipython():
     return get_ipython() != None
@@ -136,19 +105,13 @@ def is_ipython():
 def exit_shell():
     if is_ipython():
         ip = get_ipython()
-        if ipython_is_newer((0, 11)):
-            ip.exit() # FIXME This gives annoying request for y/n when called
-        else:
-            ip.magic('Exit')
+        ip.exit() # FIXME This gives annoying request for y/n when called
     sys.exit()
 
 def register_exit(func):
     if is_ipython():
         ip = get_ipython()
-        if ipython_is_newer((0, 11)):
-            ip.hooks['shutdown_hook'].add(func, 1)
-        else:
-            ip.IP.hooks.shutdown_hook.add(func, 1)
+        ip.hooks['shutdown_hook'].add(func, 1)
     else:
         import atexit
         atexit.register(func)

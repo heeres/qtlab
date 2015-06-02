@@ -1,1 +1,5 @@
 QT Lab environment
+
+requirements:
+IPython ≥ 1.0.0
+pyVISA  < 1.5
